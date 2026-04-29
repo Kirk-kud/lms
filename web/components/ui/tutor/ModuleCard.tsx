@@ -7,7 +7,7 @@ interface Item {
   id: string;
   title: string;
   type: 'pdf' | 'link' | 'video' | 'text';
-  content_url: string;
+  content_url: string | null;
   created_at: string;
 }
 
