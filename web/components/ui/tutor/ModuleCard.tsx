@@ -5,9 +5,12 @@ import { FileChip } from '../shared/FileChip';
 
 interface Item {
   id: string;
+  module_id: string;
   title: string;
   type: 'pdf' | 'link' | 'video' | 'text';
   content_url: string | null;
+  content_text: string | null;
+  order_index: number;
   created_at: string;
 }
 
