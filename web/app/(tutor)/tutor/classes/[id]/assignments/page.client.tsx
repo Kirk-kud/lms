@@ -105,14 +105,11 @@ function CreateAssignmentModal({
             <div>
               <label className="block text-[12px] text-[#6B6B6B] mb-1">Due date</label>
               <Popover open={calOpen} onOpenChange={setCalOpen}>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className="w-full h-9 px-3 text-[13px] text-left border border-[#E5E5E5] rounded-lg hover:border-[#8B1A2F] transition-colors"
-                    style={{ color: dueDate ? '#111' : '#9CA3AF' }}
-                  >
-                    {dueDate ? format(dueDate, 'MMM d, yyyy') : 'Pick a date'}
-                  </button>
+                <PopoverTrigger
+                  className="w-full h-9 px-3 text-[13px] text-left border border-[#E5E5E5] rounded-lg hover:border-[#8B1A2F] transition-colors"
+                  style={{ color: dueDate ? '#111' : '#9CA3AF' }}
+                >
+                  {dueDate ? format(dueDate, 'MMM d, yyyy') : 'Pick a date'}
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
