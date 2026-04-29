@@ -1,0 +1,225 @@
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { SupabaseService } from '../supabase/supabase.service';
+import { CreateClassDto, JoinClassDto } from './classes.dto';
+
+@Injectable()
+export class ClassesService {
+  constructor(private readonly supabase: SupabaseService) {}
+
+  // ----------------------------------------------------------------
+  // POST /classes
+  // ----------------------------------------------------------------
+  async create(tutorId: string, dto: CreateClassDto) {
+    const { data, error } = await this.supabase.adminClient
+      .from('classes')
+      .insert({ tutor_id: tutorId, title: dto.title, description: dto.description ?? null })
+      .select()
+      .single();
+
+    if (error) throw new BadRequestException(error.message);
+    return data;
+  }
+
+  // ----------------------------------------------------------------
+  // GET /classes
+  // ----------------------------------------------------------------
+  async findAll(userId: string, role: string) {
+    if (role === 'tutor') {
+      const { data, error } = await this.supabase.adminClient
+        .from('classes')
+        .select('*, enrollments(count)')
+        .eq('tutor_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw new BadRequestException(error.message);
+      return this.flattenCount(data ?? []);
+    }
+
+    // student
+    const { data, error } = await this.supabase.adminClient
+      .from('enrollments')
+      .select('enrolled_at, class:classes(*, enrollments(count))')
+      .eq('student_id', userId)
+      .order('enrolled_at', { ascending: false });
+
+    if (error) throw new BadRequestException(error.message);
+
+    return (data ?? []).map((row) => {
+      const cls = row.class as Record<string, any>;
+      return {
+        ...this.flattenCountSingle(cls),
+        enrolled_at: row.enrolled_at,
+      };
+    });
+  }
+
+  // ----------------------------------------------------------------
+  // GET /classes/:id
+  // ----------------------------------------------------------------
+  async findOne(classId: string, userId: string, role: string) {
+    const { data: cls, error } = await this.supabase.adminClient
+      .from('classes')
+      .select('*, tutor:profiles!tutor_id(*), enrollments(count)')
+      .eq('id', classId)
+      .single();
+
+    if (error || !cls) throw new NotFoundException('Class not found');
+
+    if (role === 'tutor') {
+      if (cls.tutor_id !== userId) throw new ForbiddenException();
+    } else {
+      const { data: enrollment } = await this.supabase.adminClient
+        .from('enrollments')
+        .select('id')
+        .eq('class_id', classId)
+        .eq('student_id', userId)
+        .maybeSingle();
+
+      if (!enrollment) throw new ForbiddenException('Not enrolled in this class');
+    }
+
+    return this.flattenCountSingle(cls);
+  }
+
+  // ----------------------------------------------------------------
+  // POST /classes/join
+  // ----------------------------------------------------------------
+  async join(studentId: string, dto: JoinClassDto) {
+    const { data: cls, error: clsError } = await this.supabase.adminClient
+      .from('classes')
+      .select('*')
+      .ilike('invite_code', dto.invite_code)
+      .maybeSingle();
+
+    if (clsError) throw new BadRequestException(clsError.message);
+    if (!cls) throw new NotFoundException('Invalid invite code');
+
+    const { data: existing } = await this.supabase.adminClient
+      .from('enrollments')
+      .select('id')
+      .eq('class_id', cls.id)
+      .eq('student_id', studentId)
+      .maybeSingle();
+
+    if (existing) throw new BadRequestException('Already enrolled in this class');
+
+    const { error: enrollError } = await this.supabase.adminClient
+      .from('enrollments')
+      .insert({ class_id: cls.id, student_id: studentId });
+
+    if (enrollError) throw new BadRequestException(enrollError.message);
+    return cls;
+  }
+
+  // ----------------------------------------------------------------
+  // GET /classes/:id/roster
+  // ----------------------------------------------------------------
+  async getRoster(classId: string, tutorId: string) {
+    // Verify ownership
+    const { data: cls, error: clsError } = await this.supabase.adminClient
+      .from('classes')
+      .select('id, tutor_id')
+      .eq('id', classId)
+      .single();
+
+    if (clsError || !cls) throw new NotFoundException('Class not found');
+    if (cls.tutor_id !== tutorId) throw new ForbiddenException();
+
+    // Enrollments + student profiles
+    const { data: enrollments, error: enrError } = await this.supabase.adminClient
+      .from('enrollments')
+      .select('enrolled_at, student:profiles!student_id(*)')
+      .eq('class_id', classId)
+      .order('enrolled_at', { ascending: true });
+
+    if (enrError) throw new BadRequestException(enrError.message);
+
+    // Total session count for this class
+    const { count: totalSessions } = await this.supabase.adminClient
+      .from('attendance_sessions')
+      .select('*', { count: 'exact', head: true })
+      .eq('class_id', classId);
+
+    // Attendance records for all sessions of this class
+    const { data: sessions } = await this.supabase.adminClient
+      .from('attendance_sessions')
+      .select('id')
+      .eq('class_id', classId);
+
+    const sessionIds = (sessions ?? []).map((s) => s.id);
+
+    const attendanceByStudent = new Map<string, number>();
+    if (sessionIds.length > 0) {
+      const { data: records } = await this.supabase.adminClient
+        .from('attendance_records')
+        .select('student_id')
+        .in('session_id', sessionIds);
+
+      for (const rec of records ?? []) {
+        attendanceByStudent.set(
+          rec.student_id,
+          (attendanceByStudent.get(rec.student_id) ?? 0) + 1,
+        );
+      }
+    }
+
+    // Submission counts per student for this class's assignments
+    const { data: assignments } = await this.supabase.adminClient
+      .from('assignments')
+      .select('id')
+      .eq('class_id', classId);
+
+    const assignmentIds = (assignments ?? []).map((a) => a.id);
+
+    const submissionsByStudent = new Map<string, number>();
+    if (assignmentIds.length > 0) {
+      const { data: submissions } = await this.supabase.adminClient
+        .from('submissions')
+        .select('student_id')
+        .in('assignment_id', assignmentIds);
+
+      for (const sub of submissions ?? []) {
+        submissionsByStudent.set(
+          sub.student_id,
+          (submissionsByStudent.get(sub.student_id) ?? 0) + 1,
+        );
+      }
+    }
+
+    return (enrollments ?? []).map((row) => {
+      const student = row.student as Record<string, any>;
+      const attended = attendanceByStudent.get(student.id) ?? 0;
+      const attendance_pct =
+        totalSessions && totalSessions > 0
+          ? Math.round((attended / totalSessions) * 100)
+          : 0;
+
+      return {
+        student,
+        attendance_pct,
+        submission_count: submissionsByStudent.get(student.id) ?? 0,
+        enrolled_at: row.enrolled_at,
+      };
+    });
+  }
+
+  // ----------------------------------------------------------------
+  // Helpers
+  // ----------------------------------------------------------------
+  private flattenCount(rows: any[]): any[] {
+    return rows.map((r) => this.flattenCountSingle(r));
+  }
+
+  private flattenCountSingle(row: any): any {
+    const { enrollments, ...rest } = row;
+    const enrolled_count: number = Array.isArray(enrollments)
+      ? ((enrollments[0] as any)?.count ?? 0)
+      : 0;
+    return { ...rest, enrolled_count };
+  }
+}

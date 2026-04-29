@@ -1,0 +1,83 @@
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Req,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import type { Request } from 'express';
+import { createResponse } from '../common/response.helper';
+import { Roles, RolesGuard } from '../auth/role.guard';
+import type { JwtPayload } from '../auth/jwt.strategy';
+import { CreateAssignmentDto, UpdateAssignmentDto } from './assignments.dto';
+import { AssignmentsService } from './assignments.service';
+
+@Controller('assignments')
+@UseGuards(RolesGuard)
+export class AssignmentsController {
+  constructor(private readonly service: AssignmentsService) {}
+
+  // Literal segment 'class' declared before param routes
+  @Get('class/:classId')
+  async findByClass(@Req() req: Request, @Param('classId') classId: string) {
+    const user = req.user as JwtPayload;
+    const data = await this.service.findByClass(classId, user.sub, user.role);
+    return createResponse(data, 'Assignments fetched');
+  }
+
+  @Post()
+  @Roles('tutor')
+  async create(@Req() req: Request, @Body() dto: CreateAssignmentDto) {
+    const user = req.user as JwtPayload;
+    const data = await this.service.create(user.sub, dto);
+    return createResponse(data, 'Assignment created', 201);
+  }
+
+  @Get(':id/submissions')
+  @Roles('tutor')
+  async getSubmissions(@Req() req: Request, @Param('id') id: string) {
+    const user = req.user as JwtPayload;
+    const data = await this.service.getSubmissions(id, user.sub);
+    return createResponse(data, 'Submissions fetched');
+  }
+
+  @Post(':id/submit')
+  @Roles('student')
+  @UseInterceptors(FileInterceptor('file'))
+  async submit(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    const user = req.user as JwtPayload;
+    const data = await this.service.submit(id, user.sub, file);
+    return createResponse(data, 'Assignment submitted', 201);
+  }
+
+  @Patch(':id')
+  @Roles('tutor')
+  async update(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @Body() dto: UpdateAssignmentDto,
+  ) {
+    const user = req.user as JwtPayload;
+    const data = await this.service.update(id, user.sub, dto);
+    return createResponse(data, 'Assignment updated');
+  }
+
+  @Delete(':id')
+  @Roles('tutor')
+  async remove(@Req() req: Request, @Param('id') id: string) {
+    const user = req.user as JwtPayload;
+    await this.service.remove(id, user.sub);
+    return createResponse(null, 'Assignment deleted');
+  }
+}
