@@ -37,10 +37,6 @@ Set these in the Render service:
 ### Project settings
 
 - **Root directory**: `web`
-- `web/vercel.json` references environment variables:
-  - `api_url`
-  - `supabase_url`
-  - `supabase_anon_key`
 
 ### Environment variables (Vercel)
 
