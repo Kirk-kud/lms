@@ -109,7 +109,7 @@ export class ClassesService {
     const { data: cls, error: clsError } = await this.supabase.adminClient
       .from('classes')
       .select('*')
-      .ilike('invite_code', dto.invite_code)
+      .eq('invite_code', dto.invite_code)
       .maybeSingle();
 
     this.logger.log(`classes query — data=${JSON.stringify(cls)} error=${JSON.stringify(clsError)}`);
