@@ -1,0 +1,241 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-04-30T00:00:00Z",
+  "title": "Design System: Love Inc LMS",
+  "extensions": {
+    "colorMeta": {
+      "fellowship-burgundy": {
+        "role": "primary",
+        "displayName": "Fellowship Burgundy",
+        "canonical": "oklch(35% 0.137 17)",
+        "tonalRamp": [
+          "#150307",
+          "#2a060f",
+          "#470d1b",
+          "#6b1020",
+          "#8b1a2f",
+          "#a84258",
+          "#c47385",
+          "#e0aab5"
+        ]
+      },
+      "ink-black": {
+        "role": "neutral",
+        "displayName": "Ink Black",
+        "canonical": "oklch(14.5% 0 0)",
+        "tonalRamp": [
+          "#050505",
+          "#111111",
+          "#1f1f1f",
+          "#333333",
+          "#4b4b4b",
+          "#6b6b6b",
+          "#999999",
+          "#cccccc"
+        ]
+      },
+      "field-gray": {
+        "role": "neutral",
+        "displayName": "Field Gray",
+        "canonical": "oklch(55% 0.008 257)",
+        "tonalRamp": [
+          "#1f2937",
+          "#374151",
+          "#4b5563",
+          "#6b7280",
+          "#9ca3af",
+          "#d1d5db",
+          "#e5e7eb",
+          "#f9fafb"
+        ]
+      },
+      "archive-gray": {
+        "role": "neutral",
+        "displayName": "Archive Gray",
+        "canonical": "oklch(97.2% 0 0)",
+        "tonalRamp": [
+          "#c8c8c8",
+          "#d4d4d4",
+          "#e0e0e0",
+          "#e8e8e8",
+          "#f0f0f0",
+          "#f5f5f5",
+          "#f8f8f8",
+          "#fafafa"
+        ]
+      },
+      "page-white": {
+        "role": "neutral",
+        "displayName": "Page White",
+        "canonical": "oklch(100% 0 0)",
+        "tonalRamp": [
+          "#d8d8d8",
+          "#e0e0e0",
+          "#e8e8e8",
+          "#f0f0f0",
+          "#f5f5f5",
+          "#f8f8f8",
+          "#fafafa",
+          "#ffffff"
+        ]
+      },
+      "wine-blush": {
+        "role": "neutral",
+        "displayName": "Wine Blush",
+        "canonical": "oklch(94% 0.018 17)",
+        "tonalRamp": [
+          "#c47385",
+          "#d08a97",
+          "#dca0ab",
+          "#e8b5be",
+          "#f0cad2",
+          "#f5dde2",
+          "#f5e6ea",
+          "#fdf3f5"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Page-level greetings and primary headings. One per screen." },
+      "headline": { "displayName": "Headline", "purpose": "Topbar wordmark, modal headings. Signals a surface boundary." },
+      "title": { "displayName": "Title", "purpose": "Section headers within content, card titles." },
+      "body": { "displayName": "Body", "purpose": "All body copy, list items, form field content. Max 65ch." },
+      "label": { "displayName": "Label", "purpose": "Sidebar section headers, stat card labels. Always uppercase, always tracked." },
+      "caption": { "displayName": "Caption", "purpose": "Timestamps, due dates, secondary metadata. Always Margin Gray." }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "ease-standard",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "State transitions (button hover, border color shifts). 200ms duration."
+      }
+    ],
+    "breakpoints": [
+      { "name": "md", "value": "768px", "purpose": "Sidebar visible above; bottom nav visible below." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main call-to-action. Black at rest, Fellowship Burgundy on hover.",
+      "html": "<button class=\"ds-btn-primary\">Sign in</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; height: 36px; padding: 0 16px; background: #111111; color: #ffffff; border: none; border-radius: 8px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: background 200ms cubic-bezier(0.16, 1, 0.3, 1); width: 100%; } .ds-btn-primary:hover { background: #8B1A2F; } .ds-btn-primary:focus-visible { outline: 2px solid #8B1A2F; outline-offset: 2px; } .ds-btn-primary:disabled { opacity: 0.75; cursor: not-allowed; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input-default",
+      "description": "Standard text field. Rule Line border at rest; Fellowship Burgundy on focus.",
+      "html": "<div class=\"ds-field\"><label class=\"ds-field-label\" for=\"ds-input\">Email</label><input class=\"ds-input\" id=\"ds-input\" type=\"email\" placeholder=\"you@example.com\" /></div>",
+      "css": ".ds-field { display: flex; flex-direction: column; gap: 4px; } .ds-field-label { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 400; color: #9CA3AF; } .ds-input { height: 36px; padding: 0 10px; background: #ffffff; border: 0.5px solid #E5E5E5; border-radius: 8px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 13px; color: #111111; outline: none; box-sizing: border-box; width: 100%; transition: border-color 150ms ease-out; } .ds-input:focus { border: 1px solid #8B1A2F; } .ds-input::placeholder { color: #9CA3AF; }"
+    },
+    {
+      "name": "Stat Card",
+      "kind": "card",
+      "refersTo": "stat-card",
+      "description": "Dashboard metric tile. Archive Gray surface, Fellowship Burgundy value.",
+      "html": "<div class=\"ds-stat-card\"><div class=\"ds-stat-label\">My Attendance</div><div class=\"ds-stat-value\">84%</div></div>",
+      "css": ".ds-stat-card { background: #F8F8F8; border-radius: 8px; padding: 16px; } .ds-stat-label { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; font-weight: 500; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 4px; } .ds-stat-value { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 24px; font-weight: 500; color: #8B1A2F; }"
+    },
+    {
+      "name": "Status Badge — Wine",
+      "kind": "chip",
+      "refersTo": "badge-wine",
+      "description": "Love Inc identity badge. Wine Blush background, deep burgundy text.",
+      "html": "<span class=\"ds-badge-wine\">Ashesi</span>",
+      "css": ".ds-badge-wine { display: inline-block; background: #F5E6EA; color: #6B1222; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; font-weight: 500; padding: 2px 10px; border-radius: 9999px; }"
+    },
+    {
+      "name": "Status Badge — Gray",
+      "kind": "chip",
+      "refersTo": null,
+      "description": "Neutral status indicator.",
+      "html": "<span class=\"ds-badge-gray\">Inactive</span>",
+      "css": ".ds-badge-gray { display: inline-block; background: #F3F4F6; color: #4B5563; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; font-weight: 500; padding: 2px 10px; border-radius: 9999px; }"
+    },
+    {
+      "name": "Topbar",
+      "kind": "nav",
+      "refersTo": null,
+      "description": "Brand anchor for authenticated screens. Ink Black, wordmark left, user context right.",
+      "html": "<header class=\"ds-topbar\"><div class=\"ds-topbar-wordmark\"><span class=\"ds-wm-love\">Love</span><span class=\"ds-wm-inc\">Inc</span></div><div class=\"ds-topbar-right\"><div class=\"ds-role-chip\">Student</div><div class=\"ds-avatar\">KK</div><span class=\"ds-topbar-name\">Kirk Kudoto</span></div></header>",
+      "css": ".ds-topbar { height: 56px; background: #111111; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; } .ds-topbar-wordmark { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 18px; font-weight: 500; } .ds-wm-love { color: #ffffff; } .ds-wm-inc { color: #8B1A2F; } .ds-topbar-right { display: flex; align-items: center; gap: 12px; } .ds-role-chip { background: #333333; color: #ffffff; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 9999px; } .ds-avatar { width: 32px; height: 32px; background: #8B1A2F; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ffffff; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 500; flex-shrink: 0; } .ds-topbar-name { color: #ffffff; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 400; }"
+    },
+    {
+      "name": "Sidebar Nav Item",
+      "kind": "nav",
+      "refersTo": "nav-item-active",
+      "description": "Sidebar navigation item. Active: Page White bg + 500 weight. No side-stripe border.",
+      "html": "<div class=\"ds-nav-section\"><div class=\"ds-nav-section-label\">MY CLASS</div><button class=\"ds-nav-item ds-nav-item--active\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"currentColor\"><path d=\"M8 1L2 6v8h3v-4h2v4h3V6l-6-5z\"/></svg><span>Home</span></button><button class=\"ds-nav-item\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"currentColor\"><path d=\"M1 2h6v6H1V2zm8 0h6v6H9V2zM1 10h6v4H1v-4zm8 0h6v4H9v-4z\"/></svg><span>Modules</span></button></div>",
+      "css": ".ds-nav-section { padding-top: 8px; } .ds-nav-section-label { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; font-weight: 500; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.08em; padding: 16px 16px 4px; } .ds-nav-item { width: 100%; display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; background: transparent; border: none; cursor: pointer; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 400; color: #6B7280; text-align: left; transition: background 150ms ease-out; } .ds-nav-item:hover { background: #F0F0F0; } .ds-nav-item--active { background: #ffffff; color: #111111; font-weight: 500; } .ds-nav-item--active svg { color: #8B1A2F; }"
+    },
+    {
+      "name": "Section Container",
+      "kind": "card",
+      "refersTo": null,
+      "description": "Dashboard panel. White surface, 12px radius, Rule Line border, no shadow.",
+      "html": "<div class=\"ds-section\"><h2 class=\"ds-section-header\">Up next</h2><p class=\"ds-section-empty\">No assignments due soon</p></div>",
+      "css": ".ds-section { background: #ffffff; border: 1px solid #E5E5E5; border-radius: 12px; padding: 16px; } .ds-section-header { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 500; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.07em; margin: 0 0 12px 0; } .ds-section-empty { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 13px; color: #9CA3AF; margin: 0; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Bold Register",
+    "overview": "Love Inc LMS is built like a register — a living, named record of a discipleship community. Every element earns its place by doing a job. The system is confident without being loud, warm without being soft. The brand's bold condensed wordmark sets the tone: this isn't a generic tool. It belongs to real people at real universities who are serious about what they're doing together.\n\nThe palette is built on restraint. A single accent — Fellowship Burgundy — carries the entire brand weight. It appears on the wordmark, on active navigation, on the confirmation of an action. Everywhere else, near-black and gray do the structural work. The result is a system where the burgundy always means something.\n\nThe interface rejects the aesthetics of both the corporate LMS and the faith-tech startup. Love Inc is a specific community at specific universities. The design is specific to them.",
+    "keyCharacteristics": [
+      "Single accent system: Fellowship Burgundy on ink-black and page-white infrastructure",
+      "Flat by default — tonal contrast, no shadows",
+      "Typography-first hierarchy: weight and size, never color for emphasis",
+      "Structural confidence from the Helvetica Neue foundation",
+      "Community photos as content, not decoration"
+    ],
+    "rules": [
+      {
+        "name": "The One Accent Rule",
+        "body": "Fellowship Burgundy appears in at most three roles on any given screen: wordmark, active navigation, and one interactive confirmation. Its rarity is the point. If it appears more than three times, rethink the layout.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tonal Depth Rule",
+        "body": "There are no shadows. Depth is conveyed entirely through tonal contrast: Ink Black topbar, Archive Gray sidebar, Page White content. Never introduce a box-shadow to solve a layering problem — solve it with background color.",
+        "section": "colors"
+      },
+      {
+        "name": "The Weight Rule",
+        "body": "Hierarchy is size and weight, never color. A heading does not become Fellowship Burgundy for emphasis — it becomes 500 weight and larger size. Color emphasis belongs exclusively to interactive and brand states.",
+        "section": "typography"
+      },
+      {
+        "name": "The Single Family Rule",
+        "body": "One typeface. No serifs, no display-only variants, no pairing experiments. Helvetica Neue at two weights is sufficient.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat-By-Default Rule",
+        "body": "No box-shadow at rest, hover, active, or focus. If a component needs to feel interactive, change its border color — Rule Line to Fellowship Burgundy for focus, Rule Line to Field Gray for hover. Never add a shadow.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do use Fellowship Burgundy exclusively for: wordmark 'Inc', active navigation states, input focus borders, avatar backgrounds, and text links.",
+      "Do convey depth through tonal background layering — Ink Black topbar, Archive Gray sidebar, Page White content — not shadows.",
+      "Do use Helvetica Neue at 500 weight and larger size for all heading hierarchy.",
+      "Do place community photos at full width or anchored in a defined content zone — they are content.",
+      "Do render the wordmark as 'Love' in one color + 'Inc' in Fellowship Burgundy, in a single sans-serif weight.",
+      "Do use uppercase + letter-spacing exclusively for structural labels. Never for body copy or page headings.",
+      "Do express active navigation state through Page White background + 500 weight text. No side-stripe border."
+    ],
+    "donts": [
+      "Don't use border-left or border-right greater than 1px as a colored accent stripe. Remove existing side-stripes from sidebar active state and assignment list items.",
+      "Don't use soft gradients, stock photography, or generic religious imagery.",
+      "Don't build screens that look like Canvas or Blackboard — collapsible module accordions, institutional blue-gray palettes, progress bars as primary UI.",
+      "Don't use corporate HR or onboarding patterns: completion percentages, achievement badges, gamified streaks.",
+      "Don't use box-shadow anywhere. Change border color instead.",
+      "Don't add a second accent color. If the interface feels too gray, use larger typography and more confident spacing.",
+      "Don't color a heading or body text with Fellowship Burgundy for emphasis. Weight and size are the emphasis tools.",
+      "Don't use gradient text or background-clip text effects."
+    ]
+  }
+}

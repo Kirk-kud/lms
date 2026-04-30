@@ -48,6 +48,11 @@ export default function StudentLayout({
   const { user } = useUser()
   const { data: classes = [] } = useClasses()
   const primaryClassId = classes[0]?.id
+
+  // Prefer the class ID already in the URL so in-page navigation stays on the same class
+  const urlMatch = pathname.match(/\/student\/classes\/([^/]+)/)
+  const effectiveClassId = urlMatch?.[1] ?? primaryClassId ?? ''
+
   const activeItem = activeItemFromPath(pathname)
 
   const fullName: string = (user?.user_metadata?.full_name as string) ?? ''
@@ -65,15 +70,15 @@ export default function StudentLayout({
     }
 
     const fallback = '/join'
-    if (!primaryClassId) {
+    if (!effectiveClassId) {
       router.push(fallback)
       return
     }
 
     const routeByLabel: Record<string, string> = {
-      Modules: `/student/classes/${primaryClassId}/modules`,
-      Assignments: `/student/classes/${primaryClassId}/assignments`,
-      Attendance: `/student/classes/${primaryClassId}/attendance`,
+      Modules: `/student/classes/${effectiveClassId}/modules`,
+      Assignments: `/student/classes/${effectiveClassId}/assignments`,
+      Attendance: `/student/classes/${effectiveClassId}/attendance`,
     }
 
     const route = routeByLabel[label]
@@ -83,12 +88,15 @@ export default function StudentLayout({
   const handleSignOut = async () => {
     const supabase = createClient()
     await supabase.auth.signOut()
+    localStorage.removeItem('access_token')
     router.push('/login')
   }
 
+  const handleProfile = () => router.push('/student/profile')
+
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      <Topbar userName={fullName} userInitials={initials} role="student" />
+      <Topbar userName={fullName} userInitials={initials} role="student" onSignOut={handleSignOut} onProfile={handleProfile} />
 
       <div className="flex flex-1 overflow-hidden">
         <div className="hidden md:block">

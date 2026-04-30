@@ -88,7 +88,7 @@ function ClassCard({ id, title, description, enrolledCount, inviteCode }: {
   )
 }
 
-function CreateClassModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+function CreateClassModal({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: (id: string) => void }) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const createClass = useCreateClass()
@@ -97,10 +97,11 @@ function CreateClassModal({ open, onClose }: { open: boolean; onClose: () => voi
     e.preventDefault()
     if (!title.trim()) return
     try {
-      await createClass.mutateAsync({ title: title.trim(), description: description.trim() || undefined })
+      const newClass = await createClass.mutateAsync({ title: title.trim(), description: description.trim() || undefined })
       setTitle('')
       setDescription('')
       onClose()
+      onCreated(newClass.id)
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Unable to create class')
     }
@@ -178,6 +179,7 @@ function CreateClassModal({ open, onClose }: { open: boolean; onClose: () => voi
 }
 
 export default function ClassesPageClient() {
+  const router = useRouter()
   const {
     data: classes = [],
     isLoading,
@@ -241,7 +243,11 @@ export default function ClassesPageClient() {
         </div>
       )}
 
-      <CreateClassModal open={showCreate} onClose={() => setShowCreate(false)} />
+      <CreateClassModal
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+        onCreated={(id) => router.push(`/tutor/classes/${id}/modules`)}
+      />
     </div>
   )
 }

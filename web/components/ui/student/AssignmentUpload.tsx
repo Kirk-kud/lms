@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { X, Download, Upload, CheckCircle2 } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { format } from 'date-fns'
+import { StatusBadge } from '@/components/ui/shared/Badge'
 import { LoadingSpinner } from '@/components/ui/shared/LoadingSpinner'
 
 interface SubmissionData {
@@ -18,9 +19,6 @@ interface AssignmentUploadProps {
   submission?: SubmissionData | null
   onSubmit: (file: File) => Promise<void>
   uploadProgress?: number
-  getRootProps?: () => any
-  getInputProps?: () => any
-  StatusBadge?: React.ComponentType<{ variant: string; children: React.ReactNode }>
 }
 
 export default function AssignmentUpload({
@@ -31,132 +29,84 @@ export default function AssignmentUpload({
   submission,
   onSubmit,
   uploadProgress = 0,
-  getRootProps,
-  getInputProps,
-  StatusBadge,
 }: AssignmentUploadProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
-
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    })
-  }
-
-  const formatDateTime = (date: Date) => {
-    const d = new Date(date)
-    const dateStr = d.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    })
-    const timeStr = d.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-    })
-    return `${dateStr} at ${timeStr}`
-  }
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes'
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
-  }
+  const [resubmitting, setResubmitting] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileChange = (files: FileList | null) => {
-    if (files && files[0]) {
-      setSelectedFile(files[0])
-    }
+    if (files?.[0]) setSelectedFile(files[0])
   }
 
-  const handleRemoveFile = () => {
-    setSelectedFile(null)
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = () => setIsDragging(false)
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    handleFileChange(e.dataTransfer.files)
   }
 
   const handleSubmit = async () => {
     if (!selectedFile) return
-
     setIsUploading(true)
     try {
       await onSubmit(selectedFile)
       setSelectedFile(null)
+      setResubmitting(false)
     } finally {
       setIsUploading(false)
     }
   }
 
-  const handleDragEnter = () => {
-    setIsDragging(true)
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
   }
 
-  const handleDragLeave = () => {
-    setIsDragging(false)
-  }
-
-  const handleDrop = () => {
-    setIsDragging(false)
-  }
-
-  // Submitted mode
-  if (submission) {
+  if (submission && !resubmitting) {
     return (
-      <div className="w-full max-w-2xl">
-        <div className="relative mb-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <h2 className="text-base font-medium" style={{ fontSize: '15px' }}>
-                {title}
-              </h2>
-            </div>
-            <div className="flex items-center gap-2 bg-green-50 px-3 py-1 rounded">
-              <CheckCircle2 className="w-4 h-4 text-green-600" />
-              <span className="text-xs font-medium text-green-700">Submitted</span>
-            </div>
+      <div className="border border-[#E5E5E5] rounded-xl p-5">
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="min-w-0">
+            <h3 className="text-[14px] font-medium text-[#111]">{title}</h3>
+            {description && (
+              <p className="text-[13px] text-[#6B7280] mt-1">{description}</p>
+            )}
           </div>
+          <StatusBadge variant="success" label="Submitted" />
         </div>
 
-        {uploadProgress > 0 && (
-          <div className="mb-4">
-            <div className="w-full h-[3px] bg-gray-200 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-[#8B1A2F] transition-all duration-300"
-                style={{ width: `${uploadProgress}%` }}
-              />
-            </div>
+        <p className="text-[11px] text-[#9CA3AF]">
+          Submitted {format(new Date(submission.submitted_at), 'MMM d, yyyy')} at {format(new Date(submission.submitted_at), 'h:mm a')}
+        </p>
+
+        {uploadProgress > 0 && uploadProgress < 100 && (
+          <div className="mt-3 w-full h-[3px] bg-[#F3F4F6] rounded-full overflow-hidden">
+            <div className="h-full bg-[#8B1A2F] transition-all" style={{ width: `${uploadProgress}%` }} />
           </div>
         )}
 
-        {description && (
-          <p className="mb-3 text-sm" style={{ fontSize: '13px', color: '#6B7280' }}>
-            {description}
-          </p>
-        )}
-
-        <div className="mb-4 text-xs" style={{ color: '#6B7280' }}>
-          Submitted {formatDateTime(submission.submitted_at)}
-        </div>
-
-        <div className="flex gap-4">
+        <div className="mt-3 flex items-center gap-4">
           {submission.signed_url && (
             <a
               href={submission.signed_url}
               download={submission.file_name}
-              className="text-xs underline"
-              style={{ color: '#6B7280' }}
+              className="text-[12px] text-[#6B7280] hover:text-[#111] underline transition-colors truncate max-w-[200px]"
             >
-              Download submission
+              {submission.file_name}
             </a>
           )}
           <button
-            className="text-xs text-gray-500 hover:text-gray-700"
-            style={{ color: '#6B7280' }}
+            onClick={() => setResubmitting(true)}
+            className="text-[12px] text-[#9CA3AF] hover:text-[#111] transition-colors shrink-0"
           >
             Resubmit
           </button>
@@ -165,118 +115,95 @@ export default function AssignmentUpload({
     )
   }
 
-  // Not submitted mode
-  const dropzoneProps = getRootProps?.() || {}
-  const inputProps = getInputProps?.() || {}
-
   return (
-    <div className="w-full max-w-2xl">
-      <div className="mb-6">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-base font-medium" style={{ fontSize: '15px' }}>
-            {title}
-          </h2>
-          {StatusBadge ? (
-            <StatusBadge variant={isOverdue ? 'destructive' : 'secondary'}>
-              {isOverdue ? 'Overdue' : `Due ${formatDate(dueDate)}`}
-            </StatusBadge>
-          ) : (
-            <div className={`px-2 py-1 rounded text-xs font-medium ${
-              isOverdue
-                ? 'bg-red-100 text-red-700'
-                : 'bg-gray-100 text-gray-700'
-            }`}>
-              {isOverdue ? 'Overdue' : `Due ${formatDate(dueDate)}`}
-            </div>
+    <div className="border border-[#E5E5E5] rounded-xl p-5">
+      <div className="flex items-start justify-between gap-3 mb-4">
+        <div className="min-w-0">
+          <h3 className="text-[14px] font-medium text-[#111]">{title}</h3>
+          {description && (
+            <p className="text-[13px] text-[#6B7280] mt-1">{description}</p>
           )}
         </div>
+        <StatusBadge
+          variant={isOverdue ? 'danger' : 'gray'}
+          label={isOverdue ? 'Overdue' : `Due ${format(dueDate, 'MMM d')}`}
+        />
       </div>
 
-      {description && (
-        <p className="mb-3 text-sm" style={{ fontSize: '13px', color: '#6B7280' }}>
-          {description}
-        </p>
-      )}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="application/pdf"
+        className="hidden"
+        onChange={(e) => handleFileChange(e.target.files)}
+      />
 
-      <div
-        {...dropzoneProps}
-        onDragEnter={handleDragEnter}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        className={`mb-4 cursor-pointer transition-all ${
-          isDragging
-            ? 'border-[1.5px] border-solid'
-            : 'border-[1.5px] border-dashed border-[#E5E5E5]'
-        }`}
-        style={{
-          borderRadius: '8px',
-          padding: '24px',
-          textAlign: 'center',
-          borderColor: isDragging ? '#8B1A2F' : '#E5E5E5',
-          backgroundColor: isDragging ? '#FDF8F9' : 'transparent',
-        }}
-      >
-        <input {...inputProps} onChange={(e) => handleFileChange(e.target.files)} />
-
-        {!selectedFile ? (
-          <div className="flex flex-col items-center gap-3">
-            <Upload className="w-5 h-5" style={{ color: '#9CA3AF' }} />
-            <p className="text-sm" style={{ fontSize: '13px', color: '#6B7280' }}>
-              Drop your PDF here
-            </p>
-            <p className="text-xs" style={{ color: '#9CA3AF' }}>
-              or choose file
+      {!selectedFile ? (
+        <div
+          onClick={() => fileInputRef.current?.click()}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className="cursor-pointer rounded-lg border border-dashed p-6 text-center transition-colors"
+          style={{
+            borderColor: isDragging ? '#8B1A2F' : '#E5E5E5',
+            backgroundColor: isDragging ? '#FDF8F9' : 'transparent',
+          }}
+        >
+          <div className="flex flex-col items-center gap-2">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="1.5">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            <p className="text-[13px] text-[#6B7280]">
+              Drop PDF here or <span className="text-[#111] underline">browse</span>
             </p>
           </div>
-        ) : (
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-900">
-                {selectedFile.name}
-              </p>
-              <p className="text-xs" style={{ color: '#9CA3AF' }}>
-                {formatFileSize(selectedFile.size)}
-              </p>
-            </div>
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                handleRemoveFile()
-              }}
-              className="p-1 hover:bg-gray-100 rounded"
-            >
-              <X className="w-5 h-5 text-gray-500" />
-            </button>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between rounded-lg bg-[#F8F8F8] px-4 py-3">
+          <div className="min-w-0">
+            <p className="text-[13px] font-medium text-[#111] truncate">{selectedFile.name}</p>
+            <p className="text-[11px] text-[#9CA3AF] mt-0.5">{formatFileSize(selectedFile.size)}</p>
           </div>
-        )}
-      </div>
-
-      {isUploading && uploadProgress > 0 && (
-        <div className="mb-4">
-          <div className="w-full h-[3px] bg-gray-200 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-[#8B1A2F] transition-all duration-300"
-              style={{ width: `${uploadProgress}%` }}
-            />
-          </div>
+          <button
+            onClick={() => setSelectedFile(null)}
+            className="shrink-0 ml-3 text-[#9CA3AF] hover:text-[#111] transition-colors"
+            aria-label="Remove file"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
         </div>
       )}
 
-      <button
-        onClick={handleSubmit}
-        disabled={!selectedFile || isUploading}
-        className="w-full text-white font-medium transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        style={{
-          backgroundColor: '#000000',
-          color: '#FFFFFF',
-          height: '36px',
-          borderRadius: '8px',
-          fontSize: '13px',
-        }}
-      >
-        {isUploading && <LoadingSpinner className="text-white" />}
-        {isUploading ? 'Uploading...' : 'Submit Assignment'}
-      </button>
+      {isUploading && uploadProgress > 0 && (
+        <div className="mt-3 w-full h-[3px] bg-[#F3F4F6] rounded-full overflow-hidden">
+          <div className="h-full bg-[#8B1A2F] transition-all" style={{ width: `${uploadProgress}%` }} />
+        </div>
+      )}
+
+      <div className="mt-4 flex gap-2">
+        {resubmitting && (
+          <button
+            onClick={() => { setResubmitting(false); setSelectedFile(null) }}
+            className="h-9 px-4 text-[13px] text-[#6B7280] border border-[#E5E5E5] rounded-lg hover:bg-[#F8F8F8] transition-colors"
+          >
+            Cancel
+          </button>
+        )}
+        <button
+          onClick={handleSubmit}
+          disabled={!selectedFile || isUploading}
+          className="flex-1 h-9 text-[13px] font-medium bg-[#111111] text-white rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#8B1A2F] transition-colors flex items-center justify-center gap-2"
+        >
+          {isUploading && <LoadingSpinner className="text-white" />}
+          {isUploading ? 'Uploading...' : resubmitting ? 'Resubmit' : 'Submit'}
+        </button>
+      </div>
     </div>
   )
 }

@@ -56,7 +56,7 @@ export function useAddModuleItem() {
       fetch(`${process.env.NEXT_PUBLIC_API_URL}/modules/${moduleId}/items`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${(window as any).__sb_token ?? ''}`,
+          Authorization: `Bearer ${localStorage.getItem('access_token') ?? ''}`,
         },
         body: formData,
       })

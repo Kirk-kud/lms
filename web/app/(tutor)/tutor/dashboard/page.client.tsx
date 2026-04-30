@@ -98,7 +98,7 @@ export default function DashboardPageClient() {
   const stats = [
     { label: 'Total Students', value: isLoading ? '--' : totalStudents, accentColor: '#8B1A2F' },
     { label: 'Active Classes', value: isLoading ? '--' : classes.length, accentColor: '#8B1A2F' },
-    { label: 'Meets', value: 'Tue & Thu', accentColor: '#8B1A2F' },
+    { label: 'Meets', value: 'Mon & Wed', accentColor: '#8B1A2F' },
   ]
 
   const hasClasses = classes.length > 0

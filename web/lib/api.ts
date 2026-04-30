@@ -1,5 +1,3 @@
-import { createClient } from '@/lib/supabase/client'
-
 export class ApiError extends Error {
   constructor(
     public readonly statusCode: number,
@@ -10,12 +8,9 @@ export class ApiError extends Error {
   }
 }
 
-async function getAccessToken(): Promise<string | null> {
-  const supabase = createClient()
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-  return session?.access_token ?? null
+function getAccessToken(): string | null {
+  if (typeof window === 'undefined') return null
+  return localStorage.getItem('access_token')
 }
 
 async function request<T>(
@@ -23,7 +18,7 @@ async function request<T>(
   path: string,
   body?: unknown,
 ): Promise<T> {
-  const token = await getAccessToken()
+  const token = getAccessToken()
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',

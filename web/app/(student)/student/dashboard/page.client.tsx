@@ -154,7 +154,7 @@ export default function StudentDashboardPageClient() {
                   <button
                     key={assignment.id}
                     onClick={() => router.push(`/student/classes/${classId}/assignments`)}
-                    className="w-full flex items-center justify-between text-left py-2 px-3 rounded-lg border-l-2 border-[#8B1A2F] bg-[#FAFAFA] hover:bg-[#F5F5F5] transition-colors"
+                    className="w-full flex items-center justify-between text-left py-2 px-3 rounded-lg bg-[#F5E6EA] hover:bg-[#EDD8DE] transition-colors"
                   >
                     <div>
                       <p className="text-[13px] text-[#111]">{assignment.title}</p>

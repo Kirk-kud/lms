@@ -12,30 +12,30 @@ export async function updateSession(request: NextRequest) {
         getAll() {
           return request.cookies.getAll()
         },
-        setAll(cookiesToSet, responseHeaders) {
-          // Write cookies onto the request so the server can read them
-          // NextRequest.cookies.set only accepts name+value (no options)
+        setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value),
           )
-          // Rebuild the response so cookies are forwarded to the browser
           supabaseResponse = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options),
-          )
-          // Forward cache-control headers required for auth cookies
-          Object.entries(responseHeaders ?? {}).forEach(([key, value]) =>
-            supabaseResponse.headers.set(key, value),
           )
         },
       },
     },
   )
 
-  // getUser() validates the token server-side; never use getSession() for auth
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // getUser() triggers a token refresh when the access token is expired.
+  // If the refresh fetch fails (network error, paused Supabase project, etc.),
+  // it throws instead of returning null — so we catch and treat as unauthenticated.
+  let user = null
+  try {
+    const { data } = await supabase.auth.getUser()
+    user = data.user
+  } catch {
+    // Refresh failed — middleware continues with user = null, triggering the
+    // login redirect for protected routes instead of a 500 error.
+  }
 
   return { supabaseResponse, user }
 }

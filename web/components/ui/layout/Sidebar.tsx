@@ -121,12 +121,11 @@ export default function Sidebar({
                 onClick={() => onNavigate(item.label)}
                 className={`w-full flex flex-row items-center gap-2 px-4 cursor-pointer transition-colors ${
                   activeItem === item.label
-                    ? 'h-10 bg-white text-[#111111] font-medium border-l-2 border-[#8B1A2F]'
+                    ? 'h-10 bg-white text-[#111111] font-medium'
                     : 'h-10 text-[#6B7280] hover:bg-[#F0F0F0]'
                 }`}
                 style={{
                   fontSize: '13px',
-                  paddingLeft: activeItem === item.label ? '14px' : '16px', // Adjust for left border
                 }}
               >
                 <span className="flex-shrink-0">{item.icon}</span>

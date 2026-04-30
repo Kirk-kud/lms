@@ -3,152 +3,209 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
+
+interface LoginResponse {
+  access_token: string
+  user: { id: string; email: string; full_name: string | null; role: string | null }
+}
+
+const Spinner = () => (
+  <svg
+    className="auth-spinner"
+    width="14"
+    height="14"
+    viewBox="0 0 14 14"
+    fill="none"
+    aria-hidden="true"
+    style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}
+  >
+    <circle cx="7" cy="7" r="5.5" stroke="rgba(255,255,255,0.35)" strokeWidth="2" />
+    <path d="M7 1.5A5.5 5.5 0 0 1 12.5 7" stroke="white" strokeWidth="2" strokeLinecap="round" />
+    <style>{`
+      @keyframes auth-spin { to { transform: rotate(360deg); } }
+      .auth-spinner { animation: auth-spin 0.7s linear infinite; }
+      @media (prefers-reduced-motion: reduce) { .auth-spinner { animation: none !important; opacity: 0.6; } }
+    `}</style>
+  </svg>
+)
+
+const focusInput = (e: React.FocusEvent<HTMLInputElement>) => {
+  e.currentTarget.style.borderColor = '#8B1A2F'
+  e.currentTarget.style.borderWidth = '1px'
+}
+
+const blurInput = (e: React.FocusEvent<HTMLInputElement>) => {
+  e.currentTarget.style.borderColor = '#E5E5E5'
+  e.currentTarget.style.borderWidth = '0.5px'
+}
 
 export default function LoginPageClient() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
     setIsLoading(true)
 
     try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+      const json = (await res.json()) as { data: LoginResponse; message: string }
+      if (!res.ok) throw new Error((json as any).message ?? 'Invalid credentials')
+
+      const { access_token, user } = json.data
+      localStorage.setItem('access_token', access_token)
+
       const supabase = createClient()
-      const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password })
+      await supabase.auth.signInWithPassword({ email, password })
 
-      if (authError) throw authError
-
-      const role = data.user.user_metadata?.role
-      router.push(role === 'tutor' ? '/tutor/dashboard' : '/student/dashboard')
+      toast.success(`Welcome back${user.full_name ? `, ${user.full_name.split(' ')[0]}` : ''}!`, {
+        description: 'You have been signed in successfully.',
+      })
+      router.push(user.role === 'tutor' ? '/tutor/dashboard' : '/student/dashboard')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
+      toast.error('Sign in failed', {
+        description: err instanceof Error ? err.message : 'Something went wrong. Please try again.',
+      })
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div
-      className="w-full bg-white"
-      style={{
-        maxWidth: '400px',
-        borderRadius: '12px',
-        border: '0.5px solid #E5E5E5',
-        padding: '32px',
-      }}
-    >
+    <>
+      <style>{`
+        .auth-submit-btn { transition: background-color 200ms cubic-bezier(0.16, 1, 0.3, 1); }
+        .auth-submit-btn:hover:not(:disabled) { background-color: #8B1A2F !important; }
+        .auth-submit-btn:focus-visible { outline: 2px solid #8B1A2F; outline-offset: 2px; }
+      `}</style>
       <div
-        className="text-center font-sans font-medium select-none"
-        style={{ fontSize: '22px', marginBottom: '24px' }}
-      >
-        <span style={{ color: '#111111' }}>Love</span>
-        <span style={{ color: '#8B1A2F' }}>Inc</span>
-      </div>
-
-      <form onSubmit={handleSubmit} noValidate>
-        <div style={{ marginBottom: '14px' }}>
-          <label
-            htmlFor="email"
-            style={{ display: 'block', fontSize: '12px', color: '#6B6B6B', marginBottom: '4px' }}
-          >
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={{
-              width: '100%',
-              height: '36px',
-              borderRadius: '8px',
-              border: '0.5px solid #E5E5E5',
-              fontSize: '13px',
-              padding: '0 10px',
-              outline: 'none',
-              boxSizing: 'border-box',
-            }}
-            onFocus={(e) => (e.currentTarget.style.borderColor = '#8B1A2F')}
-            onBlur={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')}
-          />
-        </div>
-
-        <div style={{ marginBottom: '4px' }}>
-          <label
-            htmlFor="password"
-            style={{ display: 'block', fontSize: '12px', color: '#6B6B6B', marginBottom: '4px' }}
-          >
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={{
-              width: '100%',
-              height: '36px',
-              borderRadius: '8px',
-              border: '0.5px solid #E5E5E5',
-              fontSize: '13px',
-              padding: '0 10px',
-              outline: 'none',
-              boxSizing: 'border-box',
-            }}
-            onFocus={(e) => (e.currentTarget.style.borderColor = '#8B1A2F')}
-            onBlur={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')}
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={isLoading}
-          style={{
-            width: '100%',
-            height: '36px',
-            marginTop: '16px',
-            backgroundColor: '#000000',
-            color: '#FFFFFF',
-            border: 'none',
-            borderRadius: '8px',
-            fontSize: '13px',
-            fontWeight: 500,
-            cursor: isLoading ? 'not-allowed' : 'pointer',
-            opacity: isLoading ? 0.6 : 1,
-          }}
-        >
-          {isLoading ? 'Signing in...' : 'Sign in'}
-        </button>
-
-        {error && (
-          <p style={{ fontSize: '12px', color: '#DC2626', marginTop: '10px', textAlign: 'center' }}>
-            {error}
-          </p>
-        )}
-      </form>
-
-      <p
+        className="w-full"
         style={{
-          fontSize: '12px',
-          color: '#6B6B6B',
-          textAlign: 'center',
-          marginTop: '20px',
+          maxWidth: '400px',
+          backgroundColor: '#FFFFFF',
+          borderRadius: '12px',
+          border: '0.5px solid #E5E5E5',
+          padding: '32px',
         }}
       >
-        Don&apos;t have an account?{' '}
-        <Link href="/register" style={{ color: '#8B1A2F', textDecoration: 'underline' }}>
-          Register
-        </Link>
-      </p>
-    </div>
+        <div
+          className="text-center font-sans font-medium select-none"
+          style={{ fontSize: '22px', marginBottom: '24px' }}
+        >
+          <span style={{ color: '#111111' }}>Love</span>
+          <span style={{ color: '#8B1A2F' }}>Inc</span>
+        </div>
+
+        <form onSubmit={handleSubmit} noValidate>
+          <div style={{ marginBottom: '14px' }}>
+            <label
+              htmlFor="email"
+              style={{ display: 'block', fontSize: '12px', color: '#6B6B6B', marginBottom: '4px' }}
+            >
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              autoComplete="email"
+              autoFocus
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onFocus={focusInput}
+              onBlur={blurInput}
+              style={{
+                width: '100%',
+                height: '36px',
+                borderRadius: '8px',
+                border: '0.5px solid #E5E5E5',
+                fontSize: '13px',
+                padding: '0 10px',
+                outline: 'none',
+                boxSizing: 'border-box',
+                backgroundColor: '#FFFFFF',
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: '4px' }}>
+            <label
+              htmlFor="password"
+              style={{ display: 'block', fontSize: '12px', color: '#6B6B6B', marginBottom: '4px' }}
+            >
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onFocus={focusInput}
+              onBlur={blurInput}
+              style={{
+                width: '100%',
+                height: '36px',
+                borderRadius: '8px',
+                border: '0.5px solid #E5E5E5',
+                fontSize: '13px',
+                padding: '0 10px',
+                outline: 'none',
+                boxSizing: 'border-box',
+                backgroundColor: '#FFFFFF',
+              }}
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="auth-submit-btn"
+            disabled={isLoading}
+            aria-busy={isLoading}
+            style={{
+              width: '100%',
+              height: '36px',
+              marginTop: '16px',
+              backgroundColor: '#111111',
+              color: '#FFFFFF',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '13px',
+              fontWeight: 500,
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              opacity: isLoading ? 0.75 : 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {isLoading ? <><Spinner />Signing in…</> : 'Sign in'}
+          </button>
+        </form>
+
+        <p
+          style={{
+            fontSize: '12px',
+            color: '#6B6B6B',
+            textAlign: 'center',
+            marginTop: '20px',
+          }}
+        >
+          Don&apos;t have an account?{' '}
+          <Link href="/register" style={{ color: '#8B1A2F', textDecoration: 'underline' }}>
+            Register
+          </Link>
+        </p>
+      </div>
+    </>
   )
 }

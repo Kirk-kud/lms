@@ -83,12 +83,15 @@ export default function TutorLayout({ children }: { children: React.ReactNode })
   const handleSignOut = async () => {
     const supabase = createClient()
     await supabase.auth.signOut()
+    localStorage.removeItem('access_token')
     router.push('/login')
   }
 
+  const handleProfile = () => router.push('/tutor/profile')
+
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      <Topbar userName={fullName} userInitials={initials} role="tutor" />
+      <Topbar userName={fullName} userInitials={initials} role="tutor" onSignOut={handleSignOut} onProfile={handleProfile} />
       <div className="flex flex-1 overflow-hidden">
         <div className="hidden md:block">
           <Sidebar

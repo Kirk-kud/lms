@@ -1,14 +1,14 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import { toast } from 'sonner';
+import { useState, useEffect } from 'react'
+import { toast } from 'sonner'
 
 interface AttendancePinDisplayProps {
-  pin: string;
-  expiresAt: Date;
-  checkedIn: number;
-  total: number;
-  onEndSession: () => void;
+  pin: string
+  expiresAt: Date
+  checkedIn: number
+  total: number
+  onEndSession: () => void
 }
 
 export default function AttendancePinDisplay({
@@ -18,100 +18,91 @@ export default function AttendancePinDisplay({
   total,
   onEndSession,
 }: AttendancePinDisplayProps) {
-  const [timeLeft, setTimeLeft] = useState<string>('');
-  const [isExpired, setIsExpired] = useState(false);
+  const [timeLeft, setTimeLeft] = useState('')
+  const [isExpired, setIsExpired] = useState(false)
 
   useEffect(() => {
-    const updateTimer = () => {
-      const now = new Date();
-      const diff = expiresAt.getTime() - now.getTime();
-
+    const update = () => {
+      const diff = expiresAt.getTime() - Date.now()
       if (diff <= 0) {
-        setIsExpired(true);
-        setTimeLeft('Session expired');
-      } else {
-        const seconds = Math.floor(diff / 1000);
-        const minutes = Math.floor(seconds / 60);
-        const remainingSeconds = seconds % 60;
-
-        if (minutes > 0) {
-          setTimeLeft(`${minutes}m ${remainingSeconds}s`);
-        } else {
-          setTimeLeft(`${remainingSeconds}s`);
-        }
-        setIsExpired(false);
+        setIsExpired(true)
+        setTimeLeft('Expired')
+        return
       }
-    };
-
-    updateTimer();
-    const interval = setInterval(updateTimer, 1000);
-
-    return () => clearInterval(interval);
-  }, [expiresAt]);
-
-  const secondsRemaining = Math.floor(
-    (expiresAt.getTime() - new Date().getTime()) / 1000
-  );
-  const isLowTime = secondsRemaining < 60 && secondsRemaining > 0;
-
-  const pinDigits = pin.split('');
-
-  const handleCopyPin = async () => {
-    try {
-      await navigator.clipboard.writeText(pin);
-      toast.success('PIN copied to clipboard');
-    } catch {
-      toast.error('Unable to copy PIN');
+      const s = Math.floor(diff / 1000)
+      const m = Math.floor(s / 60)
+      const sec = s % 60
+      setTimeLeft(m > 0 ? `${m}m ${sec}s` : `${sec}s`)
+      setIsExpired(false)
     }
-  };
+    update()
+    const id = setInterval(update, 1000)
+    return () => clearInterval(id)
+  }, [expiresAt])
+
+  const secondsLeft = Math.floor((expiresAt.getTime() - Date.now()) / 1000)
+  const isLow = secondsLeft > 0 && secondsLeft < 60
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(pin)
+      toast.success('PIN copied')
+    } catch {
+      toast.error('Unable to copy PIN')
+    }
+  }
+
+  const pinDigits = pin.split('')
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-950">
-      <div className="w-full max-w-sm rounded-3xl bg-[#111111] p-6 text-center">
+    <div className="flex items-center justify-center min-h-screen bg-[#111111]">
+      <div className="w-full max-w-xs text-center px-4">
         {/* Label */}
-        <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#9CA3AF]">
+        <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-[#9CA3AF] mb-6">
           Active Session
         </p>
 
-        {/* PIN Display */}
-        <div className="mb-4 flex justify-center gap-2">
-          {pinDigits.map((digit, index) => (
+        {/* PIN digits */}
+        <div className="flex justify-center gap-3 mb-5">
+          {pinDigits.map((digit, i) => (
             <div
-              key={index}
-              className="flex h-16 w-13 items-center justify-center rounded-lg border border-[#333] bg-[#1A1A1A]"
+              key={i}
+              className="flex items-center justify-center rounded-lg border border-[#333333] bg-[#1A1A1A]"
+              style={{ width: '60px', height: '72px' }}
             >
-              <span className="font-mono text-3xl font-medium text-white">
+              <span className="font-mono text-[36px] font-medium text-white leading-none">
                 {digit}
               </span>
             </div>
           ))}
         </div>
 
-        {/* Subtitle Row */}
-        <div className="mb-4 flex items-center justify-between text-xs text-[#9CA3AF]">
-          <span className={isLowTime ? 'text-red-500' : ''}>
+        {/* Stats row */}
+        <div className="flex items-center justify-between text-[12px] text-[#6B7280] mb-6 px-1">
+          <span className={isLow ? 'text-[#8B1A2F]' : ''}>
             {isExpired ? 'Session expired' : `Expires in ${timeLeft}`}
           </span>
           <span>
-            {checkedIn} of {total} checked in
+            {checkedIn}{total > 0 ? ` / ${total}` : ''} checked in
           </span>
         </div>
 
-        <div className="flex items-center justify-center gap-2">
+        {/* Actions */}
+        <div className="flex gap-2">
           <button
-            onClick={handleCopyPin}
-            className="rounded border border-[#444] bg-transparent px-4 py-1.5 text-xs text-[#9CA3AF] transition-colors hover:border-white hover:text-white"
+            onClick={handleCopy}
+            className="flex-1 h-9 border border-[#333333] rounded-lg text-[12px] text-[#9CA3AF] hover:border-[#555] hover:text-white transition-colors"
           >
             Copy PIN
           </button>
           <button
             onClick={onEndSession}
-            className="rounded border border-[#444] bg-transparent px-4 py-1.5 text-xs text-[#9CA3AF] transition-colors hover:border-white hover:text-white"
+            className="flex-1 h-9 border border-[#8B1A2F] rounded-lg text-[12px] text-[#8B1A2F] hover:bg-[#8B1A2F] hover:text-white transition-colors"
           >
             End session
           </button>
         </div>
       </div>
     </div>
-  );
+  )
 }

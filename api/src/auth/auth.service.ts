@@ -3,12 +3,16 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { SupabaseService } from '../supabase/supabase.service';
 import { LoginDto, RegisterDto } from './auth.dto';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(
+    private readonly supabase: SupabaseService,
+    private readonly jwtService: JwtService,
+  ) {}
 
   async register(dto: RegisterDto) {
     const { data, error } = await this.supabase.adminClient.auth.admin.createUser({
@@ -56,20 +60,27 @@ export class AuthService {
         password: dto.password,
       });
 
-    if (error || !data.session) {
+    if (error || !data.user) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const { user, session } = data;
+    const { user } = data;
     const meta = user.user_metadata as Record<string, string>;
+    const role = meta.role ?? null;
+
+    const access_token = this.jwtService.sign({
+      sub: user.id,
+      email: user.email,
+      role,
+    });
 
     return {
-      access_token: session.access_token,
+      access_token,
       user: {
         id: user.id,
         email: user.email,
         full_name: meta.full_name ?? null,
-        role: meta.role ?? null,
+        role,
       },
     };
   }
