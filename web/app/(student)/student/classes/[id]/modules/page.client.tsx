@@ -1,6 +1,6 @@
 'use client'
 
-import { use, useEffect, useMemo, useState } from 'react'
+import { use, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@/lib/hooks/useUser'
 import { useModules, ModuleItem } from '@/lib/hooks/useModules'
@@ -11,6 +11,7 @@ import { SkeletonCard } from '@/components/ui/shared/SkeletonCard'
 import { EmptyState } from '@/components/ui/shared/EmptyState'
 import { InlineError } from '@/components/ui/shared/InlineError'
 import { ApiError } from '@/lib/api'
+import { toast } from 'sonner'
 
 function getStorageKey(userId: string) {
   return `viewed_items_${userId}`
@@ -35,6 +36,30 @@ export default function StudentModulesPageClient({ params }: { params: Promise<{
     refetch: refetchModules,
   } = useModules(classId)
   const [viewedItems, setViewedItems] = useState<Set<string>>(new Set())
+
+  const loadingToastRef = useRef<string | number | null>(null)
+  const didSuccessRef = useRef(false)
+
+  useEffect(() => {
+    router.prefetch(`/student/classes/${classId}/assignments`)
+    router.prefetch(`/student/classes/${classId}/attendance`)
+  }, [classId, router])
+
+  useEffect(() => {
+    const isLoading = isClassLoading || isModulesLoading
+    if (isLoading) {
+      if (!loadingToastRef.current) {
+        loadingToastRef.current = toast.loading('Loading modules...')
+      }
+    } else if (loadingToastRef.current) {
+      toast.dismiss(loadingToastRef.current)
+      loadingToastRef.current = null
+      if (!didSuccessRef.current) {
+        didSuccessRef.current = true
+        toast.success('Modules loaded')
+      }
+    }
+  }, [isClassLoading, isModulesLoading])
 
   useEffect(() => {
     if (!user?.id) return
@@ -81,12 +106,24 @@ export default function StudentModulesPageClient({ params }: { params: Promise<{
   return (
     <div className="p-8 max-w-3xl">
       <nav className="flex items-center gap-2 text-[12px] text-[#9CA3AF] mb-6">
-        <button onClick={() => router.push('/student/dashboard')} className="hover:text-[#111] transition-colors">
+        <button
+          onClick={() => router.push('/student/dashboard')}
+          onMouseEnter={() => router.prefetch('/student/dashboard')}
+          className="hover:text-[#111] transition-colors"
+        >
           Dashboard
         </button>
         <span>/</span>
-        <button onClick={() => router.push(`/student/classes/${classId}/modules`)} className="hover:text-[#111] transition-colors">
-          {classData?.title ?? '...'}
+        <button
+          onClick={() => router.push(`/student/classes/${classId}/modules`)}
+          onMouseEnter={() => router.prefetch(`/student/classes/${classId}/modules`)}
+          className="hover:text-[#111] transition-colors"
+        >
+          {isClassLoading ? (
+            <span className="inline-block w-24 h-3 bg-[#E5E5E5] rounded animate-pulse align-middle" />
+          ) : (
+            classData?.title ?? '...'
+          )}
         </button>
         <span>/</span>
         <span className="text-[#111]">Modules</span>

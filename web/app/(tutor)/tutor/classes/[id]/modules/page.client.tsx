@@ -1,6 +1,6 @@
 'use client'
 
-import { use, useState } from 'react'
+import { use, useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   useModules,
@@ -227,6 +227,31 @@ export default function ModulesPageClient({ params }: { params: Promise<{ id: st
   const deleteItem = useDeleteModuleItem()
 
   const [showCreateModule, setShowCreateModule] = useState(false)
+
+  const toastIdRef = useRef<string | number | null>(null)
+  const didSuccessRef = useRef(false)
+
+  useEffect(() => {
+    router.prefetch(`/tutor/classes/${classId}/assignments`)
+    router.prefetch(`/tutor/classes/${classId}/attendance`)
+    router.prefetch(`/tutor/classes/${classId}/roster`)
+  }, [classId, router])
+
+  useEffect(() => {
+    const isLoading = isClassLoading || isModulesLoading
+    if (isLoading) {
+      if (!toastIdRef.current) {
+        toastIdRef.current = toast.loading('Loading modules...')
+      }
+    } else if (toastIdRef.current) {
+      toast.dismiss(toastIdRef.current)
+      toastIdRef.current = null
+      if (!didSuccessRef.current) {
+        didSuccessRef.current = true
+        toast.success('Modules loaded')
+      }
+    }
+  }, [isClassLoading, isModulesLoading])
   const [activeModuleId, setActiveModuleId] = useState<string | null>(null)
   const [showAddItem, setShowAddItem] = useState(false)
 
@@ -260,12 +285,24 @@ export default function ModulesPageClient({ params }: { params: Promise<{ id: st
   return (
     <div className="p-8 max-w-3xl">
       <nav className="flex items-center gap-2 text-[12px] text-[#9CA3AF] mb-6">
-        <button onClick={() => router.push('/tutor/classes')} className="hover:text-[#111] transition-colors">
+        <button
+          onClick={() => router.push('/tutor/classes')}
+          onMouseEnter={() => router.prefetch('/tutor/classes')}
+          className="hover:text-[#111] transition-colors"
+        >
           Classes
         </button>
         <span>/</span>
-        <button onClick={() => router.push(`/tutor/classes/${classId}/modules`)} className="hover:text-[#111] transition-colors">
-          {classData?.title ?? '...'}
+        <button
+          onClick={() => router.push(`/tutor/classes/${classId}/modules`)}
+          onMouseEnter={() => router.prefetch(`/tutor/classes/${classId}/modules`)}
+          className="hover:text-[#111] transition-colors"
+        >
+          {isClassLoading ? (
+            <span className="inline-block w-24 h-3 bg-[#E5E5E5] rounded animate-pulse align-middle" />
+          ) : (
+            classData?.title ?? '...'
+          )}
         </button>
         <span>/</span>
         <span className="text-[#111]">Modules</span>

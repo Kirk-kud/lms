@@ -1,6 +1,6 @@
 'use client'
 
-import { use, useState, useEffect } from 'react'
+import { use, useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
@@ -103,7 +103,7 @@ export default function AttendancePageClient({ params }: { params: Promise<{ id:
   const { data: roster } = useRoster(classId)
   const {
     data: sessions = [],
-    isLoading,
+    isLoading: isAttendanceLoading,
     isError,
     error,
     refetch,
@@ -113,6 +113,31 @@ export default function AttendancePageClient({ params }: { params: Promise<{ id:
 
   const totalStudents = roster?.length ?? 0
   const activeSession = sessions.find((s) => s.is_active) ?? null
+
+  const toastIdRef = useRef<string | number | null>(null)
+  const didSuccessRef = useRef(false)
+
+  useEffect(() => {
+    router.prefetch(`/tutor/classes/${classId}/assignments`)
+    router.prefetch(`/tutor/classes/${classId}/roster`)
+    router.prefetch(`/tutor/classes/${classId}/modules`)
+  }, [classId, router])
+
+  useEffect(() => {
+    const isLoading = isClassLoading || isAttendanceLoading
+    if (isLoading) {
+      if (!toastIdRef.current) {
+        toastIdRef.current = toast.loading('Loading attendance...')
+      }
+    } else if (toastIdRef.current) {
+      toast.dismiss(toastIdRef.current)
+      toastIdRef.current = null
+      if (!didSuccessRef.current) {
+        didSuccessRef.current = true
+        toast.success('Attendance loaded')
+      }
+    }
+  }, [isClassLoading, isAttendanceLoading])
 
   useEffect(() => {
     if (!activeSession) return
@@ -169,9 +194,25 @@ export default function AttendancePageClient({ params }: { params: Promise<{ id:
   return (
     <div className="p-8 max-w-3xl">
       <nav className="flex items-center gap-2 text-[12px] text-[#9CA3AF] mb-6">
-        <button onClick={() => router.push('/tutor/classes')} className="hover:text-[#111] transition-colors">Classes</button>
+        <button
+          onClick={() => router.push('/tutor/classes')}
+          onMouseEnter={() => router.prefetch('/tutor/classes')}
+          className="hover:text-[#111] transition-colors"
+        >
+          Classes
+        </button>
         <span>/</span>
-        <button onClick={() => router.push(`/tutor/classes/${classId}/modules`)} className="hover:text-[#111] transition-colors">{classData?.title ?? '...'}</button>
+        <button
+          onClick={() => router.push(`/tutor/classes/${classId}/modules`)}
+          onMouseEnter={() => router.prefetch(`/tutor/classes/${classId}/modules`)}
+          className="hover:text-[#111] transition-colors"
+        >
+          {isClassLoading ? (
+            <span className="inline-block w-24 h-3 bg-[#E5E5E5] rounded animate-pulse align-middle" />
+          ) : (
+            classData?.title ?? '...'
+          )}
+        </button>
         <span>/</span>
         <span className="text-[#111]">Attendance</span>
       </nav>
@@ -202,13 +243,13 @@ export default function AttendancePageClient({ params }: { params: Promise<{ id:
         />
       )}
 
-      {(isClassLoading || isLoading) && (
+      {(isClassLoading || isAttendanceLoading) && (
         <div className="space-y-3">
           {Array.from({ length: 2 }).map((_, i) => <SkeletonCard key={i} lines={2} />)}
         </div>
       )}
 
-      {!(isClassLoading || isLoading) && pastSessions.length === 0 && (
+      {!(isClassLoading || isAttendanceLoading) && pastSessions.length === 0 && (
         <div className="text-center py-16">
           <div className="w-14 h-14 rounded-full bg-[#F8F8F8] flex items-center justify-center mx-auto mb-4">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8B1A2F" strokeWidth="1.5">
@@ -221,7 +262,7 @@ export default function AttendancePageClient({ params }: { params: Promise<{ id:
         </div>
       )}
 
-      {!(isClassLoading || isLoading) && pastSessions.length > 0 && (
+      {!(isClassLoading || isAttendanceLoading) && pastSessions.length > 0 && (
         <div className="space-y-3">
           <p className="text-[12px] font-medium text-[#9CA3AF] uppercase tracking-wider mb-4">
             Session History

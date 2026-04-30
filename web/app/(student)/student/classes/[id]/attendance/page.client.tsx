@@ -36,6 +36,30 @@ export default function StudentAttendancePageClient({ params }: { params: Promis
   const [isSubmitting, setIsSubmitting] = useState(false)
   const expiredSessionRef = useRef<string | null>(null)
 
+  const loadingToastRef = useRef<string | number | null>(null)
+  const didSuccessRef = useRef(false)
+
+  useEffect(() => {
+    router.prefetch(`/student/classes/${classId}/assignments`)
+    router.prefetch(`/student/classes/${classId}/modules`)
+  }, [classId, router])
+
+  useEffect(() => {
+    const isLoading = isClassLoading || isAttendanceLoading
+    if (isLoading) {
+      if (!loadingToastRef.current) {
+        loadingToastRef.current = toast.loading('Loading attendance...')
+      }
+    } else if (loadingToastRef.current) {
+      toast.dismiss(loadingToastRef.current)
+      loadingToastRef.current = null
+      if (!didSuccessRef.current) {
+        didSuccessRef.current = true
+        toast.success('Attendance loaded')
+      }
+    }
+  }, [isClassLoading, isAttendanceLoading])
+
   const activeRow = attendanceRows.find((row) => row.session.is_active)
   const checkedInAt = activeRow?.checked_in_at ? new Date(activeRow.checked_in_at) : undefined
 
@@ -113,12 +137,24 @@ export default function StudentAttendancePageClient({ params }: { params: Promis
   return (
     <div className="p-8 max-w-3xl">
       <nav className="flex items-center gap-2 text-[12px] text-[#9CA3AF] mb-6">
-        <button onClick={() => router.push('/student/dashboard')} className="hover:text-[#111] transition-colors">
+        <button
+          onClick={() => router.push('/student/dashboard')}
+          onMouseEnter={() => router.prefetch('/student/dashboard')}
+          className="hover:text-[#111] transition-colors"
+        >
           Dashboard
         </button>
         <span>/</span>
-        <button onClick={() => router.push(`/student/classes/${classId}/modules`)} className="hover:text-[#111] transition-colors">
-          {classData?.title ?? '...'}
+        <button
+          onClick={() => router.push(`/student/classes/${classId}/modules`)}
+          onMouseEnter={() => router.prefetch(`/student/classes/${classId}/modules`)}
+          className="hover:text-[#111] transition-colors"
+        >
+          {isClassLoading ? (
+            <span className="inline-block w-24 h-3 bg-[#E5E5E5] rounded animate-pulse align-middle" />
+          ) : (
+            classData?.title ?? '...'
+          )}
         </button>
         <span>/</span>
         <span className="text-[#111]">Attendance</span>

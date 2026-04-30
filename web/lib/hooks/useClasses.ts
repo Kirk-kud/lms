@@ -39,6 +39,8 @@ export function useClass(id: string) {
     queryKey: ['classes', id],
     queryFn: () => apiClient.get<ClassRecord>(`/classes/${id}`),
     enabled: !!id,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   })
 }
 

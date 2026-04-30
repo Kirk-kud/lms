@@ -1,6 +1,6 @@
 'use client'
 
-import { use, useState } from 'react'
+import { use, useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { format, isPast } from 'date-fns'
 import {
@@ -265,6 +265,31 @@ export default function AssignmentsPageClient({ params }: { params: Promise<{ id
   const deleteAssignment = useDeleteAssignment()
   const [showCreate, setShowCreate] = useState(false)
 
+  const toastIdRef = useRef<string | number | null>(null)
+  const didSuccessRef = useRef(false)
+
+  useEffect(() => {
+    router.prefetch(`/tutor/classes/${classId}/attendance`)
+    router.prefetch(`/tutor/classes/${classId}/roster`)
+    router.prefetch(`/tutor/classes/${classId}/modules`)
+  }, [classId, router])
+
+  useEffect(() => {
+    const isLoading = isClassLoading || isAssignmentsLoading
+    if (isLoading) {
+      if (!toastIdRef.current) {
+        toastIdRef.current = toast.loading('Loading assignments...')
+      }
+    } else if (toastIdRef.current) {
+      toast.dismiss(toastIdRef.current)
+      toastIdRef.current = null
+      if (!didSuccessRef.current) {
+        didSuccessRef.current = true
+        toast.success('Assignments loaded')
+      }
+    }
+  }, [isClassLoading, isAssignmentsLoading])
+
   const nextWeek = assignments.length > 0
     ? Math.max(...assignments.map((a) => a.week_number)) + 1
     : 1
@@ -272,9 +297,25 @@ export default function AssignmentsPageClient({ params }: { params: Promise<{ id
   return (
     <div className="p-8 max-w-3xl">
       <nav className="flex items-center gap-2 text-[12px] text-[#9CA3AF] mb-6">
-        <button onClick={() => router.push('/tutor/classes')} className="hover:text-[#111] transition-colors">Classes</button>
+        <button
+          onClick={() => router.push('/tutor/classes')}
+          onMouseEnter={() => router.prefetch('/tutor/classes')}
+          className="hover:text-[#111] transition-colors"
+        >
+          Classes
+        </button>
         <span>/</span>
-        <button onClick={() => router.push(`/tutor/classes/${classId}/modules`)} className="hover:text-[#111] transition-colors">{classData?.title ?? '...'}</button>
+        <button
+          onClick={() => router.push(`/tutor/classes/${classId}/modules`)}
+          onMouseEnter={() => router.prefetch(`/tutor/classes/${classId}/modules`)}
+          className="hover:text-[#111] transition-colors"
+        >
+          {isClassLoading ? (
+            <span className="inline-block w-24 h-3 bg-[#E5E5E5] rounded animate-pulse align-middle" />
+          ) : (
+            classData?.title ?? '...'
+          )}
+        </button>
         <span>/</span>
         <span className="text-[#111]">Assignments</span>
       </nav>

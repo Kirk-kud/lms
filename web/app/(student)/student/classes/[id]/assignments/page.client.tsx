@@ -1,6 +1,6 @@
 'use client'
 
-import { use, useMemo, useState } from 'react'
+import { use, useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
@@ -50,6 +50,30 @@ export default function StudentAssignmentsPageClient({ params }: { params: Promi
     refetch: refetchAssignments,
   } = useAssignments(classId)
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({})
+
+  const loadingToastRef = useRef<string | number | null>(null)
+  const didSuccessRef = useRef(false)
+
+  useEffect(() => {
+    router.prefetch(`/student/classes/${classId}/attendance`)
+    router.prefetch(`/student/classes/${classId}/modules`)
+  }, [classId, router])
+
+  useEffect(() => {
+    const isLoading = isClassLoading || isAssignmentsLoading
+    if (isLoading) {
+      if (!loadingToastRef.current) {
+        loadingToastRef.current = toast.loading('Loading assignments...')
+      }
+    } else if (loadingToastRef.current) {
+      toast.dismiss(loadingToastRef.current)
+      loadingToastRef.current = null
+      if (!didSuccessRef.current) {
+        didSuccessRef.current = true
+        toast.success('Assignments loaded')
+      }
+    }
+  }, [isClassLoading, isAssignmentsLoading])
 
   const now = useMemo(() => new Date(), [])
   const upcoming = assignments.filter((a) => new Date(a.due_date) >= now)
@@ -110,12 +134,24 @@ export default function StudentAssignmentsPageClient({ params }: { params: Promi
   return (
     <div className="p-8 max-w-3xl">
       <nav className="flex items-center gap-2 text-[12px] text-[#9CA3AF] mb-6">
-        <button onClick={() => router.push('/student/dashboard')} className="hover:text-[#111] transition-colors">
+        <button
+          onClick={() => router.push('/student/dashboard')}
+          onMouseEnter={() => router.prefetch('/student/dashboard')}
+          className="hover:text-[#111] transition-colors"
+        >
           Dashboard
         </button>
         <span>/</span>
-        <button onClick={() => router.push(`/student/classes/${classId}/modules`)} className="hover:text-[#111] transition-colors">
-          {classData?.title ?? '...'}
+        <button
+          onClick={() => router.push(`/student/classes/${classId}/modules`)}
+          onMouseEnter={() => router.prefetch(`/student/classes/${classId}/modules`)}
+          className="hover:text-[#111] transition-colors"
+        >
+          {isClassLoading ? (
+            <span className="inline-block w-24 h-3 bg-[#E5E5E5] rounded animate-pulse align-middle" />
+          ) : (
+            classData?.title ?? '...'
+          )}
         </button>
         <span>/</span>
         <span className="text-[#111]">Assignments</span>
