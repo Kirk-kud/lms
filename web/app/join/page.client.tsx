@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ApiError } from '@/lib/api'
 import { useJoinClass } from '@/lib/hooks/useClasses'
@@ -12,6 +12,12 @@ export default function JoinClassPageClient() {
   const [inviteCode, setInviteCode] = useState('')
   const [error, setError] = useState('')
 
+  useEffect(() => {
+    if (!localStorage.getItem('access_token')) {
+      router.replace('/login')
+    }
+  }, [router])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -20,7 +26,13 @@ export default function JoinClassPageClient() {
       const data = await joinClass.mutateAsync({ invite_code: inviteCode.trim().toUpperCase() })
       router.push(`/student/classes/${data.id}/modules`)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Invalid invite code')
+      if (err instanceof ApiError) {
+        setError(err.message)
+      } else if (err instanceof Error) {
+        setError(err.message)
+      } else {
+        setError('Something went wrong. Please try again.')
+      }
     }
   }
 

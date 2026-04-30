@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
@@ -9,20 +10,33 @@ import { CreateClassDto, JoinClassDto } from './classes.dto';
 
 @Injectable()
 export class ClassesService {
+  private readonly logger = new Logger(ClassesService.name);
+
   constructor(private readonly supabase: SupabaseService) {}
 
   // ----------------------------------------------------------------
   // POST /classes
   // ----------------------------------------------------------------
   async create(tutorId: string, dto: CreateClassDto) {
+    const invite_code = this.generateInviteCode();
+
     const { data, error } = await this.supabase.adminClient
       .from('classes')
-      .insert({ tutor_id: tutorId, title: dto.title, description: dto.description ?? null })
+      .insert({ tutor_id: tutorId, title: dto.title, description: dto.description ?? null, invite_code })
       .select()
       .single();
 
     if (error) throw new BadRequestException(error.message);
     return data;
+  }
+
+  private generateInviteCode(): string {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 8; i++) {
+      code += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return code;
   }
 
   // ----------------------------------------------------------------
@@ -90,21 +104,27 @@ export class ClassesService {
   // POST /classes/join
   // ----------------------------------------------------------------
   async join(studentId: string, dto: JoinClassDto) {
+    this.logger.log(`join() called — studentId=${studentId} invite_code="${dto.invite_code}"`);
+
     const { data: cls, error: clsError } = await this.supabase.adminClient
       .from('classes')
       .select('*')
       .ilike('invite_code', dto.invite_code)
       .maybeSingle();
 
+    this.logger.log(`classes query — data=${JSON.stringify(cls)} error=${JSON.stringify(clsError)}`);
+
     if (clsError) throw new BadRequestException(clsError.message);
     if (!cls) throw new NotFoundException('Invalid invite code');
 
-    const { data: existing } = await this.supabase.adminClient
+    const { data: existing, error: existingError } = await this.supabase.adminClient
       .from('enrollments')
       .select('id')
       .eq('class_id', cls.id)
       .eq('student_id', studentId)
       .maybeSingle();
+
+    this.logger.log(`enrollment check — existing=${JSON.stringify(existing)} error=${JSON.stringify(existingError)}`);
 
     if (existing) throw new BadRequestException('Already enrolled in this class');
 
@@ -112,7 +132,12 @@ export class ClassesService {
       .from('enrollments')
       .insert({ class_id: cls.id, student_id: studentId });
 
-    if (enrollError) throw new BadRequestException(enrollError.message);
+    if (enrollError) {
+      this.logger.error(`enrollment insert failed — ${JSON.stringify(enrollError)}`);
+      throw new BadRequestException(enrollError.message);
+    }
+
+    this.logger.log(`student ${studentId} successfully enrolled in class ${cls.id}`);
     return cls;
   }
 
