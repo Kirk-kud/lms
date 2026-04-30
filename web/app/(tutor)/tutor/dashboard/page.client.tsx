@@ -90,7 +90,7 @@ export default function DashboardPageClient() {
     isError,
     error,
     refetch,
-  } = useClasses()
+  } = useClasses(user?.id)
 
   const firstName = ((user?.user_metadata?.full_name as string) ?? '').split(' ')[0] || 'there'
   const totalStudents = classes.reduce((sum, c) => sum + (c.enrolled_count ?? 0), 0)

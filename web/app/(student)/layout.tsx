@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter, usePathname } from 'next/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 import Sidebar from '@/components/ui/layout/Sidebar'
 import Topbar from '@/components/ui/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
@@ -45,8 +46,9 @@ export default function StudentLayout({
 }) {
   const router = useRouter()
   const pathname = usePathname()
+  const qc = useQueryClient()
   const { user } = useUser()
-  const { data: classes = [] } = useClasses()
+  const { data: classes = [] } = useClasses(user?.id)
   const primaryClassId = classes[0]?.id
 
   // Prefer the class ID already in the URL so in-page navigation stays on the same class
@@ -89,6 +91,7 @@ export default function StudentLayout({
     const supabase = createClient()
     await supabase.auth.signOut()
     localStorage.removeItem('access_token')
+    qc.clear()
     router.push('/login')
   }
 

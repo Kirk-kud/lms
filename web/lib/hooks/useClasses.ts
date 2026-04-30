@@ -26,10 +26,11 @@ export interface RosterEntry {
   enrolled_at: string
 }
 
-export function useClasses() {
+export function useClasses(userId?: string) {
   return useQuery({
-    queryKey: ['classes'],
+    queryKey: ['classes', userId ?? null],
     queryFn: () => apiClient.get<ClassRecord[]>('/classes'),
+    enabled: !!userId,
   })
 }
 

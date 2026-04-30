@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter, usePathname } from 'next/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 import Sidebar from '@/components/ui/layout/Sidebar'
 import Topbar from '@/components/ui/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
@@ -62,6 +63,7 @@ const IconAttendance = ({ active }: { active: boolean }) => (
 export default function TutorLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
+  const qc = useQueryClient()
   const { user } = useUser()
 
   const fullName: string = (user?.user_metadata?.full_name as string) ?? ''
@@ -84,6 +86,7 @@ export default function TutorLayout({ children }: { children: React.ReactNode })
     const supabase = createClient()
     await supabase.auth.signOut()
     localStorage.removeItem('access_token')
+    qc.clear()
     router.push('/login')
   }
 

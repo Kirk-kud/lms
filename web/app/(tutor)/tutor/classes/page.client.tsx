@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useClasses, useCreateClass } from '@/lib/hooks/useClasses'
+import { useUser } from '@/lib/hooks/useUser'
 import { SkeletonCard } from '@/components/ui/shared/SkeletonCard'
 import { EmptyState } from '@/components/ui/shared/EmptyState'
 import { LoadingSpinner } from '@/components/ui/shared/LoadingSpinner'
@@ -180,13 +181,14 @@ function CreateClassModal({ open, onClose, onCreated }: { open: boolean; onClose
 
 export default function ClassesPageClient() {
   const router = useRouter()
+  const { user } = useUser()
   const {
     data: classes = [],
     isLoading,
     isError,
     error,
     refetch,
-  } = useClasses()
+  } = useClasses(user?.id)
   const [showCreate, setShowCreate] = useState(false)
 
   return (

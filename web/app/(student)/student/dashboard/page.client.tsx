@@ -29,7 +29,7 @@ export default function StudentDashboardPageClient() {
     isError: isClassesError,
     error: classesError,
     refetch: refetchClasses,
-  } = useClasses()
+  } = useClasses(user?.id)
   const primaryClass = classes[0]
   const classId = primaryClass?.id ?? ''
 
