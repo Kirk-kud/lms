@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -17,6 +18,7 @@ import {
 @Injectable()
 export class CourseModulesService {
   private readonly storageUrl: string;
+  private readonly logger = new Logger(CourseModulesService.name);
 
   constructor(
     private readonly supabase: SupabaseService,
@@ -156,11 +158,18 @@ export class CourseModulesService {
     dto: CreateModuleItemDto,
     file?: Express.Multer.File,
   ) {
+    this.logger.log(`createItem called - moduleId=${moduleId}, type=${dto.type}, hasFile=${!!file}`);
+    
     const mod = await this.assertTutorOwnsModule(moduleId, tutorId);
     let contentUrl = dto.content_url ?? null;
 
     if (dto.type === 'pdf' && file) {
-      const path = `modules/${mod.class_id}/${Date.now()}_${file.originalname}`;
+      this.logger.log(`Uploading PDF - filename=${file.originalname}, size=${file.buffer.length}`);
+      // Sanitize filename: remove special characters, replace spaces with underscores
+      const sanitized = file.originalname
+        .replace(/[^a-zA-Z0-9.\-_]/g, '_')
+        .replace(/\s+/g, '_');
+      const path = `modules/${mod.class_id}/${Date.now()}_${sanitized}`;
       const { error: uploadError } = await this.supabase.adminClient.storage
         .from('modules')
         .upload(path, file.buffer, {
@@ -168,13 +177,17 @@ export class CourseModulesService {
           upsert: false,
         });
 
-      if (uploadError) throw new BadRequestException(uploadError.message);
+      if (uploadError) {
+        this.logger.error(`Supabase upload error: ${JSON.stringify(uploadError)}`);
+        throw new BadRequestException(uploadError.message);
+      }
 
       const { data: urlData } = this.supabase.adminClient.storage
         .from('modules')
         .getPublicUrl(path);
 
       contentUrl = urlData.publicUrl;
+      this.logger.log(`File uploaded successfully - url=${contentUrl}`);
     }
 
     const { data, error } = await this.supabase.adminClient
