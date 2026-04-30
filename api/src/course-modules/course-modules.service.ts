@@ -22,7 +22,7 @@ export class CourseModulesService {
     private readonly supabase: SupabaseService,
     configService: ConfigService,
   ) {
-    this.storageUrl = `${configService.getOrThrow('SUPABASE_URL')}/storage/v1/object/public/submissions/`;
+    this.storageUrl = `${configService.getOrThrow('SUPABASE_URL')}/storage/v1/object/public/modules/`;
   }
 
   // ----------------------------------------------------------------
@@ -162,7 +162,7 @@ export class CourseModulesService {
     if (dto.type === 'pdf' && file) {
       const path = `modules/${mod.class_id}/${Date.now()}_${file.originalname}`;
       const { error: uploadError } = await this.supabase.adminClient.storage
-        .from('submissions')
+        .from('modules')
         .upload(path, file.buffer, {
           contentType: file.mimetype,
           upsert: false,
@@ -171,7 +171,7 @@ export class CourseModulesService {
       if (uploadError) throw new BadRequestException(uploadError.message);
 
       const { data: urlData } = this.supabase.adminClient.storage
-        .from('submissions')
+        .from('modules')
         .getPublicUrl(path);
 
       contentUrl = urlData.publicUrl;
