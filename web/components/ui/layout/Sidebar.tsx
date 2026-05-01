@@ -37,6 +37,13 @@ const IconRoster = () => (
   </svg>
 );
 
+const IconSettings = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+    <path d="M8 5a3 3 0 100 6A3 3 0 008 5zm0 1.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3z" />
+    <path d="M6.5 0l-.4 1.4a5.9 5.9 0 00-1.4.8L3.2.8 1 3l.9 1.5a6 6 0 00-.4 1.5H0v3h1.5a6 6 0 00.4 1.5L1 12l2.2 2.2 1.5-.9a5.9 5.9 0 001.4.8L6.5 16h3l.4-1.4a5.9 5.9 0 001.4-.8l1.5.9L15 12.2l-.9-1.5a6 6 0 00.4-1.5H16V6h-1.5a6 6 0 00-.4-1.5L15 3l-2.2-2.2-1.5.9a5.9 5.9 0 00-1.4-.8L9.5 0h-3zm.7 1.5h1.6l.3 1.2.8.3a4.4 4.4 0 011 .6l.7.5 1.1-.6.8.8-.6 1.1.3.8a4.4 4.4 0 01.2 1.1l.1.8 1.2.3v1.2l-1.2.3-.1.8a4.4 4.4 0 01-.3 1l-.3.8.6 1.1-.8.8-1.1-.6-.8.3a4.4 4.4 0 01-1 .3l-.8.1-.3 1.2H7.2L7 13.7l-.8-.1a4.4 4.4 0 01-1-.3l-.8-.3-1.1.6-.8-.8.6-1.1-.3-.8a4.4 4.4 0 01-.3-1l-.1-.8-1.2-.3V7.2l1.2-.3.1-.8a4.4 4.4 0 01.3-1l.3-.8-.6-1.1.8-.8 1.1.6.8-.3a4.4 4.4 0 011-.3l.8-.1.3-1.1z" />
+  </svg>
+);
+
 const IconHome = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
     <path d="M8 1L2 6v8h3v-4h2v4h3V6l-6-5z" />
@@ -71,7 +78,10 @@ const TUTOR_SECTIONS: Section[] = [
   },
   {
     name: 'CLASS',
-    items: [{ label: 'Roster', icon: <IconRoster /> }],
+    items: [
+      { label: 'Roster', icon: <IconRoster /> },
+      { label: 'Settings', icon: <IconSettings /> },
+    ],
   },
 ];
 

@@ -234,6 +234,27 @@ export class ClassesService {
   }
 
   // ----------------------------------------------------------------
+  // DELETE /classes/:id
+  // ----------------------------------------------------------------
+  async remove(classId: string, tutorId: string) {
+    const { data: cls, error } = await this.supabase.adminClient
+      .from('classes')
+      .select('id, tutor_id')
+      .eq('id', classId)
+      .single();
+
+    if (error || !cls) throw new NotFoundException('Class not found');
+    if (cls.tutor_id !== tutorId) throw new ForbiddenException();
+
+    const { error: deleteError } = await this.supabase.adminClient
+      .from('classes')
+      .delete()
+      .eq('id', classId);
+
+    if (deleteError) throw new BadRequestException(deleteError.message);
+  }
+
+  // ----------------------------------------------------------------
   // Helpers
   // ----------------------------------------------------------------
   private flattenCount(rows: any[]): any[] {

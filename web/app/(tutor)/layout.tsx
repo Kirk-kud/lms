@@ -20,6 +20,7 @@ function activeItemFromPath(pathname: string): string {
   if (/\/tutor\/classes\/[^/]+\/assignments/.test(pathname)) return 'Assignments'
   if (/\/tutor\/classes\/[^/]+\/attendance/.test(pathname)) return 'Attendance'
   if (/\/tutor\/classes\/[^/]+\/roster/.test(pathname)) return 'Roster'
+  if (/\/tutor\/classes\/[^/]+\/settings/.test(pathname)) return 'Settings'
   return 'Overview'
 }
 
@@ -28,6 +29,7 @@ const TUTOR_SEGMENTS: Record<string, string> = {
   Assignments: 'assignments',
   Attendance: 'attendance',
   Roster: 'roster',
+  Settings: 'settings',
 }
 
 const IconOverview = ({ active }: { active: boolean }) => (

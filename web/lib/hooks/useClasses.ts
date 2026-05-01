@@ -62,6 +62,14 @@ export function useJoinClass() {
   })
 }
 
+export function useDeleteClass() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (classId: string) => apiClient.delete(`/classes/${classId}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['classes'] }),
+  })
+}
+
 export function useRoster(classId: string) {
   return useQuery({
     queryKey: ['roster', classId],

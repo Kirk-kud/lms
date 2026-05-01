@@ -24,6 +24,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import ItemPreviewModal from '@/components/ui/shared/ItemPreviewModal'
+import type { PreviewItem } from '@/components/ui/shared/ItemPreviewModal'
 
 const ITEM_TYPES = ['pdf', 'video', 'link', 'text'] as const
 type ItemType = (typeof ITEM_TYPES)[number]
@@ -227,6 +229,7 @@ export default function ModulesPageClient({ params }: { params: Promise<{ id: st
   const deleteItem = useDeleteModuleItem()
 
   const [showCreateModule, setShowCreateModule] = useState(false)
+  const [previewItem, setPreviewItem] = useState<PreviewItem | null>(null)
 
   const toastIdRef = useRef<string | number | null>(null)
   const didSuccessRef = useRef(false)
@@ -261,9 +264,16 @@ export default function ModulesPageClient({ params }: { params: Promise<{ id: st
   }
 
   const handleItemClick = (item: ModuleItem) => {
-    if (item.content_url) {
-      window.open(item.content_url, '_blank')
+    if (item.type === 'link' && item.content_url) {
+      window.open(item.content_url, '_blank', 'noopener,noreferrer')
+      return
     }
+    setPreviewItem({
+      title: item.title,
+      type: item.type,
+      content_url: item.content_url,
+      content_text: item.content_text,
+    })
   }
 
   const handleDeleteItem = async (itemId: string) => {
@@ -387,6 +397,12 @@ export default function ModulesPageClient({ params }: { params: Promise<{ id: st
           onClose={() => { setShowAddItem(false); setActiveModuleId(null) }}
         />
       )}
+
+      <ItemPreviewModal
+        item={previewItem}
+        open={previewItem !== null}
+        onClose={() => setPreviewItem(null)}
+      />
     </div>
   )
 }

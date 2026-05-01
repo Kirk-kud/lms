@@ -4,6 +4,8 @@ import { useRef, useState } from 'react'
 import { format } from 'date-fns'
 import { StatusBadge } from '@/components/ui/shared/Badge'
 import { LoadingSpinner } from '@/components/ui/shared/LoadingSpinner'
+import ItemPreviewModal from '@/components/ui/shared/ItemPreviewModal'
+import type { PreviewItem } from '@/components/ui/shared/ItemPreviewModal'
 
 interface SubmissionData {
   file_name: string
@@ -34,6 +36,7 @@ export default function AssignmentUpload({
   const [isUploading, setIsUploading] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [resubmitting, setResubmitting] = useState(false)
+  const [previewItem, setPreviewItem] = useState<PreviewItem | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileChange = (files: FileList | null) => {
@@ -73,6 +76,7 @@ export default function AssignmentUpload({
 
   if (submission && !resubmitting) {
     return (
+      <>
       <div className="border border-[#E5E5E5] rounded-xl p-5">
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="min-w-0">
@@ -96,13 +100,12 @@ export default function AssignmentUpload({
 
         <div className="mt-3 flex items-center gap-4">
           {submission.signed_url && (
-            <a
-              href={submission.signed_url}
-              download={submission.file_name}
-              className="text-[12px] text-[#6B7280] hover:text-[#111] underline transition-colors truncate max-w-[200px]"
+            <button
+              onClick={() => setPreviewItem({ title: submission.file_name, type: 'pdf', content_url: submission.signed_url, content_text: null })}
+              className="text-[12px] text-[#6B7280] hover:text-[#111] underline transition-colors truncate max-w-[200px] text-left"
             >
               {submission.file_name}
-            </a>
+            </button>
           )}
           <button
             onClick={() => setResubmitting(true)}
@@ -112,6 +115,13 @@ export default function AssignmentUpload({
           </button>
         </div>
       </div>
+
+      <ItemPreviewModal
+        item={previewItem}
+        open={previewItem !== null}
+        onClose={() => setPreviewItem(null)}
+      />
+      </>
     )
   }
 

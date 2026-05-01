@@ -10,6 +10,8 @@ import { StatusBadge } from '@/components/ui/shared/Badge'
 import { SkeletonCard } from '@/components/ui/shared/SkeletonCard'
 import { EmptyState } from '@/components/ui/shared/EmptyState'
 import { InlineError } from '@/components/ui/shared/InlineError'
+import ItemPreviewModal from '@/components/ui/shared/ItemPreviewModal'
+import type { PreviewItem } from '@/components/ui/shared/ItemPreviewModal'
 import { ApiError } from '@/lib/api'
 import { toast } from 'sonner'
 
@@ -36,6 +38,7 @@ export default function StudentModulesPageClient({ params }: { params: Promise<{
     refetch: refetchModules,
   } = useModules(classId)
   const [viewedItems, setViewedItems] = useState<Set<string>>(new Set())
+  const [previewItem, setPreviewItem] = useState<PreviewItem | null>(null)
 
   const loadingToastRef = useRef<string | number | null>(null)
   const didSuccessRef = useRef(false)
@@ -98,9 +101,17 @@ export default function StudentModulesPageClient({ params }: { params: Promise<{
       })
     }
 
-    if (item.content_url) {
-      window.open(item.content_url, '_blank')
+    if (item.type === 'link' && item.content_url) {
+      window.open(item.content_url, '_blank', 'noopener,noreferrer')
+      return
     }
+
+    setPreviewItem({
+      title: item.title,
+      type: item.type,
+      content_url: item.content_url,
+      content_text: item.content_text,
+    })
   }
 
   return (
@@ -191,6 +202,12 @@ export default function StudentModulesPageClient({ params }: { params: Promise<{
           })}
         </div>
       )}
+
+      <ItemPreviewModal
+        item={previewItem}
+        open={previewItem !== null}
+        onClose={() => setPreviewItem(null)}
+      />
     </div>
   )
 }
