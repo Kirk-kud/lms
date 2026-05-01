@@ -2,13 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
+import globalBlack from '@/public/global_black.png'
+import globalWhite from '@/public/global_white.png'
 
 const SLIDES = [
-  { src: '/photos/gathering-crowd.jpg', caption: 'Discipleship gathering' },
-  { src: '/photos/worship-hands-raised.jpg', caption: 'Worship — Ashesi' },
-  { src: '/photos/fire-night-ashesi.jpg', caption: 'Fire Night — Ashesi' },
-  { src: '/photos/gathering-listening.jpg', caption: 'In session' },
-  { src: '/photos/knust-worship.jpg', caption: 'KNUST' },
+  { src: '/photos/gathering-crowd.jpg', caption: 'Fellowship' },
+  { src: '/photos/worship-hands-raised.jpg', caption: 'Worship - Ashesi' },
+  { src: '/photos/fire-night-ashesi.jpg', caption: 'Fire Night - Ashesi' },
+  { src: '/photos/listening.jpg', caption: 'In Session' },
+  { src: '/photos/knust-worship.jpg', caption: 'Apostolos KNUST' },
 ]
 
 export function PhotoCarousel() {
@@ -57,8 +59,13 @@ export function PhotoCarousel() {
       />
 
       <div style={{ position: 'absolute', top: '24px', left: '28px', zIndex: 20 }}>
-        <span style={{ color: 'white', fontSize: '18px', fontWeight: 500 }}>Love</span>
-        <span style={{ color: '#8B1A2F', fontSize: '18px', fontWeight: 500 }}> Inc</span>
+        <Image
+          src={globalWhite}
+          alt="Love Inc"
+          width={60}
+          height={40}
+          style={{ display: 'block', width: 'auto', height: '100px' }}
+        />
       </div>
 
       <div style={{ position: 'absolute', bottom: '28px', left: '28px', zIndex: 20 }}>

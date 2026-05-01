@@ -72,7 +72,7 @@ function JoinPhotoCarousel() {
           alt="Love Inc"
           width={60}
           height={40}
-          style={{ display: 'block', width: 'auto', height: '40px' }}
+          style={{ display: 'block', width: 'auto', height: '100px' }}
         />
       </div>
 
