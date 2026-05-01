@@ -220,24 +220,28 @@ function SubmissionsList({ assignmentId }: { assignmentId: string }) {
             <div>
               <p style={{ fontSize: '13px', color: '#111' }}>{row.student.full_name}</p>
               <p style={{ fontSize: '11px', color: '#9CA3AF' }}>
-                Submitted {format(new Date(row.submitted_at), 'MMM d, h:mm a')}
+                {row.submission?.submitted_at
+                  ? `Submitted ${format(new Date(row.submission.submitted_at), 'MMM d, h:mm a')}`
+                  : 'Not submitted'}
               </p>
             </div>
           </div>
-          <a
-            href={row.file_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              fontSize: '12px',
-              color: '#8B1A2F',
-              textDecoration: 'underline',
-              fontFamily: 'Inter, sans-serif',
-              cursor: 'pointer',
-            }}
-          >
-            Download
-          </a>
+          {row.submission?.file_url && (
+            <a
+              href={row.submission.file_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                fontSize: '12px',
+                color: '#8B1A2F',
+                textDecoration: 'underline',
+                fontFamily: 'Inter, sans-serif',
+                cursor: 'pointer',
+              }}
+            >
+              Download
+            </a>
+          )}
         </div>
       ))}
     </div>
@@ -257,7 +261,7 @@ function AssignmentCard({
 }) {
   const [expanded, setExpanded] = useState(false)
   const submittedCount = assignment.submission_count ?? 0
-  const needsReview = submittedCount > (assignment.reviewed_count ?? 0)
+  const needsReview = submittedCount > 0
 
   return (
     <div
@@ -376,9 +380,7 @@ export default function AssignmentsPageClient({ params }: { params: Promise<{ id
     ? Math.max(...assignments.map((a) => a.week_number)) + 1
     : 1
 
-  // Filter logic for "Needs review" tab
-  const needsReview = (a: Assignment) =>
-    (a.submission_count ?? 0) > (a.reviewed_count ?? 0)
+  const needsReview = (a: Assignment) => (a.submission_count ?? 0) > 0
 
   const needsReviewCount = assignments.filter(needsReview).length
 
@@ -386,7 +388,6 @@ export default function AssignmentsPageClient({ params }: { params: Promise<{ id
     ? assignments.filter(needsReview)
     : assignments
 
-  // Get total enrolled students from first assignment's metadata, or estimate from submissions
   const totalStudents = assignments.length > 0
     ? Math.max(
         ...(assignments

@@ -9,7 +9,7 @@ const SLIDES = [
   { src: '/photos/gathering-crowd.jpg', caption: 'Fellowship' },
   { src: '/photos/worship-hands-raised.jpg', caption: 'Worship - Ashesi' },
   { src: '/photos/fire-night-ashesi.jpg', caption: 'Fire Night - Ashesi' },
-  { src: '/photos/listening.jpg', caption: 'In Session' },
+  { src: '/photos/listening.jpg', caption: 'In Session (Friends Service Legon)' },
   { src: '/photos/knust-worship.jpg', caption: 'Apostolos KNUST' },
 ]
 
