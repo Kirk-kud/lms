@@ -15,6 +15,8 @@ import {
   UpdateModuleItemDto,
 } from './course-modules.dto';
 
+const MAX_MODULE_PDF_SIZE = 25 * 1024 * 1024; // 25 MB
+
 @Injectable()
 export class CourseModulesService {
   private readonly storageUrl: string;
@@ -163,13 +165,21 @@ export class CourseModulesService {
     const mod = await this.assertTutorOwnsModule(moduleId, tutorId);
     let contentUrl = dto.content_url ?? null;
 
-    if (dto.type === 'pdf' && file) {
+    if (dto.type === 'pdf') {
+      if (!file) throw new BadRequestException('PDF file is required');
+      if (file.mimetype !== 'application/pdf') {
+        throw new BadRequestException('Only PDF files are accepted');
+      }
+      if (file.size > MAX_MODULE_PDF_SIZE) {
+        throw new BadRequestException('PDF file must be under 25 MB');
+      }
+
       this.logger.log(`Uploading PDF - filename=${file.originalname}, size=${file.buffer.length}`);
       // Sanitize filename: remove special characters, replace spaces with underscores
       const sanitized = file.originalname
         .replace(/[^a-zA-Z0-9.\-_]/g, '_')
         .replace(/\s+/g, '_');
-      const path = `modules/${mod.class_id}/${Date.now()}_${sanitized}`;
+      const path = `${mod.class_id}/${Date.now()}_${sanitized}`;
       const { error: uploadError } = await this.supabase.adminClient.storage
         .from('modules')
         .upload(path, file.buffer, {
@@ -239,7 +249,7 @@ export class CourseModulesService {
       const storagePath = (item.content_url as string).replace(this.storageUrl, '');
       if (storagePath) {
         await this.supabase.adminClient.storage
-          .from('submissions')
+          .from('modules')
           .remove([storagePath]);
       }
     }
