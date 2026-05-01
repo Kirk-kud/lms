@@ -1,32 +1,19 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import Sidebar from '@/components/ui/layout/Sidebar'
 import Topbar from '@/components/ui/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
-
-function buildNavRoutes(pathname: string): Record<string, string> {
-  const m = pathname.match(/\/tutor\/classes\/([^/]+)/)
-  const id = m?.[1]
-  if (id) {
-    return {
-      Overview: '/tutor/dashboard',
-      Modules: `/tutor/classes/${id}/modules`,
-      Assignments: `/tutor/classes/${id}/assignments`,
-      Attendance: `/tutor/classes/${id}/attendance`,
-      Roster: `/tutor/classes/${id}/roster`,
-    }
-  }
-  return {
-    Overview: '/tutor/dashboard',
-    Modules: '/tutor/classes',
-    Assignments: '/tutor/classes',
-    Attendance: '/tutor/classes',
-    Roster: '/tutor/classes',
-  }
-}
+import { useClasses } from '@/lib/hooks/useClasses'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 function activeItemFromPath(pathname: string): string {
   if (/\/tutor\/classes\/[^/]+\/modules/.test(pathname)) return 'Modules'
@@ -34,6 +21,13 @@ function activeItemFromPath(pathname: string): string {
   if (/\/tutor\/classes\/[^/]+\/attendance/.test(pathname)) return 'Attendance'
   if (/\/tutor\/classes\/[^/]+\/roster/.test(pathname)) return 'Roster'
   return 'Overview'
+}
+
+const TUTOR_SEGMENTS: Record<string, string> = {
+  Modules: 'modules',
+  Assignments: 'assignments',
+  Attendance: 'attendance',
+  Roster: 'roster',
 }
 
 const IconOverview = ({ active }: { active: boolean }) => (
@@ -65,6 +59,12 @@ export default function TutorLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname()
   const qc = useQueryClient()
   const { user } = useUser()
+  const { data: classes = [] } = useClasses(user?.id)
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [pendingLabel, setPendingLabel] = useState('')
+
+  const urlClassId = pathname.match(/\/tutor\/classes\/([^/]+)/)?.[1]
+  const activeItem = activeItemFromPath(pathname)
 
   const fullName: string = (user?.user_metadata?.full_name as string) ?? ''
   const initials = fullName
@@ -74,12 +74,25 @@ export default function TutorLayout({ children }: { children: React.ReactNode })
     .join('')
     .toUpperCase()
 
-  const navRoutes = buildNavRoutes(pathname)
-  const activeItem = activeItemFromPath(pathname)
-
   const handleNavigate = (label: string) => {
-    const route = navRoutes[label]
-    if (route) router.push(route)
+    if (label === 'Overview') {
+      router.push('/tutor/dashboard')
+      return
+    }
+    const segment = TUTOR_SEGMENTS[label]
+    if (!segment) return
+    if (urlClassId) {
+      router.push(`/tutor/classes/${urlClassId}/${segment}`)
+    } else {
+      setPendingLabel(label)
+      setPickerOpen(true)
+    }
+  }
+
+  const handlePickClass = (classId: string) => {
+    setPickerOpen(false)
+    const segment = TUTOR_SEGMENTS[pendingLabel]
+    if (segment) router.push(`/tutor/classes/${classId}/${segment}`)
   }
 
   const handleSignOut = async () => {
@@ -121,6 +134,35 @@ export default function TutorLayout({ children }: { children: React.ReactNode })
           <IconAttendance active={activeItem === 'Attendance'} />
         </button>
       </nav>
+
+      <Dialog open={pickerOpen} onOpenChange={(v) => !v && setPickerOpen(false)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-[15px] font-medium">Choose a class</DialogTitle>
+          </DialogHeader>
+          <div className="mt-2 space-y-2">
+            {classes.length === 0 ? (
+              <p className="text-[13px] text-[#9CA3AF]">No classes yet. Create one from the Classes page.</p>
+            ) : (
+              classes.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => handlePickClass(c.id)}
+                  className="w-full text-left border border-[#E5E5E5] rounded-xl p-4 hover:border-[#8B1A2F]/30 hover:bg-[#FAFAFA] transition-all"
+                >
+                  <p className="text-[14px] font-medium text-[#111]">{c.title}</p>
+                  {c.description && (
+                    <p className="text-[12px] text-[#6B7280] mt-1 line-clamp-2">{c.description}</p>
+                  )}
+                  <p className="text-[11px] text-[#9CA3AF] mt-1">
+                    {c.enrolled_count} {c.enrolled_count === 1 ? 'student' : 'students'}
+                  </p>
+                </button>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

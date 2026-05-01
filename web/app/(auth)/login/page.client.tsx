@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
+import globalBlack from '@/public/global_black.png'
 
 interface LoginResponse {
   access_token: string
@@ -96,12 +97,20 @@ export default function LoginPageClient() {
           padding: '32px',
         }}
       >
-        <div
-          className="text-center font-sans font-medium select-none"
-          style={{ fontSize: '22px', marginBottom: '24px' }}
-        >
-          <span style={{ color: '#111111' }}>Love</span>
-          <span style={{ color: '#8B1A2F' }}>Inc</span>
+        <div className="flex flex-col items-center" style={{ marginBottom: '16px' }}>
+          <img 
+            src={globalBlack.src} 
+            alt="Love Inc" 
+            className="w-16 h-auto sm:w-20 md:w-24"
+            style={{ marginBottom: '12px' }} 
+          />
+          <div
+            className="text-center font-sans font-medium select-none"
+            style={{ fontSize: '22px' }}
+          >
+            <span style={{ color: '#111111' }}>Love</span>
+            <span style={{ color: '#8B1A2F' }}>Inc</span>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} noValidate>

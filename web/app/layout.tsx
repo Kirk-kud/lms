@@ -11,7 +11,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Love Inc LMS',
+  title: 'Love\u00A0Inc LMS',
   description: 'Discipleship learning management system',
 }
 

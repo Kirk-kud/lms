@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import Sidebar from '@/components/ui/layout/Sidebar'
@@ -7,12 +8,24 @@ import Topbar from '@/components/ui/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
 import { useClasses } from '@/lib/hooks/useClasses'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 function activeItemFromPath(pathname: string): string {
   if (pathname.includes('/modules')) return 'Modules'
   if (pathname.includes('/assignments')) return 'Assignments'
   if (pathname.includes('/attendance')) return 'Attendance'
   return 'Home'
+}
+
+const STUDENT_SEGMENTS: Record<string, string> = {
+  Modules: 'modules',
+  Assignments: 'assignments',
+  Attendance: 'attendance',
 }
 
 const IconHome = ({ active }: { active: boolean }) => (
@@ -49,12 +62,10 @@ export default function StudentLayout({
   const qc = useQueryClient()
   const { user } = useUser()
   const { data: classes = [] } = useClasses(user?.id)
-  const primaryClassId = classes[0]?.id
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [pendingLabel, setPendingLabel] = useState('')
 
-  // Prefer the class ID already in the URL so in-page navigation stays on the same class
-  const urlMatch = pathname.match(/\/student\/classes\/([^/]+)/)
-  const effectiveClassId = urlMatch?.[1] ?? primaryClassId ?? ''
-
+  const urlClassId = pathname.match(/\/student\/classes\/([^/]+)/)?.[1]
   const activeItem = activeItemFromPath(pathname)
 
   const fullName: string = (user?.user_metadata?.full_name as string) ?? ''
@@ -70,21 +81,26 @@ export default function StudentLayout({
       router.push('/student/dashboard')
       return
     }
-
-    const fallback = '/join'
-    if (!effectiveClassId) {
-      router.push(fallback)
-      return
+    const segment = STUDENT_SEGMENTS[label]
+    if (!segment) return
+    if (urlClassId) {
+      router.push(`/student/classes/${urlClassId}/${segment}`)
+    } else if (classes.length > 0) {
+      if (classes.length === 1) {
+        router.push(`/student/classes/${classes[0].id}/${segment}`)
+      } else {
+        setPendingLabel(label)
+        setPickerOpen(true)
+      }
+    } else {
+      router.push('/join')
     }
+  }
 
-    const routeByLabel: Record<string, string> = {
-      Modules: `/student/classes/${effectiveClassId}/modules`,
-      Assignments: `/student/classes/${effectiveClassId}/assignments`,
-      Attendance: `/student/classes/${effectiveClassId}/attendance`,
-    }
-
-    const route = routeByLabel[label]
-    router.push(route ?? fallback)
+  const handlePickClass = (classId: string) => {
+    setPickerOpen(false)
+    const segment = STUDENT_SEGMENTS[pendingLabel]
+    if (segment) router.push(`/student/classes/${classId}/${segment}`)
   }
 
   const handleSignOut = async () => {
@@ -127,6 +143,28 @@ export default function StudentLayout({
           <IconAttendance active={activeItem === 'Attendance'} />
         </button>
       </nav>
+
+      <Dialog open={pickerOpen} onOpenChange={(v) => !v && setPickerOpen(false)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-[15px] font-medium">Choose a class</DialogTitle>
+          </DialogHeader>
+          <div className="mt-2 space-y-2">
+            {classes.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => handlePickClass(c.id)}
+                className="w-full text-left border border-[#E5E5E5] rounded-xl p-4 hover:border-[#8B1A2F]/30 hover:bg-[#FAFAFA] transition-all"
+              >
+                <p className="text-[14px] font-medium text-[#111]">{c.title}</p>
+                {c.description && (
+                  <p className="text-[12px] text-[#6B7280] mt-1 line-clamp-2">{c.description}</p>
+                )}
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

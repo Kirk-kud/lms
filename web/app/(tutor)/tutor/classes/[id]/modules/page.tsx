@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import ModulesPageClient from './page.client'
 
 export const metadata: Metadata = {
-  title: 'Modules · Love Inc',
+  title: 'Modules · Love\u00A0Inc',
 }
 
 export default function ModulesPage({ params }: { params: Promise<{ id: string }> }) {

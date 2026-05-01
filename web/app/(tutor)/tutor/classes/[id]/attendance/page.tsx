@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import AttendancePageClient from './page.client'
 
 export const metadata: Metadata = {
-  title: 'Attendance · Love Inc',
+  title: 'Attendance · Love\u00A0Inc',
 }
 
 export default function AttendancePage({ params }: { params: Promise<{ id: string }> }) {

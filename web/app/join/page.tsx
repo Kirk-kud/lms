@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import JoinClassPageClient from './page.client'
 
 export const metadata: Metadata = {
-  title: 'Join · Love Inc',
+  title: 'Join Class · Love\u00A0Inc',
 }
 
 export default function JoinClassPage() {
