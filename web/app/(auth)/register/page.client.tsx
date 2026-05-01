@@ -116,7 +116,6 @@ export default function RegisterPageClient() {
     height: '36px',
     borderRadius: '8px',
     border: '0.5px solid #E5E5E5',
-    fontSize: '13px',
     padding: '0 10px',
     outline: 'none',
     boxSizing: 'border-box',
@@ -125,7 +124,6 @@ export default function RegisterPageClient() {
 
   const labelStyle: React.CSSProperties = {
     display: 'block',
-    fontSize: '12px',
     color: '#6B6B6B',
     marginBottom: '4px',
   }
@@ -156,8 +154,7 @@ export default function RegisterPageClient() {
             style={{ marginBottom: '12px' }} 
           />
           <div
-            className="text-center font-sans font-medium select-none"
-            style={{ fontSize: '22px' }}
+            className="text-headline text-center font-sans select-none"
           >
             <span style={{ color: '#111111' }}>Love</span>
             &nbsp;
@@ -167,7 +164,7 @@ export default function RegisterPageClient() {
 
         <form onSubmit={handleSubmit} noValidate>
           <div style={{ marginBottom: '14px' }}>
-            <label htmlFor="fullName" style={labelStyle}>
+            <label htmlFor="fullName" className="text-label" style={labelStyle}>
               Full name
             </label>
             <input
@@ -180,12 +177,13 @@ export default function RegisterPageClient() {
               onChange={(e) => setFullName(e.target.value)}
               onFocus={focusInput}
               onBlur={blurInput}
+              className="text-body-sm"
               style={inputStyle}
             />
           </div>
 
           <div style={{ marginBottom: '14px' }}>
-            <label htmlFor="email" style={labelStyle}>
+            <label htmlFor="email" className="text-label" style={labelStyle}>
               Email
             </label>
             <input
@@ -197,12 +195,13 @@ export default function RegisterPageClient() {
               onChange={(e) => setEmail(e.target.value)}
               onFocus={focusInput}
               onBlur={blurInput}
+              className="text-body-sm"
               style={inputStyle}
             />
           </div>
 
           <div style={{ marginBottom: '20px' }}>
-            <label htmlFor="password" style={labelStyle}>
+            <label htmlFor="password" className="text-label" style={labelStyle}>
               Password
             </label>
             <PasswordInput

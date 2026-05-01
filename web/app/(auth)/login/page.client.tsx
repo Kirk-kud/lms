@@ -106,8 +106,7 @@ export default function LoginPageClient() {
             style={{ marginBottom: '12px' }} 
           />
           <div
-            className="text-center font-sans font-medium select-none"
-            style={{ fontSize: '22px' }}
+            className="text-headline text-center font-sans select-none"
           >
           <span style={{ color: '#111111' }}>Love</span>
           &nbsp;
@@ -119,7 +118,8 @@ export default function LoginPageClient() {
           <div style={{ marginBottom: '14px' }}>
             <label
               htmlFor="email"
-              style={{ display: 'block', fontSize: '12px', color: '#6B6B6B', marginBottom: '4px' }}
+              className="text-label"
+              style={{ display: 'block', color: '#6B6B6B', marginBottom: '4px' }}
             >
               Email
             </label>
@@ -133,12 +133,12 @@ export default function LoginPageClient() {
               onChange={(e) => setEmail(e.target.value)}
               onFocus={focusInput}
               onBlur={blurInput}
+              className="text-body-sm"
               style={{
                 width: '100%',
                 height: '36px',
                 borderRadius: '8px',
                 border: '0.5px solid #E5E5E5',
-                fontSize: '13px',
                 padding: '0 10px',
                 outline: 'none',
                 boxSizing: 'border-box',
@@ -150,7 +150,8 @@ export default function LoginPageClient() {
           <div style={{ marginBottom: '4px' }}>
             <label
               htmlFor="password"
-              style={{ display: 'block', fontSize: '12px', color: '#6B6B6B', marginBottom: '4px' }}
+              className="text-label"
+              style={{ display: 'block', color: '#6B6B6B', marginBottom: '4px' }}
             >
               Password
             </label>
@@ -167,7 +168,7 @@ export default function LoginPageClient() {
 
           <button
             type="submit"
-            className="auth-submit-btn"
+            className="auth-submit-btn text-label"
             disabled={isLoading}
             aria-busy={isLoading}
             style={{
@@ -178,7 +179,6 @@ export default function LoginPageClient() {
               color: '#FFFFFF',
               border: 'none',
               borderRadius: '8px',
-              fontSize: '13px',
               fontWeight: 500,
               cursor: isLoading ? 'not-allowed' : 'pointer',
               opacity: isLoading ? 0.75 : 1,
@@ -192,8 +192,8 @@ export default function LoginPageClient() {
         </form>
 
         <p
+          className="text-label"
           style={{
-            fontSize: '12px',
             color: '#6B6B6B',
             textAlign: 'center',
             marginTop: '20px',

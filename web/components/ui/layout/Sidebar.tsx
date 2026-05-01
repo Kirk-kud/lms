@@ -115,7 +115,7 @@ export default function Sidebar({
         {sections.map((section) => (
           <div key={section.name}>
             <div
-              className="text-[10px] uppercase"
+              className="text-tiny uppercase"
               style={{
                 letterSpacing: '0.08em',
                 color: '#9CA3AF',
@@ -129,14 +129,11 @@ export default function Sidebar({
               <button
                 key={item.label}
                 onClick={() => onNavigate(item.label)}
-                className={`w-full flex flex-row items-center gap-2 px-4 cursor-pointer transition-colors ${
+                className={`w-full flex flex-row items-center gap-2 px-4 cursor-pointer transition-colors text-body-sm ${
                   activeItem === item.label
                     ? 'h-10 bg-white text-[#111111] font-medium'
                     : 'h-10 text-[#6B7280] hover:bg-[#F0F0F0]'
                 }`}
-                style={{
-                  fontSize: '13px',
-                }}
               >
                 <span className="flex-shrink-0">{item.icon}</span>
                 <span>{item.label}</span>
@@ -150,9 +147,8 @@ export default function Sidebar({
       <div className="border-t-[0.5px] border-[#E5E5E5]">
         <button
           onClick={onSignOut}
-          className="w-full flex flex-row items-center gap-2 px-4 h-10 text-[#6B7280] hover:text-[#111111] transition-colors"
+          className="w-full flex flex-row items-center gap-2 px-4 h-10 text-[#6B7280] hover:text-[#111111] transition-colors text-body-sm"
           style={{
-            fontSize: '13px',
             background: 'transparent',
           }}
         >
