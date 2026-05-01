@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
+import { PasswordInput } from '@/components/ui/shared/PasswordInput'
 import globalBlack from '@/public/global_black.png'
 
 interface LoginResponse {
@@ -108,8 +109,9 @@ export default function LoginPageClient() {
             className="text-center font-sans font-medium select-none"
             style={{ fontSize: '22px' }}
           >
-            <span style={{ color: '#111111' }}>Love</span>
-            <span style={{ color: '#8B1A2F' }}>Inc</span>
+          <span style={{ color: '#111111' }}>Love</span>
+          &nbsp;
+          <span style={{ color: '#8B1A2F' }}>Inc</span>
           </div>
         </div>
 
@@ -152,26 +154,14 @@ export default function LoginPageClient() {
             >
               Password
             </label>
-            <input
+            <PasswordInput
               id="password"
-              type="password"
               autoComplete="current-password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               onFocus={focusInput}
               onBlur={blurInput}
-              style={{
-                width: '100%',
-                height: '36px',
-                borderRadius: '8px',
-                border: '0.5px solid #E5E5E5',
-                fontSize: '13px',
-                padding: '0 10px',
-                outline: 'none',
-                boxSizing: 'border-box',
-                backgroundColor: '#FFFFFF',
-              }}
             />
           </div>
 

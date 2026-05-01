@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { apiClient, ApiError } from '@/lib/api'
 import { createClient } from '@/lib/supabase/client'
+import { PasswordInput } from '@/components/ui/shared/PasswordInput'
 import globalBlack from '@/public/global_black.png'
 
 const Spinner = () => (
@@ -159,6 +160,7 @@ export default function RegisterPageClient() {
             style={{ fontSize: '22px' }}
           >
             <span style={{ color: '#111111' }}>Love</span>
+            &nbsp;
             <span style={{ color: '#8B1A2F' }}>Inc</span>
           </div>
         </div>
@@ -203,16 +205,14 @@ export default function RegisterPageClient() {
             <label htmlFor="password" style={labelStyle}>
               Password
             </label>
-            <input
+            <PasswordInput
               id="password"
-              type="password"
               autoComplete="new-password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               onFocus={focusInput}
               onBlur={blurInput}
-              style={inputStyle}
             />
           </div>
 
