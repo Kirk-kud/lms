@@ -40,6 +40,7 @@ export function PhotoCarousel() {
             src={slide.src}
             alt={slide.caption}
             fill
+            sizes="50vw"
             style={{ objectFit: 'cover' }}
             priority={i === 0}
           />

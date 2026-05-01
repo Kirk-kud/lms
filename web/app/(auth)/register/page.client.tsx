@@ -3,12 +3,14 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { toast } from 'sonner'
 import { apiClient, ApiError } from '@/lib/api'
 import { createClient } from '@/lib/supabase/client'
 import { PasswordInput } from '@/components/ui/shared/PasswordInput'
 import { PhotoCarousel } from '@/components/ui/shared/PhotoCarousel'
 import globalBlack from '@/public/global_black.png'
+import globalWhite from '@/public/global_white.png'
 
 const Spinner = () => (
   <svg
@@ -150,8 +152,18 @@ export default function RegisterPageClient() {
             padding: '0 48px',
             backgroundColor: '#FFFFFF',
             overflowY: 'auto',
+            position: 'relative',
           }}
         >
+          {/* Desktop logo in top-left */}
+          <div style={{ position: 'absolute', top: '24px', left: '48px', zIndex: 10 }} className="hidden md:block">
+            <Image
+              src={globalWhite}
+              alt="Love Inc"
+              style={{ width: 'auto', height: '32px' }}
+            />
+          </div>
+
           <div style={{ width: '100%', maxWidth: '360px', paddingTop: '32px', paddingBottom: '32px' }}>
             <div className="md:hidden flex flex-col items-center" style={{ marginBottom: '24px' }}>
               <img
