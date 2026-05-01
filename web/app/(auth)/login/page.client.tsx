@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { PasswordInput } from '@/components/ui/shared/PasswordInput'
+import { PhotoCarousel } from '@/components/ui/shared/PhotoCarousel'
 import globalBlack from '@/public/global_black.png'
 
 interface LoginResponse {
@@ -88,122 +89,137 @@ export default function LoginPageClient() {
         .auth-submit-btn:hover:not(:disabled) { background-color: #8B1A2F !important; }
         .auth-submit-btn:focus-visible { outline: 2px solid #8B1A2F; outline-offset: 2px; }
       `}</style>
-      <div
-        className="w-full"
-        style={{
-          maxWidth: '400px',
-          backgroundColor: '#FFFFFF',
-          borderRadius: '12px',
-          border: '0.5px solid #E5E5E5',
-          padding: '32px',
-        }}
-      >
-        <div className="flex flex-col items-center" style={{ marginBottom: '16px' }}>
-          <img 
-            src={globalBlack.src} 
-            alt="Love Inc" 
-            className="w-16 h-auto sm:w-20 md:w-24"
-            style={{ marginBottom: '12px' }} 
-          />
-          <div
-            className="text-headline text-center font-sans select-none"
-          >
-          <span style={{ color: '#111111' }}>Love</span>
-          &nbsp;
-          <span style={{ color: '#8B1A2F' }}>Inc</span>
-          </div>
-        </div>
 
-        <form onSubmit={handleSubmit} noValidate>
-          <div style={{ marginBottom: '14px' }}>
-            <label
-              htmlFor="email"
-              className="text-label"
-              style={{ display: 'block', color: '#6B6B6B', marginBottom: '4px' }}
-            >
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              autoFocus
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onFocus={focusInput}
-              onBlur={blurInput}
-              className="text-body-sm"
-              style={{
-                width: '100%',
-                height: '36px',
-                borderRadius: '8px',
-                border: '0.5px solid #E5E5E5',
-                padding: '0 10px',
-                outline: 'none',
-                boxSizing: 'border-box',
-                backgroundColor: '#FFFFFF',
-              }}
-            />
-          </div>
+      <div style={{ display: 'flex', height: '100vh' }}>
+        <PhotoCarousel />
 
-          <div style={{ marginBottom: '4px' }}>
-            <label
-              htmlFor="password"
-              className="text-label"
-              style={{ display: 'block', color: '#6B6B6B', marginBottom: '4px' }}
-            >
-              Password
-            </label>
-            <PasswordInput
-              id="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onFocus={focusInput}
-              onBlur={blurInput}
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="auth-submit-btn text-label"
-            disabled={isLoading}
-            aria-busy={isLoading}
-            style={{
-              width: '100%',
-              height: '36px',
-              marginTop: '16px',
-              backgroundColor: '#111111',
-              color: '#FFFFFF',
-              border: 'none',
-              borderRadius: '8px',
-              fontWeight: 500,
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              opacity: isLoading ? 0.75 : 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            {isLoading ? <><Spinner />Signing in…</> : 'Sign in'}
-          </button>
-        </form>
-
-        <p
-          className="text-label"
+        <div
           style={{
-            color: '#6B6B6B',
-            textAlign: 'center',
-            marginTop: '20px',
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '0 48px',
+            backgroundColor: '#FFFFFF',
           }}
         >
-          Don&apos;t have an account?{' '}
-          <Link href="/register" style={{ color: '#8B1A2F', textDecoration: 'underline' }}>
-            Register
-          </Link>
-        </p>
+          <div style={{ width: '100%', maxWidth: '360px' }}>
+            <div className="md:hidden flex flex-col items-center" style={{ marginBottom: '24px' }}>
+              <img
+                src={globalBlack.src}
+                alt="Love Inc"
+                className="w-16 h-auto"
+                style={{ marginBottom: '8px' }}
+              />
+            </div>
+
+            <h1
+              style={{
+                fontSize: '28px',
+                fontWeight: 600,
+                color: '#111111',
+                lineHeight: 1.2,
+                marginBottom: '8px',
+              }}
+            >
+              Good to have you back.
+            </h1>
+            <p style={{ fontSize: '13px', color: '#9CA3AF', marginBottom: '32px' }}>
+              Sign in to your Love Inc account.
+            </p>
+
+            <form onSubmit={handleSubmit} noValidate>
+              <div style={{ marginBottom: '14px' }}>
+                <label
+                  htmlFor="email"
+                  className="text-label"
+                  style={{ display: 'block', color: '#6B6B6B', marginBottom: '4px' }}
+                >
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  autoFocus
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onFocus={focusInput}
+                  onBlur={blurInput}
+                  className="text-body-sm"
+                  style={{
+                    width: '100%',
+                    height: '36px',
+                    borderRadius: '8px',
+                    border: '0.5px solid #E5E5E5',
+                    padding: '0 10px',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    backgroundColor: '#FFFFFF',
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: '4px' }}>
+                <label
+                  htmlFor="password"
+                  className="text-label"
+                  style={{ display: 'block', color: '#6B6B6B', marginBottom: '4px' }}
+                >
+                  Password
+                </label>
+                <PasswordInput
+                  id="password"
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onFocus={focusInput}
+                  onBlur={blurInput}
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="auth-submit-btn text-label"
+                disabled={isLoading}
+                aria-busy={isLoading}
+                style={{
+                  width: '100%',
+                  height: '36px',
+                  marginTop: '16px',
+                  backgroundColor: '#111111',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontWeight: 500,
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                  opacity: isLoading ? 0.75 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {isLoading ? <><Spinner />Signing in…</> : 'Sign in'}
+              </button>
+            </form>
+
+            <p
+              style={{
+                fontSize: '12px',
+                color: '#6B6B6B',
+                textAlign: 'center',
+                marginTop: '20px',
+              }}
+            >
+              Don&apos;t have an account?{' '}
+              <Link href="/register" style={{ color: '#8B1A2F', textDecoration: 'underline' }}>
+                Register
+              </Link>
+            </p>
+          </div>
+        </div>
       </div>
     </>
   )

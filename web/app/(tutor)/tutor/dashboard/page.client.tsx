@@ -1,9 +1,10 @@
 'use client'
 
+import { useState, useCallback, useEffect } from 'react'
 import { getHours, format, isPast } from 'date-fns'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@/lib/hooks/useUser'
-import { useClasses, ClassRecord } from '@/lib/hooks/useClasses'
+import { useClasses } from '@/lib/hooks/useClasses'
 import { useAssignments, Assignment } from '@/lib/hooks/useAssignments'
 import { StatCardGrid } from '@/components/ui/shared/StatCard'
 import { SkeletonCard } from '@/components/ui/shared/SkeletonCard'
@@ -18,15 +19,29 @@ function greeting(): string {
   return 'Good evening'
 }
 
-function ClassUpcomingRows({ classId, classTitle, onNavigate }: { classId: string; classTitle: string; onNavigate: (href: string) => void }) {
+function ClassUpcomingRows({
+  classId,
+  classTitle,
+  onNavigate,
+  onItemCount,
+}: {
+  classId: string
+  classTitle: string
+  onNavigate: (href: string) => void
+  onItemCount: (classId: string, count: number) => void
+}) {
   const { data: assignments = [], isLoading } = useAssignments(classId)
-  if (isLoading) return <SkeletonCard lines={2} />
 
   const upcoming = assignments
     .filter((a) => !isPast(new Date(a.due_date)))
     .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
     .slice(0, 3)
 
+  useEffect(() => {
+    if (!isLoading) onItemCount(classId, upcoming.length)
+  }, [isLoading, upcoming.length, classId, onItemCount])
+
+  if (isLoading) return <SkeletonCard lines={2} />
   if (!upcoming.length) return null
 
   return (
@@ -50,14 +65,29 @@ function ClassUpcomingRows({ classId, classTitle, onNavigate }: { classId: strin
   )
 }
 
-function ClassSubmissionRows({ classId, classTitle, onNavigate }: { classId: string; classTitle: string; onNavigate: (href: string) => void }) {
-  const { data: assignments = [] } = useAssignments(classId)
+function ClassSubmissionRows({
+  classId,
+  classTitle,
+  onNavigate,
+  onItemCount,
+}: {
+  classId: string
+  classTitle: string
+  onNavigate: (href: string) => void
+  onItemCount: (classId: string, count: number) => void
+}) {
+  const { data: assignments = [], isLoading } = useAssignments(classId)
 
   const recent = assignments
     .filter((a): a is Assignment & { submission_count: number } => (a.submission_count ?? 0) > 0)
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 3)
 
+  useEffect(() => {
+    if (!isLoading) onItemCount(classId, recent.length)
+  }, [isLoading, recent.length, classId, onItemCount])
+
+  if (isLoading) return <SkeletonCard lines={2} />
   if (!recent.length) return null
 
   return (
@@ -92,6 +122,17 @@ export default function DashboardPageClient() {
     refetch,
   } = useClasses(user?.id)
 
+  const [upcomingCounts, setUpcomingCounts] = useState<Record<string, number>>({})
+  const [submissionCounts, setSubmissionCounts] = useState<Record<string, number>>({})
+
+  const handleUpcomingCount = useCallback((classId: string, count: number) => {
+    setUpcomingCounts((prev) => prev[classId] === count ? prev : { ...prev, [classId]: count })
+  }, [])
+
+  const handleSubmissionCount = useCallback((classId: string, count: number) => {
+    setSubmissionCounts((prev) => prev[classId] === count ? prev : { ...prev, [classId]: count })
+  }, [])
+
   const firstName = ((user?.user_metadata?.full_name as string) ?? '').split(' ')[0] || 'there'
   const totalStudents = classes.reduce((sum, c) => sum + (c.enrolled_count ?? 0), 0)
 
@@ -102,6 +143,12 @@ export default function DashboardPageClient() {
   ]
 
   const hasClasses = classes.length > 0
+
+  const allUpcomingLoaded = hasClasses && classes.every((c) => upcomingCounts[c.id] !== undefined)
+  const totalUpcoming = Object.values(upcomingCounts).reduce((a, b) => a + b, 0)
+
+  const allSubmissionsLoaded = hasClasses && classes.every((c) => submissionCounts[c.id] !== undefined)
+  const totalSubmissions = Object.values(submissionCounts).reduce((a, b) => a + b, 0)
 
   return (
     <div className="p-8 max-w-4xl">
@@ -132,46 +179,6 @@ export default function DashboardPageClient() {
         </div>
       )}
 
-      {!isLoading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="border border-[#E5E5E5] rounded-xl p-4">
-            <h2 className="text-[12px] font-medium text-[#9CA3AF] uppercase tracking-wider mb-3">
-              Upcoming
-            </h2>
-            {hasClasses ? (
-              classes.map((c) => (
-                <ClassUpcomingRows
-                  key={c.id}
-                  classId={c.id}
-                  classTitle={c.title}
-                  onNavigate={router.push}
-                />
-              ))
-            ) : (
-              <p className="text-[13px] text-[#9CA3AF]">No upcoming assignments</p>
-            )}
-          </div>
-
-          <div className="border border-[#E5E5E5] rounded-xl p-4">
-            <h2 className="text-[12px] font-medium text-[#9CA3AF] uppercase tracking-wider mb-3">
-              Recent Submissions
-            </h2>
-            {hasClasses ? (
-              classes.map((c) => (
-                <ClassSubmissionRows
-                  key={c.id}
-                  classId={c.id}
-                  classTitle={c.title}
-                  onNavigate={router.push}
-                />
-              ))
-            ) : (
-              <p className="text-[13px] text-[#9CA3AF]">No submissions yet</p>
-            )}
-          </div>
-        </div>
-      )}
-
       {!isLoading && !hasClasses && (
         <EmptyState
           icon={
@@ -184,6 +191,46 @@ export default function DashboardPageClient() {
           actionLabel="Go to Classes"
           onAction={() => router.push('/tutor/classes')}
         />
+      )}
+
+      {!isLoading && hasClasses && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="border border-[#E5E5E5] rounded-xl p-4">
+            <h2 className="text-[12px] font-medium text-[#9CA3AF] uppercase tracking-wider mb-3">
+              Upcoming
+            </h2>
+            {classes.map((c) => (
+              <ClassUpcomingRows
+                key={c.id}
+                classId={c.id}
+                classTitle={c.title}
+                onNavigate={router.push}
+                onItemCount={handleUpcomingCount}
+              />
+            ))}
+            {allUpcomingLoaded && totalUpcoming === 0 && (
+              <p className="text-[13px] text-[#9CA3AF]">No upcoming assignments</p>
+            )}
+          </div>
+
+          <div className="border border-[#E5E5E5] rounded-xl p-4">
+            <h2 className="text-[12px] font-medium text-[#9CA3AF] uppercase tracking-wider mb-3">
+              Recent Submissions
+            </h2>
+            {classes.map((c) => (
+              <ClassSubmissionRows
+                key={c.id}
+                classId={c.id}
+                classTitle={c.title}
+                onNavigate={router.push}
+                onItemCount={handleSubmissionCount}
+              />
+            ))}
+            {allSubmissionsLoaded && totalSubmissions === 0 && (
+              <p className="text-[13px] text-[#9CA3AF]">No submissions yet</p>
+            )}
+          </div>
+        </div>
       )}
     </div>
   )

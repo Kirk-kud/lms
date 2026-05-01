@@ -2,6 +2,7 @@
 
 import { getHours, format, addHours } from 'date-fns'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { useUser } from '@/lib/hooks/useUser'
 import { useClasses } from '@/lib/hooks/useClasses'
 import { useAssignments } from '@/lib/hooks/useAssignments'
@@ -12,6 +13,40 @@ import { SkeletonCard } from '@/components/ui/shared/SkeletonCard'
 import { EmptyState } from '@/components/ui/shared/EmptyState'
 import { InlineError } from '@/components/ui/shared/InlineError'
 import { ApiError } from '@/lib/api'
+
+const CommunityPhoto = ({ classTitle }: { classTitle: string }) => {
+  return (
+    <div
+      style={{
+        position: 'relative',
+        width: '100%',
+        aspectRatio: '21/8',
+        borderRadius: '12px',
+        overflow: 'hidden',
+        marginBottom: '24px',
+      }}
+    >
+      <Image
+        src="/photos/community-three.jpg"
+        alt="Love Inc community gathering"
+        fill
+        style={{ objectFit: 'cover', objectPosition: 'center 15%' }}
+        priority
+      />
+      <div
+        style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0,
+          padding: '20px 16px 12px',
+          background: 'linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 100%)',
+        }}
+      >
+        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', fontWeight: 400 }}>
+          {classTitle} — Love Inc
+        </p>
+      </div>
+    </div>
+  )
+}
 
 function greeting(): string {
   const h = getHours(new Date())
@@ -64,7 +99,7 @@ export default function StudentDashboardPageClient() {
   const stats = [
     { label: 'My Attendance', value: attendancePct === null ? '--' : `${attendancePct}%`, accentColor: '#8B1A2F' },
     { label: 'Submitted', value: isAssignmentsLoading ? '--' : submittedCount, accentColor: '#8B1A2F' },
-    { label: 'Class', value: primaryClass?.title ?? '--', accentColor: '#8B1A2F' },
+    { label: 'Modules', value: isModulesLoading ? '--' : modules.length, accentColor: '#8B1A2F' },
   ]
 
   const now = new Date()
@@ -138,6 +173,10 @@ export default function StudentDashboardPageClient() {
           actionLabel="Join a class"
           onAction={() => router.push('/join')}
         />
+      )}
+
+      {!isClassesLoading && primaryClass && (
+        <CommunityPhoto classTitle={primaryClass.title} />
       )}
 
       {!isClassesLoading && primaryClass && (

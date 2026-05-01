@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { apiClient, ApiError } from '@/lib/api'
 import { createClient } from '@/lib/supabase/client'
 import { PasswordInput } from '@/components/ui/shared/PasswordInput'
+import { PhotoCarousel } from '@/components/ui/shared/PhotoCarousel'
 import globalBlack from '@/public/global_black.png'
 
 const Spinner = () => (
@@ -136,164 +137,180 @@ export default function RegisterPageClient() {
         .auth-submit-btn:focus-visible { outline: 2px solid #8B1A2F; outline-offset: 2px; }
         .auth-role-btn:focus-visible { outline: 2px solid #8B1A2F; outline-offset: 2px; }
       `}</style>
-      <div
-        className="w-full"
-        style={{
-          maxWidth: '400px',
-          backgroundColor: '#FFFFFF',
-          borderRadius: '12px',
-          border: '0.5px solid #E5E5E5',
-          padding: '32px',
-        }}
-      >
-        <div className="flex flex-col items-center" style={{ marginBottom: '16px' }}>
-          <img 
-            src={globalBlack.src} 
-            alt="Love Inc" 
-            className="w-16 h-auto sm:w-20 md:w-24"
-            style={{ marginBottom: '12px' }} 
-          />
-          <div
-            className="text-headline text-center font-sans select-none"
-          >
-            <span style={{ color: '#111111' }}>Love</span>
-            &nbsp;
-            <span style={{ color: '#8B1A2F' }}>Inc</span>
-          </div>
-        </div>
 
-        <form onSubmit={handleSubmit} noValidate>
-          <div style={{ marginBottom: '14px' }}>
-            <label htmlFor="fullName" className="text-label" style={labelStyle}>
-              Full name
-            </label>
-            <input
-              id="fullName"
-              type="text"
-              autoComplete="name"
-              autoFocus
-              required
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              onFocus={focusInput}
-              onBlur={blurInput}
-              className="text-body-sm"
-              style={inputStyle}
-            />
-          </div>
+      <div style={{ display: 'flex', height: '100vh' }}>
+        <PhotoCarousel />
 
-          <div style={{ marginBottom: '14px' }}>
-            <label htmlFor="email" className="text-label" style={labelStyle}>
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onFocus={focusInput}
-              onBlur={blurInput}
-              className="text-body-sm"
-              style={inputStyle}
-            />
-          </div>
-
-          <div style={{ marginBottom: '20px' }}>
-            <label htmlFor="password" className="text-label" style={labelStyle}>
-              Password
-            </label>
-            <PasswordInput
-              id="password"
-              autoComplete="new-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onFocus={focusInput}
-              onBlur={blurInput}
-            />
-          </div>
-
-          <div style={{ marginBottom: '20px' }}>
-            <p style={{ ...labelStyle, marginBottom: '8px' }}>I am a</p>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              {(['student', 'tutor'] as const).map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  className="auth-role-btn"
-                  onClick={() => setRole(r)}
-                  aria-pressed={role === r}
-                  style={{
-                    flex: 1,
-                    padding: '12px 0',
-                    borderRadius: '8px',
-                    border: `1px solid ${role === r ? '#8B1A2F' : '#E5E5E5'}`,
-                    backgroundColor: role === r ? '#F5E6EA' : '#FFFFFF',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '8px',
-                    transition: 'border-color 150ms ease-out, background-color 150ms ease-out',
-                  }}
-                >
-                  <span style={{ color: role === r ? '#8B1A2F' : '#9CA3AF' }}>
-                    {r === 'tutor' ? <TutorIcon /> : <StudentIcon />}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: '12px',
-                      fontWeight: 500,
-                      color: role === r ? '#8B1A2F' : '#6B7280',
-                    }}
-                  >
-                    {r === 'tutor' ? 'Tutor' : 'Student'}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            className="auth-submit-btn"
-            disabled={isLoading}
-            aria-busy={isLoading}
-            style={{
-              width: '100%',
-              height: '36px',
-              backgroundColor: '#111111',
-              color: '#FFFFFF',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '13px',
-              fontWeight: 500,
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              opacity: isLoading ? 0.75 : 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            {isLoading ? <><Spinner />Creating account…</> : 'Create account'}
-          </button>
-        </form>
-
-        <p
+        <div
           style={{
-            fontSize: '12px',
-            color: '#6B6B6B',
-            textAlign: 'center',
-            marginTop: '20px',
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '0 48px',
+            backgroundColor: '#FFFFFF',
+            overflowY: 'auto',
           }}
         >
-          Already have an account?{' '}
-          <Link href="/login" style={{ color: '#8B1A2F', textDecoration: 'underline' }}>
-            Sign in
-          </Link>
-        </p>
+          <div style={{ width: '100%', maxWidth: '360px', paddingTop: '32px', paddingBottom: '32px' }}>
+            <div className="md:hidden flex flex-col items-center" style={{ marginBottom: '24px' }}>
+              <img
+                src={globalBlack.src}
+                alt="Love Inc"
+                className="w-16 h-auto"
+                style={{ marginBottom: '8px' }}
+              />
+            </div>
+
+            <h1
+              style={{
+                fontSize: '28px',
+                fontWeight: 600,
+                color: '#111111',
+                lineHeight: 1.2,
+                marginBottom: '8px',
+              }}
+            >
+              Join Love Inc.
+            </h1>
+            <p style={{ fontSize: '13px', color: '#9CA3AF', marginBottom: '32px' }}>
+              Create your account to get started.
+            </p>
+
+            <form onSubmit={handleSubmit} noValidate>
+              <div style={{ marginBottom: '14px' }}>
+                <label htmlFor="fullName" className="text-label" style={labelStyle}>
+                  Full name
+                </label>
+                <input
+                  id="fullName"
+                  type="text"
+                  autoComplete="name"
+                  autoFocus
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  onFocus={focusInput}
+                  onBlur={blurInput}
+                  className="text-body-sm"
+                  style={inputStyle}
+                />
+              </div>
+
+              <div style={{ marginBottom: '14px' }}>
+                <label htmlFor="email" className="text-label" style={labelStyle}>
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onFocus={focusInput}
+                  onBlur={blurInput}
+                  className="text-body-sm"
+                  style={inputStyle}
+                />
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <label htmlFor="password" className="text-label" style={labelStyle}>
+                  Password
+                </label>
+                <PasswordInput
+                  id="password"
+                  autoComplete="new-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onFocus={focusInput}
+                  onBlur={blurInput}
+                />
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <p style={{ ...labelStyle, marginBottom: '8px' }}>I am a</p>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  {(['student', 'tutor'] as const).map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      className="auth-role-btn"
+                      onClick={() => setRole(r)}
+                      aria-pressed={role === r}
+                      style={{
+                        flex: 1,
+                        padding: '12px 0',
+                        borderRadius: '8px',
+                        border: `1px solid ${role === r ? '#8B1A2F' : '#E5E5E5'}`,
+                        backgroundColor: role === r ? '#F5E6EA' : '#FFFFFF',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '8px',
+                        transition: 'border-color 150ms ease-out, background-color 150ms ease-out',
+                      }}
+                    >
+                      <span style={{ color: role === r ? '#8B1A2F' : '#9CA3AF' }}>
+                        {r === 'tutor' ? <TutorIcon /> : <StudentIcon />}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: '12px',
+                          fontWeight: 500,
+                          color: role === r ? '#8B1A2F' : '#6B7280',
+                        }}
+                      >
+                        {r === 'tutor' ? 'Tutor' : 'Student'}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="auth-submit-btn"
+                disabled={isLoading}
+                aria-busy={isLoading}
+                style={{
+                  width: '100%',
+                  height: '36px',
+                  backgroundColor: '#111111',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                  opacity: isLoading ? 0.75 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {isLoading ? <><Spinner />Creating account…</> : 'Create account'}
+              </button>
+            </form>
+
+            <p
+              style={{
+                fontSize: '12px',
+                color: '#6B6B6B',
+                textAlign: 'center',
+                marginTop: '20px',
+              }}
+            >
+              Already have an account?{' '}
+              <Link href="/login" style={{ color: '#8B1A2F', textDecoration: 'underline' }}>
+                Sign in
+              </Link>
+            </p>
+          </div>
+        </div>
       </div>
     </>
   )

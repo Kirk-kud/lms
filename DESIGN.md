@@ -15,34 +15,34 @@ colors:
   destructive: "#991B1B"
 typography:
   display:
-    fontFamily: "Helvetica Neue, Helvetica, Arial, sans-serif"
-    fontSize: "22px"
-    fontWeight: 500
-    lineHeight: 1.3
+    fontFamily: "Inter, system-ui, -apple-system, sans-serif"
+    fontSize: "28px"
+    fontWeight: 600
+    lineHeight: 1.2
     letterSpacing: "normal"
   headline:
-    fontFamily: "Helvetica Neue, Helvetica, Arial, sans-serif"
+    fontFamily: "Inter, system-ui, -apple-system, sans-serif"
+    fontSize: "22px"
+    fontWeight: 600
+    lineHeight: 1.25
+  title:
+    fontFamily: "Inter, system-ui, -apple-system, sans-serif"
     fontSize: "18px"
     fontWeight: 500
-    lineHeight: 1.4
-  title:
-    fontFamily: "Helvetica Neue, Helvetica, Arial, sans-serif"
-    fontSize: "13px"
-    fontWeight: 500
-    lineHeight: 1.4
+    lineHeight: 1.3
   body:
-    fontFamily: "Helvetica Neue, Helvetica, Arial, sans-serif"
-    fontSize: "13px"
+    fontFamily: "Inter, system-ui, -apple-system, sans-serif"
+    fontSize: "14px"
     fontWeight: 400
-    lineHeight: 1.5
+    lineHeight: 1.6
   label:
-    fontFamily: "Helvetica Neue, Helvetica, Arial, sans-serif"
-    fontSize: "11px"
+    fontFamily: "Inter, system-ui, -apple-system, sans-serif"
+    fontSize: "12px"
     fontWeight: 500
     lineHeight: 1.4
-    letterSpacing: "0.07em"
+    letterSpacing: "0.05em"
   caption:
-    fontFamily: "Helvetica Neue, Helvetica, Arial, sans-serif"
+    fontFamily: "Inter, system-ui, -apple-system, sans-serif"
     fontSize: "11px"
     fontWeight: 400
     lineHeight: 1.4
@@ -139,19 +139,21 @@ The palette is achromatic infrastructure with one living accent. Fellowship Burg
 
 ## 3. Typography
 
-**Display / Body Font:** Helvetica Neue (with Helvetica, Arial, sans-serif as fallback)
+**Display / Body Font:** Inter (with system-ui, -apple-system, sans-serif as fallback)
 
-**Note on current implementation:** The codebase currently uses Geist (Next.js + shadcn default). The brand direction is Helvetica Neue — this should be updated in `globals.css` and the `@theme` block.
+**Character:** Inter is a modern geometric sans-serif designed for screen legibility. Its generous x-height, open letterforms, and optical sizing make it ideal for discipleship content — clear at small sizes (labels, captions), confident at large sizes (headlines), and warm across body text. The system uses a single typeface across all roles, differentiated by weight (400 / 500 / 600) and size only. No italic variants, no decorative weights, no secondary face.
 
-**Character:** Helvetica Neue carries the same confidence as the wordmark: architectural at large sizes, clear and warm at body size. The system uses a single typeface across all roles, differentiated by weight (400 / 500) and size only. No italic variants, no decorative weights, no secondary face.
+**Implementation:** Inter is configured in `layout.tsx` via Google Fonts and integrated as a CSS variable (`--font-inter`) in `globals.css`. The 9-level typography scale with responsive mobile overrides ensures legibility across devices.
 
 ### Hierarchy
-- **Display** (500, 22px, line-height 1.3): Page-level greetings and primary headings. One per screen.
-- **Headline** (500, 18px, line-height 1.4): Topbar wordmark, modal headings. Signals a surface boundary.
-- **Title** (500, 13px, line-height 1.4): Section headers within content, card titles. Weight distinguishes from body at the same size.
-- **Body** (400, 13px, line-height 1.5): All body copy, list items, form field content. Max 65ch per line.
-- **Label** (500, 11px, line-height 1.4, letter-spacing 0.07em, uppercase): Sidebar section headers ("TEACH", "MY CLASS"), stat card labels. Always uppercase, always tracked. Never used for body or headings.
+- **Display** (600, 28px desktop / 24px mobile, line-height 1.2): Page-level greetings and primary headings. One per screen.
+- **Headline** (600, 22px desktop / 20px mobile, line-height 1.25): Topbar wordmark, modal headings. Signals a surface boundary.
+- **Title** (500, 18px desktop / 16px mobile, line-height 1.3): Section headers within content, card titles. Weight distinguishes from body at the same size.
+- **Body** (400, 14px desktop / 13px mobile, line-height 1.6): All body copy, list items, form field content. Max 65ch per line. Opens breathing room for readability.
+- **Body-SM** (400, 13px desktop / 12px mobile, line-height 1.5): Form field text, smaller content areas. Maintains legibility with reduced line-height.
+- **Label** (500, 12px desktop / 11px mobile, line-height 1.4, letter-spacing 0.05em, uppercase): Sidebar section headers ("TEACH", "MY CLASS"), stat card labels. Always uppercase, always tracked. Never used for body or headings.
 - **Caption** (400, 11px, line-height 1.4): Timestamps, due dates, secondary metadata. Always Margin Gray.
+- **Tiny** (500, 10px, line-height 1.4, letter-spacing 0.05em, uppercase): Smallest labels, badges, minimal metadata. Used sparingly.
 
 ### Named Rules
 
@@ -205,11 +207,12 @@ Page White background, 12px radius, 1px Rule Line border, 16px internal padding.
 ### Do:
 - **Do** use Fellowship Burgundy exclusively for: the wordmark "Inc", active navigation states, input focus borders, avatar backgrounds, and text links. These are its only roles.
 - **Do** convey depth through tonal background layering — Ink Black topbar, Archive Gray sidebar, Page White content — not shadows.
-- **Do** use Helvetica Neue at 500 weight and larger size for all heading hierarchy. Size and weight do the work; color does not.
+- **Do** use Inter at 500 or 600 weight and larger size for all heading hierarchy. Size and weight do the work; color does not.
 - **Do** place community photos at full width or anchored in a defined content zone. They are content — document a gathering, name the people in it.
 - **Do** render the wordmark as "Love" in one color + "Inc" in Fellowship Burgundy, in a single sans-serif weight. Never rearrange or decorate.
-- **Do** use uppercase + letter-spacing (0.06–0.08em) exclusively for structural labels: sidebar section headers and stat card labels. Never for body copy or page headings.
+- **Do** use uppercase + letter-spacing (0.05em) exclusively for structural labels: sidebar section headers and stat card labels. Never for body copy or page headings.
 - **Do** express active navigation state through Page White background + 500 weight text. No side-stripe border.
+- **Do** follow the 9-level typography scale (display, headline, title, body-lg, body, body-sm, label, caption, tiny) for consistency. All sizes, weights, and line-heights are centralized in `globals.css`.
 
 ### Don't:
 - **Don't** use `border-left` or `border-right` greater than 1px as a colored accent stripe on nav items, list items, or cards. This pattern currently exists in the sidebar active state and assignment list items — it must be removed.

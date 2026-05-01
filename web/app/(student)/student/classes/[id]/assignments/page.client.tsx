@@ -189,8 +189,8 @@ export default function StudentAssignmentsPageClient({ params }: { params: Promi
               <path d="M8 2h8v4H8z" />
             </svg>
           }
-          title="No assignments yet"
-          description="Your tutor will post assignments soon"
+          title="Nothing here yet"
+          description="Your tutor will post work here when the class gets going."
         />
       )}
 
@@ -212,7 +212,7 @@ export default function StudentAssignmentsPageClient({ params }: { params: Promi
           {past.length > 0 && (
             <div className="pt-6 border-t border-[#E5E5E5]">
               <h2 className="text-[12px] font-medium text-[#9CA3AF] uppercase tracking-wider mb-4">
-                Past assignments
+                Earlier
               </h2>
               <div className="space-y-6">
                 {past.map((assignment) => (

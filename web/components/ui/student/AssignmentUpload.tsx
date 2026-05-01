@@ -92,6 +92,12 @@ export default function AssignmentUpload({
           Submitted {format(new Date(submission.submitted_at), 'MMM d, yyyy')} at {format(new Date(submission.submitted_at), 'h:mm a')}
         </p>
 
+        {isOverdue && submission && (
+          <p style={{ fontSize: 11, color: '#9CA3AF', marginTop: 4 }}>
+            Submitted after the deadline
+          </p>
+        )}
+
         {uploadProgress > 0 && uploadProgress < 100 && (
           <div className="mt-3 w-full h-[3px] bg-[#F3F4F6] rounded-full overflow-hidden">
             <div className="h-full bg-[#8B1A2F] transition-all" style={{ width: `${uploadProgress}%` }} />
@@ -148,6 +154,19 @@ export default function AssignmentUpload({
         onChange={(e) => handleFileChange(e.target.files)}
       />
 
+      {isOverdue && !submission && (
+        <p
+          style={{
+            fontSize: 12,
+            color: '#6B7280',
+            marginBottom: 12,
+            lineHeight: 1.5,
+          }}
+        >
+          This one passed. If you still want to submit, reach out to your tutor.
+        </p>
+      )}
+
       {!selectedFile ? (
         <div
           onClick={() => fileInputRef.current?.click()}
@@ -167,7 +186,7 @@ export default function AssignmentUpload({
               <line x1="12" y1="3" x2="12" y2="15" />
             </svg>
             <p className="text-[13px] text-[#6B7280]">
-              Drop PDF here or <span className="text-[#111] underline">browse</span>
+              Drop your file here, or <span className="text-[#111] underline">click to choose</span>
             </p>
           </div>
         </div>
@@ -194,6 +213,20 @@ export default function AssignmentUpload({
         <div className="mt-3 w-full h-[3px] bg-[#F3F4F6] rounded-full overflow-hidden">
           <div className="h-full bg-[#8B1A2F] transition-all" style={{ width: `${uploadProgress}%` }} />
         </div>
+      )}
+
+      {resubmitting && (
+        <p
+          style={{
+            fontSize: 12,
+            color: '#6B7280',
+            marginTop: 12,
+            marginBottom: 12,
+            lineHeight: 1.5,
+          }}
+        >
+          Drop a new version here, or click to replace
+        </p>
       )}
 
       <div className="mt-4 flex gap-2">
