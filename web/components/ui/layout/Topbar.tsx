@@ -1,6 +1,8 @@
 'use client'
 
+import Image from 'next/image'
 import { useState, useRef, useEffect } from 'react'
+import globalWhite from '@/public/global_white.png'
 
 interface TopbarProps {
   userName: string
@@ -26,15 +28,21 @@ export default function Topbar({ userName, userInitials, role, onSignOut, onProf
   }, [open])
 
   return (
-    <div className="h-14 w-full bg-[#111111] flex items-center justify-between px-6">
-      {/* Wordmark */}
-      <div className="font-sans font-medium text-[18px] select-none">
-        <span className="text-white">Love</span>
-        <span className="text-[#8B1A2F]">Inc</span>
+    <div className="h-14 w-full bg-[#111111] grid grid-cols-3 items-center px-6">
+      {/* Left: empty spacer */}
+      <div />
+
+      {/* Center: Logo */}
+      <div className="flex justify-center">
+        <Image
+          src={globalWhite}
+          alt="Love Inc"
+          style={{ width: 'auto', height: '60px' }}
+        />
       </div>
 
       {/* Right section */}
-      <div ref={menuRef} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div ref={menuRef} className="flex justify-end" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '12px' }}>
         {/* Role chip */}
         <div className="bg-[#333333] text-white text-[11px] px-2.5 py-1 rounded-full font-medium select-none">
           {role === 'admin' ? 'Admin' : role === 'tutor' ? 'Tutor' : 'Student'}

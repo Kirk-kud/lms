@@ -2,7 +2,6 @@
 
 import { use, useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { format } from 'date-fns'
 import { useRoster, useClass } from '@/lib/hooks/useClasses'
 import { SkeletonCard } from '@/components/ui/shared/SkeletonCard'
 import { EmptyState } from '@/components/ui/shared/EmptyState'
@@ -14,12 +13,6 @@ function attendanceColor(pct: number): string {
   if (pct >= 80) return '#166534'
   if (pct >= 60) return '#854D0E'
   return '#991B1B'
-}
-
-function attendanceBg(pct: number): string {
-  if (pct >= 80) return '#DCFCE7'
-  if (pct >= 60) return '#FEF9C3'
-  return '#FEE2E2'
 }
 
 function CopyIcon() {
@@ -56,8 +49,6 @@ export default function RosterPageClient({ params }: { params: Promise<{ id: str
     error: rosterError,
     refetch: refetchRoster,
   } = useRoster(classId)
-  const [search, setSearch] = useState('')
-  const [copied, setCopied] = useState(false)
 
   const toastIdRef = useRef<string | number | null>(null)
   const didSuccessRef = useRef(false)
@@ -85,6 +76,7 @@ export default function RosterPageClient({ params }: { params: Promise<{ id: str
   }, [isClassLoading, isRosterLoading])
 
   const inviteCode = classData?.invite_code ?? ''
+  const [copied, setCopied] = useState(false)
 
   const handleCopyCode = () => {
     if (!inviteCode) return
@@ -94,10 +86,26 @@ export default function RosterPageClient({ params }: { params: Promise<{ id: str
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const filtered = roster.filter((r) =>
-    r.student.full_name.toLowerCase().includes(search.toLowerCase()) ||
-    r.student.email.toLowerCase().includes(search.toLowerCase())
-  )
+  // Calculate summary stats
+  const avgAttendance = roster.length > 0
+    ? Math.round(roster.reduce((sum, r) => sum + r.attendance_pct, 0) / roster.length)
+    : null
+
+  const totalSubmissions = roster.reduce((sum, r) => sum + (r.submission_count || 0), 0)
+
+  const summaryStats = [
+    { label: 'Members', value: roster.length.toString() },
+    {
+      label: 'Avg Attendance',
+      value: avgAttendance === null ? '—' : `${avgAttendance}%`,
+      accentColor: '#8B1A2F'
+    },
+    {
+      label: 'Total Submissions',
+      value: totalSubmissions.toString(),
+      accentColor: '#8B1A2F'
+    },
+  ]
 
   return (
     <div className="p-8 max-w-3xl">
@@ -125,10 +133,13 @@ export default function RosterPageClient({ params }: { params: Promise<{ id: str
         <span className="text-[#111]">Roster</span>
       </nav>
 
-      <h1 className="text-[20px] font-medium text-[#111] mb-5">Roster</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-[20px] font-medium text-[#111]">Roster</h1>
+        <span className="text-[13px] text-[#9CA3AF]">{roster.length} students</span>
+      </div>
 
       {inviteCode && (
-        <div className="flex items-center justify-between bg-[#F8F8F8] border border-[#E5E5E5] rounded-xl px-5 py-4 mb-6">
+        <div className="flex items-center justify-between bg-[#F8F8F8] border border-[#E5E5E5] rounded-xl px-5 py-4 mb-8">
           <div>
             <p className="text-[11px] text-[#9CA3AF] uppercase tracking-wider mb-0.5">Invite Code</p>
             <p className="text-[22px] font-mono font-medium text-[#111] tracking-[0.15em]">{inviteCode}</p>
@@ -142,18 +153,24 @@ export default function RosterPageClient({ params }: { params: Promise<{ id: str
         </div>
       )}
 
-      <div className="relative mb-4">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2"
-          className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-          <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-        <input
-          type="search"
-          placeholder="Search students..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full h-9 pl-9 pr-3 text-[13px] border border-[#E5E5E5] rounded-lg outline-none focus:border-[#8B1A2F] transition-colors"
-        />
+      {/* Summary stat cards */}
+      <div className="grid grid-cols-3 gap-4 mb-8">
+        {summaryStats.map((stat, i) => (
+          <div
+            key={i}
+            className="bg-[#F8F8F8] border border-[#E5E5E5] rounded-xl px-4 py-4"
+          >
+            <p className="text-[11px] text-[#9CA3AF] uppercase tracking-wider mb-2">
+              {stat.label}
+            </p>
+            <p
+              className="text-[24px] font-medium"
+              style={{ color: stat.accentColor || '#111111' }}
+            >
+              {stat.value}
+            </p>
+          </div>
+        ))}
       </div>
 
       {(isClassError || isRosterError) && (
@@ -192,52 +209,51 @@ export default function RosterPageClient({ params }: { params: Promise<{ id: str
 
       {!(isClassLoading || isRosterLoading) && roster.length > 0 && (
         <div className="border border-[#E5E5E5] rounded-xl overflow-hidden">
-          <div className="grid grid-cols-[1fr_120px_100px_100px] gap-4 px-5 py-3 bg-[#F8F8F8] border-b border-[#E5E5E5]">
-            <span className="text-[11px] font-medium text-[#9CA3AF] uppercase tracking-wider">Student</span>
-            <span className="text-[11px] font-medium text-[#9CA3AF] uppercase tracking-wider">Enrolled</span>
+          <div className="grid grid-cols-[1fr_80px_80px] gap-4 px-5 py-3 bg-[#F8F8F8] border-b border-[#E5E5E5]">
+            <span className="text-[11px] font-medium text-[#9CA3AF] uppercase tracking-wider">Member</span>
             <span className="text-[11px] font-medium text-[#9CA3AF] uppercase tracking-wider text-right">Attendance</span>
-            <span className="text-[11px] font-medium text-[#9CA3AF] uppercase tracking-wider text-right">Submissions</span>
+            <span className="text-[11px] font-medium text-[#9CA3AF] uppercase tracking-wider text-right">Submitted</span>
           </div>
 
-          {filtered.length === 0 ? (
-            <div className="px-5 py-8 text-center text-[13px] text-[#9CA3AF]">No students match your search</div>
-          ) : (
-            filtered.map((entry, i) => (
-              <div
-                key={entry.student.id}
-                className={`grid grid-cols-[1fr_120px_100px_100px] gap-4 px-5 py-3.5 items-center ${
-                  i < filtered.length - 1 ? 'border-b border-[#F3F4F6]' : ''
-                }`}
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded-full bg-[#F5E6EA] flex items-center justify-center text-[11px] font-medium text-[#8B1A2F] shrink-0">
-                    {entry.student.avatar_initials}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[13px] font-medium text-[#111] truncate">{entry.student.full_name}</p>
-                    <p className="text-[11px] text-[#9CA3AF] truncate">{entry.student.email}</p>
-                  </div>
+          {roster.map((entry, i) => (
+            <div
+              key={entry.student.id}
+              className={`grid grid-cols-[1fr_80px_80px] gap-4 px-5 py-3.5 items-center ${
+                i < roster.length - 1 ? 'border-b border-[#F3F4F6]' : ''
+              } hover:bg-[#FAFAFA] transition-colors`}
+            >
+              {/* Member identity */}
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-8 h-8 rounded-full bg-[#F5E6EA] flex items-center justify-center text-[11px] font-medium text-[#8B1A2F] shrink-0">
+                  {entry.student.avatar_initials}
                 </div>
-                <span className="text-[12px] text-[#6B7280]">
-                  {format(new Date(entry.enrolled_at), 'MMM d, yyyy')}
-                </span>
-                <div className="flex justify-end">
-                  <span
-                    className="inline-block rounded-full px-2.5 py-0.5 text-[11px] font-medium"
-                    style={{
-                      backgroundColor: attendanceBg(entry.attendance_pct),
-                      color: attendanceColor(entry.attendance_pct),
-                    }}
-                  >
-                    {Math.round(entry.attendance_pct)}%
-                  </span>
-                </div>
-                <div className="flex justify-end">
-                  <span className="text-[12px] text-[#6B7280]">{entry.submission_count}</span>
+                <div className="min-w-0">
+                  <p className="text-[13px] font-medium text-[#111] truncate">{entry.student.full_name}</p>
+                  <p className="text-[11px] text-[#9CA3AF] truncate">{entry.student.email}</p>
                 </div>
               </div>
-            ))
-          )}
+
+              {/* Attendance percentage */}
+              <div className="text-right">
+                <span
+                  style={{
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    color: attendanceColor(entry.attendance_pct),
+                  }}
+                >
+                  {Math.round(entry.attendance_pct)}%
+                </span>
+              </div>
+
+              {/* Submission count */}
+              <div className="text-right">
+                <span className="text-[13px] text-[#111]">
+                  {entry.submission_count}
+                </span>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

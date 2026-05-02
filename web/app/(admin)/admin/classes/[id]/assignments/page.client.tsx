@@ -11,7 +11,6 @@ import {
   Assignment,
 } from '@/lib/hooks/useAssignments'
 import { useClass } from '@/lib/hooks/useClasses'
-import { StatusBadge } from '@/components/ui/shared/Badge'
 import { SkeletonCard } from '@/components/ui/shared/SkeletonCard'
 import { EmptyState } from '@/components/ui/shared/EmptyState'
 import { InlineError } from '@/components/ui/shared/InlineError'
@@ -136,7 +135,46 @@ function CreateAssignmentModal({
   )
 }
 
-function SubmissionsInbox({ assignmentId, enrolledCount }: { assignmentId: string; enrolledCount: number }) {
+function SubmissionIndicator({
+  submitted,
+  total,
+  needsReview,
+}: {
+  submitted: number
+  total: number
+  needsReview: boolean
+}) {
+  if (submitted === 0) {
+    return <span style={{ fontSize: '11px', color: '#9CA3AF' }}>No submissions</span>
+  }
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+      {needsReview && (
+        <span
+          style={{
+            fontSize: '10px',
+            fontWeight: 500,
+            background: '#F5E6EA',
+            color: '#8B1A2F',
+            padding: '2px 8px',
+            borderRadius: '9999px',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+          }}
+        >
+          Review
+        </span>
+      )}
+      <span style={{ fontSize: '13px', fontWeight: 500, color: '#111' }}>
+        {submitted}
+        <span style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 400 }}>/{total}</span>
+      </span>
+    </div>
+  )
+}
+
+function SubmissionsList({ assignmentId }: { assignmentId: string }) {
   const { data: rows = [], isLoading } = useAssignmentSubmissions(assignmentId)
 
   if (isLoading) {
@@ -150,69 +188,111 @@ function SubmissionsInbox({ assignmentId, enrolledCount }: { assignmentId: strin
   }
 
   return (
-    <div className="mt-3 border-t border-[#F3F4F6] pt-3">
-      <div className="text-[11px] text-[#9CA3AF] uppercase tracking-wider mb-2">
-        Submissions ({rows.filter(r => r.status !== 'missing').length} / {enrolledCount})
-      </div>
-      <div className="space-y-1.5 max-h-48 overflow-y-auto">
-        {rows.map((row) => (
-          <div key={row.student.id} className="flex items-center gap-2.5 py-1.5">
-            <div className="w-7 h-7 rounded-full bg-[#F5E6EA] flex items-center justify-center text-[10px] font-medium text-[#8B1A2F] shrink-0">
+    <div style={{ marginTop: '12px', borderTop: '1px solid #F3F4F6', paddingTop: '12px' }}>
+      {rows.map((row) => (
+        <div
+          key={row.student.id}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '10px 0',
+            borderTop: '1px solid #F3F4F6',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div
+              style={{
+                width: '28px',
+                height: '28px',
+                borderRadius: '50%',
+                background: '#F5E6EA',
+                color: '#8B1A2F',
+                fontSize: '11px',
+                fontWeight: 500,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
               {row.student.avatar_initials}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[12px] text-[#111] truncate">{row.student.full_name}</p>
+            <div>
+              <p style={{ fontSize: '13px', color: '#111' }}>{row.student.full_name}</p>
+              <p style={{ fontSize: '11px', color: '#9CA3AF' }}>
+                {row.submission?.submitted_at
+                  ? `Submitted ${format(new Date(row.submission.submitted_at), 'MMM d, h:mm a')}`
+                  : 'Not submitted'}
+              </p>
             </div>
-            <StatusBadge
-              variant={row.status === 'submitted' ? 'success' : row.status === 'late' ? 'warning' : 'gray'}
-              label={row.status === 'submitted' ? 'Submitted' : row.status === 'late' ? 'Late' : 'Missing'}
-            />
           </div>
-        ))}
-      </div>
+          {row.submission?.file_url && (
+            <a
+              href={row.submission.file_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                fontSize: '12px',
+                color: '#8B1A2F',
+                textDecoration: 'underline',
+                fontFamily: 'Inter, sans-serif',
+                cursor: 'pointer',
+              }}
+            >
+              Download
+            </a>
+          )}
+        </div>
+      ))}
     </div>
   )
 }
 
 function AssignmentCard({
   assignment,
+  classId,
+  totalStudents,
   onDelete,
 }: {
   assignment: Assignment
+  classId: string
+  totalStudents: number
   onDelete: () => void
 }) {
   const [expanded, setExpanded] = useState(false)
-  const totalEnrolled = (assignment.submission_count ?? 0) + (assignment.missing_count ?? 0)
   const submittedCount = assignment.submission_count ?? 0
-  const progressPct = totalEnrolled > 0 ? (submittedCount / totalEnrolled) * 100 : 0
-  const overdue = isPast(new Date(assignment.due_date))
+  const needsReview = submittedCount > 0
 
   return (
-    <div className="border border-[#E5E5E5] rounded-xl p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-[14px] font-medium text-[#111]">{assignment.title}</h3>
-            <span className="text-[11px] text-[#9CA3AF]">Week {assignment.week_number}</span>
-            {overdue && <StatusBadge variant="danger" label="Overdue" />}
-          </div>
-          {assignment.description && (
-            <p className="text-[12px] text-[#6B7280] mt-1">{assignment.description}</p>
-          )}
-          <p className="text-[11px] text-[#9CA3AF] mt-1">
-            Due {format(new Date(assignment.due_date), 'MMM d, yyyy')}
+    <div
+      style={{
+        border: '1px solid #E5E5E5',
+        borderRadius: '12px',
+        padding: '16px 20px',
+        transition: 'border-color 150ms',
+        position: 'relative',
+      }}
+      onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(139,26,47,0.3)')}
+      onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')}
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' }}>
+        {/* Left: title + due date */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontSize: '14px', fontWeight: 500, color: '#111' }}>{assignment.title}</p>
+          <p style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '3px' }}>
+            Due {format(new Date(assignment.due_date), 'MMM d, h:mm a')}
+            {isPast(new Date(assignment.due_date)) && (
+              <span style={{ marginLeft: '6px', color: '#991B1B' }}>· Closed</span>
+            )}
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={() => setExpanded((v) => !v)}
-            className="h-8 px-3 text-[12px] border border-[#E5E5E5] rounded-lg hover:bg-[#F8F8F8] transition-colors text-[#6B7280]"
-          >
-            {expanded ? 'Hide' : 'Submissions'}
-          </button>
+
+        {/* Right: submission indicator + delete button */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+          <SubmissionIndicator submitted={submittedCount} total={totalStudents} needsReview={needsReview} />
           <button
             onClick={onDelete}
-            className="h-8 w-8 flex items-center justify-center border border-[#E5E5E5] rounded-lg hover:bg-red-50 hover:border-red-200 transition-colors text-[#9CA3AF] hover:text-red-500"
+            className="h-8 w-8 flex items-center justify-center border border-[#E5E5E5] rounded-lg hover:bg-red-50 hover:border-red-200 transition-colors text-[#9CA3AF] hover:text-red-500 shrink-0"
             title="Delete assignment"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -223,22 +303,29 @@ function AssignmentCard({
         </div>
       </div>
 
-      <div className="mt-3">
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-[11px] text-[#9CA3AF]">{submittedCount} of {totalEnrolled} submitted</span>
-          <span className="text-[11px] text-[#9CA3AF]">{Math.round(progressPct)}%</span>
-        </div>
-        <div className="w-full bg-[#F3F4F6] rounded-full h-[4px] overflow-hidden">
-          <div
-            className="h-full bg-[#8B1A2F] rounded-full transition-all"
-            style={{ width: `${progressPct}%` }}
-          />
-        </div>
-      </div>
-
-      {expanded && (
-        <SubmissionsInbox assignmentId={assignment.id} enrolledCount={totalEnrolled} />
+      {/* Expand toggle */}
+      {submittedCount > 0 && (
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          style={{
+            fontSize: '12px',
+            color: '#8B1A2F',
+            marginTop: '12px',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            fontFamily: 'Inter, sans-serif',
+            padding: '0',
+          }}
+        >
+          {expanded
+            ? 'Hide submissions'
+            : `View ${submittedCount} submission${submittedCount !== 1 ? 's' : ''}`}
+        </button>
       )}
+
+      {/* Expandable: submission list */}
+      {expanded && <SubmissionsList assignmentId={assignment.id} />}
     </div>
   )
 }
@@ -262,6 +349,7 @@ export default function AssignmentsPageClient({ params }: { params: Promise<{ id
   } = useAssignments(classId)
   const deleteAssignment = useDeleteAssignment()
   const [showCreate, setShowCreate] = useState(false)
+  const [activeTab, setActiveTab] = useState<'All' | 'Needs review'>('All')
 
   const toastIdRef = useRef<string | number | null>(null)
   const didSuccessRef = useRef(false)
@@ -291,6 +379,22 @@ export default function AssignmentsPageClient({ params }: { params: Promise<{ id
   const nextWeek = assignments.length > 0
     ? Math.max(...assignments.map((a) => a.week_number)) + 1
     : 1
+
+  const needsReview = (a: Assignment) => (a.submission_count ?? 0) > 0
+
+  const needsReviewCount = assignments.filter(needsReview).length
+
+  const filtered = activeTab === 'Needs review'
+    ? assignments.filter(needsReview)
+    : assignments
+
+  const totalStudents = assignments.length > 0
+    ? Math.max(
+        ...(assignments
+          .map((a) => (a.submission_count ?? 0) + (a.missing_count ?? 0))
+          .filter((c) => c > 0) || [1])
+      )
+    : 0
 
   return (
     <div className="p-8 max-w-3xl">
@@ -364,23 +468,84 @@ export default function AssignmentsPageClient({ params }: { params: Promise<{ id
       )}
 
       {!(isClassLoading || isAssignmentsLoading) && assignments.length > 0 && (
-        <div className="space-y-4">
-          {assignments
-            .sort((a, b) => a.week_number - b.week_number)
-            .map((a) => (
-              <AssignmentCard
-                key={a.id}
-                assignment={a}
-                onDelete={async () => {
-                  try {
-                    await deleteAssignment.mutateAsync({ assignmentId: a.id, classId })
-                  } catch (err) {
-                    toast.error(err instanceof ApiError ? err.message : 'Unable to delete assignment')
-                  }
+        <>
+          {/* Tab filter */}
+          <div
+            style={{
+              display: 'flex',
+              gap: 0,
+              border: '1px solid #E5E5E5',
+              borderRadius: '8px',
+              overflow: 'hidden',
+              width: 'fit-content',
+              marginBottom: '24px',
+            }}
+          >
+            {(['All', 'Needs review'] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                style={{
+                  height: '32px',
+                  padding: '0 16px',
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontFamily: 'Inter, sans-serif',
+                  background: activeTab === tab ? '#111' : '#fff',
+                  color: activeTab === tab ? '#fff' : '#6B7280',
+                  transition: 'all 150ms',
                 }}
-              />
+              >
+                {tab}
+                {tab === 'Needs review' && needsReviewCount > 0 && (
+                  <span
+                    style={{
+                      marginLeft: '6px',
+                      fontSize: '10px',
+                      fontWeight: 500,
+                      background: activeTab === tab ? 'rgba(255,255,255,0.2)' : '#F5E6EA',
+                      color: activeTab === tab ? '#fff' : '#8B1A2F',
+                      padding: '1px 6px',
+                      borderRadius: '9999px',
+                      display: 'inline-block',
+                    }}
+                  >
+                    {needsReviewCount}
+                  </span>
+                )}
+              </button>
             ))}
-        </div>
+          </div>
+
+          {/* Assignments list */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {filtered.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '24px', color: '#9CA3AF', fontSize: '13px' }}>
+                No assignments need review
+              </div>
+            ) : (
+              filtered
+                .sort((a, b) => a.week_number - b.week_number)
+                .map((a) => (
+                  <AssignmentCard
+                    key={a.id}
+                    assignment={a}
+                    classId={classId}
+                    totalStudents={totalStudents}
+                    onDelete={async () => {
+                      try {
+                        await deleteAssignment.mutateAsync({ assignmentId: a.id, classId })
+                      } catch (err) {
+                        toast.error(err instanceof ApiError ? err.message : 'Unable to delete assignment')
+                      }
+                    }}
+                  />
+                ))
+            )}
+          </div>
+        </>
       )}
 
       <CreateAssignmentModal

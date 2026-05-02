@@ -392,7 +392,8 @@ CREATE POLICY "profiles_insert"
   FOR INSERT
   WITH CHECK (
     auth.uid() = id
-    OR auth.role() = 'service_role'
+    OR (auth.jwt() ->> 'role') = 'service_role'
+    OR auth.uid() IS NULL  -- Service role requests have no user UUID
   );
 
 -- Users can update their own profile; service role can update any profile
@@ -401,7 +402,8 @@ CREATE POLICY "profiles_update"
   FOR UPDATE
   USING (
     auth.uid() = id
-    OR auth.role() = 'service_role'
+    OR (auth.jwt() ->> 'role') = 'service_role'
+    OR auth.uid() IS NULL  -- Service role requests have no user UUID
   );
 
 
