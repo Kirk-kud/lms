@@ -124,6 +124,8 @@ export default function StudentLayout({
             activeItem={activeItem}
             onNavigate={handleNavigate}
             onSignOut={handleSignOut}
+            userName={fullName}
+            userInitials={initials}
           />
         </div>
         <main className="flex-1 overflow-y-auto bg-white pb-20 md:pb-0">{children}</main>

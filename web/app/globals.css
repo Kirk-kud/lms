@@ -50,6 +50,20 @@
 
 :root {
   --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+
+  /* Design system tokens */
+  --crimson: #8B1A2F;
+  --crimson-700: #6F1325;
+  --crimson-50: #FBEDF0;
+  --crimson-100: #F4DCE1;
+  --ink: #0A0A0B;
+  --ink-2: #1A1A1C;
+  --paper: #FFFFFF;
+  --paper-2: #FAF7F4;
+  --paper-3: #F4EEE8;
+  --line: #ECE6E0;
+  --muted: #6B6168;
+  --muted-2: #9C949A;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);

@@ -1,8 +1,6 @@
 'use client'
 
-import Image from 'next/image'
 import { useState, useRef, useEffect } from 'react'
-import globalWhite from '@/public/global_white.png'
 
 interface TopbarProps {
   userName: string
@@ -27,28 +25,83 @@ export default function Topbar({ userName, userInitials, role, onSignOut, onProf
     return () => document.removeEventListener('mousedown', handler)
   }, [open])
 
-  return (
-    <div className="h-14 w-full bg-[#111111] grid grid-cols-3 items-center px-6">
-      {/* Left: empty spacer */}
-      <div />
+  const roleLabel = role === 'admin' ? 'Admin' : role === 'tutor' ? 'Tutor' : 'Student'
 
-      {/* Center: Logo */}
-      <div className="flex justify-center">
-        <Image
-          src={globalWhite}
-          alt="Love Inc"
-          style={{ width: 'auto', height: '60px' }}
+  return (
+    <div
+      style={{
+        height: '56px',
+        width: '100%',
+        backgroundColor: '#FFFFFF',
+        borderBottom: '1px solid #ECE6E0',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 24px',
+        flexShrink: 0,
+        zIndex: 30,
+      }}
+    >
+      {/* Left: Wordmark */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+        <span
+          style={{
+            fontSize: '18px',
+            fontWeight: 800,
+            color: '#0A0A0B',
+            letterSpacing: '-0.02em',
+            lineHeight: 1,
+          }}
+        >
+          Vine
+        </span>
+        <span
+          style={{
+            width: '6px',
+            height: '6px',
+            borderRadius: '50%',
+            backgroundColor: '#8B1A2F',
+            display: 'inline-block',
+            flexShrink: 0,
+          }}
         />
       </div>
 
-      {/* Right section */}
-      <div ref={menuRef} className="flex justify-end" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '12px' }}>
+      {/* Right */}
+      <div
+        ref={menuRef}
+        style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '10px' }}
+      >
         {/* Role chip */}
-        <div className="bg-[#333333] text-white text-[11px] px-2.5 py-1 rounded-full font-medium select-none">
-          {role === 'admin' ? 'Admin' : role === 'tutor' ? 'Tutor' : 'Student'}
+        <div
+          style={{
+            backgroundColor: '#FBEDF0',
+            color: '#8B1A2F',
+            fontSize: '11px',
+            fontWeight: 600,
+            padding: '4px 10px',
+            borderRadius: '999px',
+            border: '1px solid #F4DCE1',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            userSelect: 'none',
+          }}
+        >
+          <span
+            style={{
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              backgroundColor: '#8B1A2F',
+              display: 'inline-block',
+              flexShrink: 0,
+            }}
+          />
+          {roleLabel}
         </div>
 
-        {/* Avatar + name trigger */}
+        {/* Avatar + dropdown trigger */}
         <button
           onClick={() => setOpen(v => !v)}
           aria-haspopup="menu"
@@ -64,7 +117,7 @@ export default function Topbar({ userName, userInitials, role, onSignOut, onProf
             borderRadius: '6px',
             outline: 'none',
           }}
-          onFocus={e => (e.currentTarget.style.outline = '2px solid rgba(139,26,47,0.5)')}
+          onFocus={e => (e.currentTarget.style.outline = '2px solid rgba(139,26,47,0.4)')}
           onBlur={e => (e.currentTarget.style.outline = 'none')}
         >
           <div
@@ -78,13 +131,18 @@ export default function Topbar({ userName, userInitials, role, onSignOut, onProf
               justifyContent: 'center',
               color: '#FFFFFF',
               fontSize: '12px',
-              fontWeight: 500,
+              fontWeight: 700,
               flexShrink: 0,
             }}
           >
             {userInitials}
           </div>
-          <span className="text-white text-[13px] hidden sm:inline">{userName}</span>
+          <span
+            style={{ fontSize: '13px', fontWeight: 500, color: '#0A0A0B' }}
+            className="hidden sm:inline"
+          >
+            {userName}
+          </span>
           <svg
             width="12"
             height="12"
@@ -92,24 +150,30 @@ export default function Topbar({ userName, userInitials, role, onSignOut, onProf
             fill="none"
             aria-hidden="true"
             style={{
-              color: 'rgba(255,255,255,0.45)',
+              color: '#9C949A',
               transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
               transition: 'transform 150ms cubic-bezier(0.16, 1, 0.3, 1)',
               flexShrink: 0,
             }}
           >
-            <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <path
+              d="M2 4l4 4 4-4"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </button>
 
-        {/* Dropdown menu */}
+        {/* Dropdown */}
         {open && (
           <>
             <style>{`
-              .topbar-menu-item { transition: background-color 120ms ease-out; }
-              .topbar-menu-item:hover { background-color: #F8F8F8; }
-              .topbar-menu-item-danger { transition: background-color 120ms ease-out, color 120ms ease-out; }
-              .topbar-menu-item-danger:hover { background-color: #FEE2E2; color: #991B1B !important; }
+              .tb-item { transition: background-color 120ms ease-out; }
+              .tb-item:hover { background-color: #FAF7F4; }
+              .tb-item-danger { transition: background-color 120ms ease-out, color 120ms ease-out; }
+              .tb-item-danger:hover { background-color: #FBEDF0; color: #8B1A2F !important; }
             `}</style>
             <div
               role="menu"
@@ -119,36 +183,33 @@ export default function Topbar({ userName, userInitials, role, onSignOut, onProf
                 top: 'calc(100% + 10px)',
                 right: 0,
                 backgroundColor: '#FFFFFF',
-                border: '1px solid #E5E5E5',
+                border: '1px solid #ECE6E0',
                 borderRadius: '8px',
                 minWidth: '188px',
                 zIndex: 50,
                 overflow: 'hidden',
               }}
             >
-              {/* Identity header */}
-              <div style={{ padding: '12px 14px', borderBottom: '0.5px solid #E5E5E5' }}>
-                <p style={{ fontSize: '13px', fontWeight: 500, color: '#111111', margin: 0, lineHeight: 1.4 }}>
+              <div style={{ padding: '12px 14px', borderBottom: '1px solid #ECE6E0' }}>
+                <p style={{ fontSize: '13px', fontWeight: 600, color: '#0A0A0B', margin: 0, lineHeight: 1.4 }}>
                   {userName}
                 </p>
-                <p style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '2px', marginBottom: 0 }}>
-                  {role === 'admin' ? 'Admin' : role === 'tutor' ? 'Tutor' : 'Student'}
+                <p style={{ fontSize: '11px', color: '#9C949A', marginTop: '2px', marginBottom: 0 }}>
+                  {roleLabel}
                 </p>
               </div>
-
-              {/* Items */}
               <div style={{ padding: '4px 0' }}>
                 {onProfile && (
                   <button
                     role="menuitem"
-                    className="topbar-menu-item"
+                    className="tb-item"
                     onClick={() => { setOpen(false); onProfile() }}
                     style={{
                       width: '100%',
                       textAlign: 'left',
                       padding: '8px 14px',
                       fontSize: '13px',
-                      color: '#111111',
+                      color: '#0A0A0B',
                       background: 'none',
                       border: 'none',
                       cursor: 'pointer',
@@ -158,7 +219,7 @@ export default function Topbar({ userName, userInitials, role, onSignOut, onProf
                     }}
                   >
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                      <path d="M7 7a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM2 12a5 5 0 0 1 10 0" stroke="#9CA3AF" strokeWidth="1.2" strokeLinecap="round" />
+                      <path d="M7 7a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM2 12a5 5 0 0 1 10 0" stroke="#9C949A" strokeWidth="1.2" strokeLinecap="round" />
                     </svg>
                     Profile
                   </button>
@@ -166,14 +227,14 @@ export default function Topbar({ userName, userInitials, role, onSignOut, onProf
                 {onSignOut && (
                   <button
                     role="menuitem"
-                    className="topbar-menu-item-danger"
+                    className="tb-item-danger"
                     onClick={() => { setOpen(false); onSignOut() }}
                     style={{
                       width: '100%',
                       textAlign: 'left',
                       padding: '8px 14px',
                       fontSize: '13px',
-                      color: '#6B7280',
+                      color: '#6B6168',
                       background: 'none',
                       border: 'none',
                       cursor: 'pointer',
