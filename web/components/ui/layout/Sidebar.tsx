@@ -5,6 +5,8 @@ interface SidebarProps {
   activeItem: string;
   onNavigate: (item: string) => void;
   onSignOut: () => void;
+  userName?: string;
+  userInitials?: string;
 }
 
 const IconOverview = () => (
@@ -57,20 +59,13 @@ const IconHome = () => (
 );
 
 const IconSignOut = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-    <path d="M6 2H3v12h3v2H2V0h4v2zm6 4l3 3-3 3v-2h-4v-2h4V6z" />
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <path d="M5 2H3v10h2M9 4l3 3-3 3M12 7H5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
-type NavItem = {
-  label: string;
-  icon: React.ReactNode;
-};
-
-type Section = {
-  name: string;
-  items: NavItem[];
-};
+type NavItem = { label: string; icon: React.ReactNode };
+type Section = { name: string; items: NavItem[] };
 
 const ADMIN_SECTIONS: Section[] = [
   {
@@ -94,7 +89,7 @@ const ADMIN_SECTIONS: Section[] = [
 
 const STUDENT_SECTIONS: Section[] = [
   {
-    name: 'MY CLASS',
+    name: 'WORKSPACE',
     items: [
       { label: 'Home', icon: <IconHome /> },
       { label: 'Modules', icon: <IconModules /> },
@@ -106,7 +101,7 @@ const STUDENT_SECTIONS: Section[] = [
 
 const TUTOR_SECTIONS: Section[] = [
   {
-    name: 'COHORT',
+    name: 'WORKSPACE',
     items: [
       { label: 'Dashboard', icon: <IconOverview /> },
       { label: 'My Cohort', icon: <IconRoster /> },
@@ -122,66 +117,205 @@ const TUTOR_SECTIONS: Section[] = [
   },
 ];
 
+function NavButton({
+  label,
+  icon,
+  isActive,
+  onClick,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  isActive: boolean;
+  onClick: () => void;
+}) {
+  const [hovered, setHovered] = React.useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        padding: '9px 12px',
+        borderRadius: '8px',
+        fontSize: '13.5px',
+        fontWeight: isActive ? 600 : 500,
+        color: isActive ? '#FFFFFF' : hovered ? '#0A0A0B' : '#6B6168',
+        backgroundColor: isActive ? '#8B1A2F' : hovered ? '#FFFFFF' : 'transparent',
+        border: 'none',
+        cursor: 'pointer',
+        textAlign: 'left',
+        transition: 'background-color 120ms ease, color 120ms ease',
+      }}
+    >
+      <span style={{ flexShrink: 0, display: 'flex' }}>{icon}</span>
+      <span>{label}</span>
+    </button>
+  );
+}
+
+function SignOutButton({ onClick }: { onClick: () => void }) {
+  const [hovered, setHovered] = React.useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        padding: '7px 12px',
+        borderRadius: '8px',
+        fontSize: '12.5px',
+        fontWeight: 500,
+        color: hovered ? '#0A0A0B' : '#9C949A',
+        backgroundColor: hovered ? '#FFFFFF' : 'transparent',
+        border: 'none',
+        cursor: 'pointer',
+        transition: 'background-color 120ms ease, color 120ms ease',
+      }}
+    >
+      <IconSignOut />
+      Sign out
+    </button>
+  );
+}
+
 export default function Sidebar({
   variant,
   activeItem,
   onNavigate,
   onSignOut,
+  userName = 'User',
+  userInitials = '??',
 }: SidebarProps) {
-  const sections = variant === 'admin' ? ADMIN_SECTIONS : variant === 'tutor' ? TUTOR_SECTIONS : STUDENT_SECTIONS;
+  const sections =
+    variant === 'admin' ? ADMIN_SECTIONS : variant === 'tutor' ? TUTOR_SECTIONS : STUDENT_SECTIONS;
+  const roleLabel = variant === 'admin' ? 'Admin' : variant === 'tutor' ? 'Tutor' : 'Student';
 
   return (
     <div
-      className="flex flex-col h-screen bg-[#F8F8F8] border-r-[0.5px] border-[#E5E5E5]"
-      style={{ width: '200px' }}
+      style={{
+        width: '220px',
+        backgroundColor: '#FAF7F4',
+        borderRight: '1px solid #ECE6E0',
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        position: 'relative',
+        flexShrink: 0,
+      }}
     >
+      {/* Crimson left rail */}
+      <div
+        style={{
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: '3px',
+          backgroundColor: '#8B1A2F',
+          borderRadius: '0 2px 2px 0',
+        }}
+      />
+
       {/* Navigation sections */}
-      <div className="flex-1 overflow-y-auto">
+      <div style={{ flex: 1, overflowY: 'auto', paddingTop: '12px' }}>
         {sections.map((section) => (
           <div key={section.name}>
             <div
-              className="text-tiny uppercase"
               style={{
-                letterSpacing: '0.08em',
-                color: '#9CA3AF',
-                padding: '16px 16px 4px',
+                fontSize: '10px',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.14em',
+                color: '#9C949A',
+                padding: '12px 22px 6px',
               }}
             >
               {section.name}
             </div>
-
             {section.items.map((item) => (
-              <button
-                key={item.label}
-                onClick={() => onNavigate(item.label)}
-                className={`w-full flex flex-row items-center gap-2 px-4 cursor-pointer transition-colors text-body-sm ${
-                  activeItem === item.label
-                    ? 'h-10 bg-white text-[#111111] font-medium'
-                    : 'h-10 text-[#6B7280] hover:bg-[#F0F0F0]'
-                }`}
-              >
-                <span className="flex-shrink-0">{item.icon}</span>
-                <span>{item.label}</span>
-              </button>
+              <div key={item.label} style={{ margin: '2px 12px' }}>
+                <NavButton
+                  label={item.label}
+                  icon={item.icon}
+                  isActive={activeItem === item.label}
+                  onClick={() => onNavigate(item.label)}
+                />
+              </div>
             ))}
           </div>
         ))}
       </div>
 
-      {/* Sign out button - pinned to bottom */}
-      <div className="border-t-[0.5px] border-[#E5E5E5]">
-        <button
-          onClick={onSignOut}
-          className="w-full flex flex-row items-center gap-2 px-4 h-10 text-[#6B7280] hover:text-[#111111] transition-colors text-body-sm"
+      {/* Account section */}
+      <div style={{ borderTop: '1px solid #ECE6E0' }}>
+        <div
           style={{
-            background: 'transparent',
+            fontSize: '10px',
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.14em',
+            color: '#9C949A',
+            padding: '12px 22px 6px',
           }}
         >
-          <span className="flex-shrink-0">
-            <IconSignOut />
-          </span>
-          <span>Sign Out</span>
-        </button>
+          ACCOUNT
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            padding: '4px 22px 8px',
+          }}
+        >
+          <div
+            style={{
+              width: '22px',
+              height: '22px',
+              borderRadius: '50%',
+              backgroundColor: '#8B1A2F',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#FFFFFF',
+              fontSize: '9px',
+              fontWeight: 700,
+              flexShrink: 0,
+            }}
+          >
+            {userInitials}
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <p
+              style={{
+                fontSize: '12.5px',
+                fontWeight: 600,
+                color: '#0A0A0B',
+                margin: 0,
+                lineHeight: 1.3,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {userName}
+            </p>
+            <p style={{ fontSize: '11px', color: '#6B6168', margin: 0, lineHeight: 1.3 }}>
+              {roleLabel}
+            </p>
+          </div>
+        </div>
+        <div style={{ margin: '0 12px 12px' }}>
+          <SignOutButton onClick={onSignOut} />
+        </div>
       </div>
     </div>
   );

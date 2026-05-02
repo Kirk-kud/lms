@@ -10,7 +10,6 @@ import { createClient } from '@/lib/supabase/client'
 import { PasswordInput } from '@/components/ui/shared/PasswordInput'
 import { PhotoCarousel } from '@/components/ui/shared/PhotoCarousel'
 import globalBlack from '@/public/global_black.png'
-import globalWhite from '@/public/global_white.png'
 
 const Spinner = () => (
   <svg
@@ -58,12 +57,12 @@ const StudentIcon = () => (
 
 const focusInput = (e: React.FocusEvent<HTMLInputElement>) => {
   e.currentTarget.style.borderColor = '#8B1A2F'
-  e.currentTarget.style.borderWidth = '1px'
+  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(139,26,47,0.12)'
 }
 
 const blurInput = (e: React.FocusEvent<HTMLInputElement>) => {
-  e.currentTarget.style.borderColor = '#E5E5E5'
-  e.currentTarget.style.borderWidth = '0.5px'
+  e.currentTarget.style.borderColor = '#ECE6E0'
+  e.currentTarget.style.boxShadow = 'none'
 }
 
 export default function RegisterPageClient() {
@@ -139,26 +138,31 @@ export default function RegisterPageClient() {
 
   const inputStyle: React.CSSProperties = {
     width: '100%',
-    height: '36px',
+    height: '40px',
     borderRadius: '8px',
-    border: '0.5px solid #E5E5E5',
-    padding: '0 10px',
+    border: '1px solid #ECE6E0',
+    padding: '0 12px',
     outline: 'none',
     boxSizing: 'border-box',
     backgroundColor: '#FFFFFF',
+    fontSize: '14px',
+    color: '#0A0A0B',
+    transition: 'border-color 150ms ease, box-shadow 150ms ease',
   }
 
   const labelStyle: React.CSSProperties = {
     display: 'block',
-    color: '#6B6B6B',
-    marginBottom: '4px',
+    fontSize: '12px',
+    fontWeight: 600,
+    color: '#0A0A0B',
+    marginBottom: '6px',
   }
 
   return (
     <>
       <style>{`
-        .auth-submit-btn { transition: background-color 200ms cubic-bezier(0.16, 1, 0.3, 1); }
-        .auth-submit-btn:hover:not(:disabled) { background-color: #8B1A2F !important; }
+        .auth-submit-btn { transition: background-color 180ms cubic-bezier(0.16, 1, 0.3, 1); }
+        .auth-submit-btn:hover:not(:disabled) { background-color: #6F1325 !important; }
         .auth-submit-btn:focus-visible { outline: 2px solid #8B1A2F; outline-offset: 2px; }
         .auth-role-btn:focus-visible { outline: 2px solid #8B1A2F; outline-offset: 2px; }
       `}</style>
@@ -179,37 +183,37 @@ export default function RegisterPageClient() {
           }}
         >
           {/* Desktop logo in top-left */}
-          <div style={{ position: 'absolute', top: '24px', left: '48px', zIndex: 10 }} className="hidden md:block">
+          <div style={{ position: 'absolute', top: '28px', left: '40px', zIndex: 10 }} className="hidden md:block">
             <Image
-              src={globalWhite}
+              src={globalBlack}
               alt="Love Inc"
-              style={{ width: 'auto', height: '32px' }}
+              style={{ width: 'auto', height: '28px' }}
             />
           </div>
 
           <div style={{ width: '100%', maxWidth: '360px', paddingTop: '32px', paddingBottom: '32px' }}>
-            <div className="md:hidden flex flex-col items-center" style={{ marginBottom: '24px' }}>
-              <img
-                src={globalBlack.src}
+            <div className="md:hidden flex justify-center" style={{ marginBottom: '32px' }}>
+              <Image
+                src={globalBlack}
                 alt="Love Inc"
-                className="w-16 h-auto"
-                style={{ marginBottom: '8px' }}
+                style={{ width: 'auto', height: '28px' }}
               />
             </div>
 
             <h1
               style={{
-                fontSize: '28px',
-                fontWeight: 600,
-                color: '#111111',
+                fontSize: '26px',
+                fontWeight: 700,
+                color: '#0A0A0B',
+                letterSpacing: '-0.02em',
                 lineHeight: 1.2,
-                marginBottom: '8px',
+                margin: '0 0 6px 0',
               }}
             >
-              Join Love Inc.
+              Create your account
             </h1>
-            <p style={{ fontSize: '13px', color: '#9CA3AF', marginBottom: '32px' }}>
-              Create your account to get started.
+            <p style={{ fontSize: '13.5px', color: '#9C949A', margin: '0 0 28px 0' }}>
+              Join Love Inc and get started.
             </p>
 
             <form onSubmit={handleSubmit} noValidate>
@@ -336,18 +340,19 @@ export default function RegisterPageClient() {
                 aria-busy={isLoading}
                 style={{
                   width: '100%',
-                  height: '36px',
-                  backgroundColor: '#111111',
+                  height: '40px',
+                  backgroundColor: '#8B1A2F',
                   color: '#FFFFFF',
                   border: 'none',
                   borderRadius: '8px',
-                  fontSize: '13px',
-                  fontWeight: 500,
+                  fontSize: '14px',
+                  fontWeight: 600,
                   cursor: isLoading ? 'not-allowed' : 'pointer',
                   opacity: isLoading ? 0.75 : 1,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  gap: '6px',
                 }}
               >
                 {isLoading ? <><Spinner />Creating account…</> : 'Create account'}
@@ -356,14 +361,14 @@ export default function RegisterPageClient() {
 
             <p
               style={{
-                fontSize: '12px',
-                color: '#6B6B6B',
+                fontSize: '13px',
+                color: '#9C949A',
                 textAlign: 'center',
                 marginTop: '20px',
               }}
             >
               Already have an account?{' '}
-              <Link href="/login" style={{ color: '#8B1A2F', textDecoration: 'underline' }}>
+              <Link href="/login" style={{ color: '#8B1A2F', fontWeight: 600, textDecoration: 'underline' }}>
                 Sign in
               </Link>
             </p>
