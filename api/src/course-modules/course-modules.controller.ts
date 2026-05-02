@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UploadedFile,
   UseGuards,
@@ -25,10 +26,26 @@ import {
 } from './course-modules.dto';
 import { CourseModulesService } from './course-modules.service';
 
-@Controller('modules')
+@Controller(['modules', 'course-modules'])
 @UseGuards(RolesGuard)
 export class CourseModulesController {
   constructor(private readonly service: CourseModulesService) {}
+
+  @Get()
+  async findByQuery(
+    @Req() req: Request,
+    @Query('class_id') classId: string,
+    @Query('cohort_id') cohortId?: string,
+  ) {
+    const user = req.user as JwtPayload;
+    const data = await this.service.findByClass(
+      classId,
+      user.sub,
+      user.role,
+      cohortId,
+    );
+    return createResponse(data, 'Modules fetched');
+  }
 
   // GET /modules/class/:classId — literal segment declared before :id params
   @Get('class/:classId')
@@ -39,7 +56,7 @@ export class CourseModulesController {
   }
 
   @Post()
-  @Roles('tutor')
+  @Roles('admin')
   async create(@Req() req: Request, @Body() dto: CreateModuleDto) {
     const user = req.user as JwtPayload;
     const data = await this.service.create(user.sub, dto);
@@ -48,7 +65,7 @@ export class CourseModulesController {
 
   // PATCH /modules/items/:itemId — literal 'items' segment declared before :id
   @Patch('items/:itemId')
-  @Roles('tutor')
+  @Roles('admin')
   async updateItem(
     @Req() req: Request,
     @Param('itemId') itemId: string,
@@ -61,7 +78,7 @@ export class CourseModulesController {
 
   // DELETE /modules/items/:itemId — same reason: before :id
   @Delete('items/:itemId')
-  @Roles('tutor')
+  @Roles('admin')
   async removeItem(@Req() req: Request, @Param('itemId') itemId: string) {
     const user = req.user as JwtPayload;
     await this.service.removeItem(itemId, user.sub);
@@ -69,7 +86,7 @@ export class CourseModulesController {
   }
 
   @Patch(':id')
-  @Roles('tutor')
+  @Roles('admin')
   async update(
     @Req() req: Request,
     @Param('id') id: string,
@@ -81,7 +98,7 @@ export class CourseModulesController {
   }
 
   @Delete(':id')
-  @Roles('tutor')
+  @Roles('admin')
   async remove(@Req() req: Request, @Param('id') id: string) {
     const user = req.user as JwtPayload;
     await this.service.remove(id, user.sub);
@@ -89,7 +106,7 @@ export class CourseModulesController {
   }
 
   @Post(':id/items')
-  @Roles('tutor')
+  @Roles('admin')
   @UseInterceptors(FileInterceptor('file'))
   async createItem(
     @Req() req: Request,
@@ -103,7 +120,7 @@ export class CourseModulesController {
   }
 
   @Post(':id/reorder')
-  @Roles('tutor')
+  @Roles('admin')
   async reorderItems(
     @Req() req: Request,
     @Param('id') id: string,

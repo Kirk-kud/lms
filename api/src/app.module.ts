@@ -9,6 +9,9 @@ import { ClassesModule } from './classes/classes.module';
 import { CourseModulesModule } from './course-modules/course-modules.module';
 import { AssignmentsModule } from './assignments/assignments.module';
 import { AttendanceModule } from './attendance/attendance.module';
+import { CohortsModule } from './cohorts/cohorts.module';
+import { EnrollmentsModule } from './enrollments/enrollments.module';
+import { TaInvitesModule } from './ta-invites/ta-invites.module';
 import { JwtAuthGuard } from './auth/auth.guard';
 import { RolesGuard } from './auth/role.guard';
 
@@ -21,6 +24,9 @@ import { RolesGuard } from './auth/role.guard';
     CourseModulesModule,
     AssignmentsModule,
     AttendanceModule,
+    CohortsModule,
+    EnrollmentsModule,
+    TaInvitesModule,
   ],
   controllers: [AppController],
   providers: [

@@ -1,16 +1,12 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
 import { getHours, format, isPast } from 'date-fns'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@/lib/hooks/useUser'
 import { useClasses } from '@/lib/hooks/useClasses'
-import { useAssignments, Assignment } from '@/lib/hooks/useAssignments'
-import { StatCardGrid } from '@/components/ui/shared/StatCard'
+import { useCohortStudents } from '@/lib/hooks/useCohorts'
+import { useAssignments } from '@/lib/hooks/useAssignments'
 import { SkeletonCard } from '@/components/ui/shared/SkeletonCard'
-import { EmptyState } from '@/components/ui/shared/EmptyState'
-import { InlineError } from '@/components/ui/shared/InlineError'
-import { ApiError } from '@/lib/api'
 
 function greeting(): string {
   const h = getHours(new Date())
@@ -19,218 +15,111 @@ function greeting(): string {
   return 'Good evening'
 }
 
-function ClassUpcomingRows({
-  classId,
-  classTitle,
-  onNavigate,
-  onItemCount,
-}: {
-  classId: string
-  classTitle: string
-  onNavigate: (href: string) => void
-  onItemCount: (classId: string, count: number) => void
-}) {
-  const { data: assignments = [], isLoading } = useAssignments(classId)
+function StatCard({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="bg-[#F8F8F8] rounded-xl p-4 border border-[#E5E5E5]">
+      <p className="text-tiny uppercase tracking-widest text-[#9CA3AF] mb-1">{label}</p>
+      <p className="text-[24px] font-semibold text-[#8B1A2F]">{value}</p>
+    </div>
+  )
+}
+
+export default function TutorDashboardClient() {
+  const router = useRouter()
+  const { user } = useUser()
+  const { data: classes = [], isLoading: classesLoading } = useClasses(user?.id)
+
+  const cls = classes[0] as (typeof classes[0] & { cohort_id?: string; cohort_name?: string }) | undefined
+  const classId = cls?.id ?? ''
+  const cohortId = (cls as { cohort_id?: string } | undefined)?.cohort_id ?? ''
+  const cohortName = (cls as { cohort_name?: string } | undefined)?.cohort_name ?? 'My Cohort'
+
+  const { data: students = [], isLoading: studentsLoading } = useCohortStudents(cohortId)
+  const { data: assignments = [], isLoading: assignmentsLoading } = useAssignments(classId)
+
+  const firstName = ((user?.user_metadata?.full_name as string) ?? '').split(' ')[0]
 
   const upcoming = assignments
     .filter((a) => !isPast(new Date(a.due_date)))
     .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
-    .slice(0, 3)
+    .slice(0, 4)
 
-  useEffect(() => {
-    if (!isLoading) onItemCount(classId, upcoming.length)
-  }, [isLoading, upcoming.length, classId, onItemCount])
-
-  if (isLoading) return <SkeletonCard lines={2} />
-  if (!upcoming.length) return null
+  const isLoading = classesLoading || studentsLoading || assignmentsLoading
 
   return (
-    <>
-      {upcoming.map((a) => (
-        <button
-          key={a.id}
-          onClick={() => onNavigate(`/tutor/classes/${classId}/assignments`)}
-          className="w-full flex items-center justify-between py-2.5 border-b border-[#F3F4F6] last:border-0 text-left hover:bg-[#FAFAFA] -mx-4 px-4 transition-colors"
-        >
-          <div>
-            <p className="text-[13px] text-[#111]">{a.title}</p>
-            <p className="text-[11px] text-[#9CA3AF] mt-0.5">{classTitle}</p>
-          </div>
-          <span className="text-[11px] text-[#6B7280] shrink-0 ml-4">
-            {format(new Date(a.due_date), 'MMM d')}
-          </span>
-        </button>
-      ))}
-    </>
-  )
-}
-
-function ClassSubmissionRows({
-  classId,
-  classTitle,
-  onNavigate,
-  onItemCount,
-}: {
-  classId: string
-  classTitle: string
-  onNavigate: (href: string) => void
-  onItemCount: (classId: string, count: number) => void
-}) {
-  const { data: assignments = [], isLoading } = useAssignments(classId)
-
-  const recent = assignments
-    .filter((a): a is Assignment & { submission_count: number } => (a.submission_count ?? 0) > 0)
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, 3)
-
-  useEffect(() => {
-    if (!isLoading) onItemCount(classId, recent.length)
-  }, [isLoading, recent.length, classId, onItemCount])
-
-  if (isLoading) return <SkeletonCard lines={2} />
-  if (!recent.length) return null
-
-  return (
-    <>
-      {recent.map((a) => (
-        <button
-          key={a.id}
-          onClick={() => onNavigate(`/tutor/classes/${classId}/assignments`)}
-          className="w-full flex items-center justify-between py-2.5 border-b border-[#F3F4F6] last:border-0 text-left hover:bg-[#FAFAFA] -mx-4 px-4 transition-colors"
-        >
-          <div>
-            <p className="text-[13px] text-[#111]">{a.title}</p>
-            <p className="text-[11px] text-[#9CA3AF] mt-0.5">{classTitle}</p>
-          </div>
-          <span className="text-[11px] font-medium text-[#8B1A2F] shrink-0 ml-4">
-            {a.submission_count} submitted
-          </span>
-        </button>
-      ))}
-    </>
-  )
-}
-
-export default function DashboardPageClient() {
-  const router = useRouter()
-  const { user } = useUser()
-  const {
-    data: classes = [],
-    isLoading,
-    isError,
-    error,
-    refetch,
-  } = useClasses(user?.id)
-
-  const [upcomingCounts, setUpcomingCounts] = useState<Record<string, number>>({})
-  const [submissionCounts, setSubmissionCounts] = useState<Record<string, number>>({})
-
-  const handleUpcomingCount = useCallback((classId: string, count: number) => {
-    setUpcomingCounts((prev) => prev[classId] === count ? prev : { ...prev, [classId]: count })
-  }, [])
-
-  const handleSubmissionCount = useCallback((classId: string, count: number) => {
-    setSubmissionCounts((prev) => prev[classId] === count ? prev : { ...prev, [classId]: count })
-  }, [])
-
-  const firstName = ((user?.user_metadata?.full_name as string) ?? '').split(' ')[0] || 'there'
-  const totalStudents = classes.reduce((sum, c) => sum + (c.enrolled_count ?? 0), 0)
-
-  const stats = [
-    { label: 'Total Students', value: isLoading ? '--' : totalStudents, accentColor: '#8B1A2F' },
-    { label: 'Active Classes', value: isLoading ? '--' : classes.length, accentColor: '#8B1A2F' },
-    { label: 'Meets', value: 'Mon & Wed', accentColor: '#8B1A2F' },
-  ]
-
-  const hasClasses = classes.length > 0
-
-  const allUpcomingLoaded = hasClasses && classes.every((c) => upcomingCounts[c.id] !== undefined)
-  const totalUpcoming = Object.values(upcomingCounts).reduce((a, b) => a + b, 0)
-
-  const allSubmissionsLoaded = hasClasses && classes.every((c) => submissionCounts[c.id] !== undefined)
-  const totalSubmissions = Object.values(submissionCounts).reduce((a, b) => a + b, 0)
-
-  return (
-    <div className="p-8 max-w-4xl">
-      <div className="mb-6">
-        <h1 className="text-[22px] font-medium text-[#111]">
-          {greeting()}, {firstName}
-        </h1>
-        <p className="text-[13px] text-[#9CA3AF] mt-1">
-          {format(new Date(), 'EEEE, MMMM d, yyyy')}
+    <div className="p-6 max-w-3xl">
+      <p className="text-[11px] font-medium uppercase tracking-widest text-[#9CA3AF] mb-1">
+        {greeting()},
+      </p>
+      <h1 className="text-[28px] font-semibold text-[#111111] mb-1">{firstName}.</h1>
+      {cls && (
+        <p className="text-[13px] text-[#6B7280] mb-8">
+          {cls.title} · {cohortName}
         </p>
-      </div>
-
-      <div className="mb-8">
-        <StatCardGrid cards={stats} />
-      </div>
-
-      {isError && (
-        <InlineError
-          message={error instanceof ApiError ? error.message : 'Unable to load dashboard'}
-          onRetry={() => refetch()}
-        />
       )}
 
-      {isLoading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <SkeletonCard lines={4} />
-          <SkeletonCard lines={4} />
-        </div>
-      )}
+      {isLoading ? (
+        <SkeletonCard lines={3} />
+      ) : (
+        <>
+          <div className="grid grid-cols-3 gap-4 mb-8">
+            <StatCard label="Students" value={students.length} />
+            <StatCard label="Assignments" value={assignments.length} />
+            <StatCard label="Upcoming due" value={upcoming.length} />
+          </div>
 
-      {!isLoading && !hasClasses && (
-        <EmptyState
-          icon={
-            <svg viewBox="0 0 24 24" fill="none" stroke="#8B1A2F" strokeWidth="1.5">
-              <path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
-            </svg>
-          }
-          title="No classes yet"
-          description="Create your first class to get started"
-          actionLabel="Go to Classes"
-          onAction={() => router.push('/tutor/classes')}
-        />
-      )}
-
-      {!isLoading && hasClasses && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="border border-[#E5E5E5] rounded-xl p-4">
-            <h2 className="text-[12px] font-medium text-[#9CA3AF] uppercase tracking-wider mb-3">
-              Upcoming
-            </h2>
-            {classes.map((c) => (
-              <ClassUpcomingRows
-                key={c.id}
-                classId={c.id}
-                classTitle={c.title}
-                onNavigate={router.push}
-                onItemCount={handleUpcomingCount}
-              />
-            ))}
-            {allUpcomingLoaded && totalUpcoming === 0 && (
-              <p className="text-[13px] text-[#9CA3AF]">No upcoming assignments</p>
+          <div className="border border-[#E5E5E5] rounded-xl overflow-hidden mb-6">
+            <div className="px-4 py-3 border-b border-[#E5E5E5] bg-[#F8F8F8]">
+              <p className="text-[11px] font-medium uppercase tracking-widest text-[#9CA3AF]">Upcoming Assignments</p>
+            </div>
+            {upcoming.length === 0 ? (
+              <p className="px-4 py-6 text-[13px] text-[#9CA3AF]">No upcoming assignments.</p>
+            ) : (
+              upcoming.map((a) => (
+                <button
+                  key={a.id}
+                  onClick={() => router.push('/tutor/assignments')}
+                  className="w-full flex items-center justify-between px-4 py-3 border-b border-[#F3F4F6] last:border-0 text-left hover:bg-[#FAFAFA] transition-colors"
+                >
+                  <p className="text-[13px] text-[#111]">{a.title}</p>
+                  <span className="text-[11px] text-[#6B7280] shrink-0 ml-4">
+                    Due {format(new Date(a.due_date), 'MMM d')}
+                  </span>
+                </button>
+              ))
             )}
           </div>
 
-          <div className="border border-[#E5E5E5] rounded-xl p-4">
-            <h2 className="text-[12px] font-medium text-[#9CA3AF] uppercase tracking-wider mb-3">
-              Recent Submissions
-            </h2>
-            {classes.map((c) => (
-              <ClassSubmissionRows
-                key={c.id}
-                classId={c.id}
-                classTitle={c.title}
-                onNavigate={router.push}
-                onItemCount={handleSubmissionCount}
-              />
-            ))}
-            {allSubmissionsLoaded && totalSubmissions === 0 && (
-              <p className="text-[13px] text-[#9CA3AF]">No submissions yet</p>
+          <div className="border border-[#E5E5E5] rounded-xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-[#E5E5E5] bg-[#F8F8F8] flex items-center justify-between">
+              <p className="text-[11px] font-medium uppercase tracking-widest text-[#9CA3AF]">My Cohort</p>
+              <button
+                onClick={() => router.push('/tutor/cohort')}
+                className="text-[11px] text-[#8B1A2F] font-medium hover:underline"
+              >
+                View all
+              </button>
+            </div>
+            {students.length === 0 ? (
+              <p className="px-4 py-6 text-[13px] text-[#9CA3AF]">No students in this cohort yet.</p>
+            ) : (
+              students.slice(0, 5).map((s) => (
+                <div key={s.id} className="flex items-center gap-3 px-4 py-3 border-b border-[#F3F4F6] last:border-0">
+                  <div
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-medium text-white shrink-0"
+                    style={{ backgroundColor: '#8B1A2F' }}
+                  >
+                    {s.student.full_name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[13px] text-[#111] truncate">{s.student.full_name}</p>
+                    <p className="text-[11px] text-[#9CA3AF] truncate">{s.student.email}</p>
+                  </div>
+                </div>
+              ))
             )}
           </div>
-        </div>
+        </>
       )}
     </div>
   )

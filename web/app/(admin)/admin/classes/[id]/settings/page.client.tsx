@@ -108,7 +108,7 @@ export default function SettingsPageClient({ params }: { params: Promise<{ id: s
     try {
       await deleteClass.mutateAsync(classId)
       toast.success('Class deleted')
-      router.push('/tutor/classes')
+      router.push('/admin/classes')
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Unable to delete class')
     }
@@ -118,16 +118,16 @@ export default function SettingsPageClient({ params }: { params: Promise<{ id: s
     <div className="p-8 max-w-2xl">
       <nav className="flex items-center gap-2 text-[12px] text-[#9CA3AF] mb-6">
         <button
-          onClick={() => router.push('/tutor/classes')}
-          onMouseEnter={() => router.prefetch('/tutor/classes')}
+          onClick={() => router.push('/admin/classes')}
+          onMouseEnter={() => router.prefetch('/admin/classes')}
           className="hover:text-[#111] transition-colors"
         >
           Classes
         </button>
         <span>/</span>
         <button
-          onClick={() => router.push(`/tutor/classes/${classId}/modules`)}
-          onMouseEnter={() => router.prefetch(`/tutor/classes/${classId}/modules`)}
+          onClick={() => router.push(`/admin/classes/${classId}/modules`)}
+          onMouseEnter={() => router.prefetch(`/admin/classes/${classId}/modules`)}
           className="hover:text-[#111] transition-colors"
         >
           {isLoading ? (

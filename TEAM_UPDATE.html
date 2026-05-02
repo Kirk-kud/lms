@@ -1,0 +1,1799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Love Inc LMS — Product Update & Roadmap · May 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --green: #1F4037;
+  --green-light: #2D5A48;
+  --amber: #F5A623;
+  --amber-soft: #FEF3DC;
+  --linen: #FAF8F3;
+  --paper: #F0ECE4;
+  --charcoal: #1A1917;
+  --muted: #8B8278;
+  --border: #E4DED6;
+  --sage: #EAF0EA;
+  --error: #C0392B;
+  --white: #FFFFFF;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: white;
+  color: var(--charcoal);
+  font-size: 14px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── PRINT ───────────────────────────────────────────────── */
+@media print {
+  @page { size: A4; margin: 0; }
+  body { background: white; padding: 0; }
+  .no-print { display: none !important; }
+  .page-break { page-break-after: always; break-after: page; height: 0 !important; }
+  .avoid-break { page-break-inside: avoid; break-inside: avoid; }
+  .cover { min-height: 100vh; width: 100%; max-width: none; box-shadow: none; margin: 0; }
+  .toc { min-height: 100vh; width: 100%; max-width: none; box-shadow: none; margin: 0; justify-content: center; }
+  .doc { width: 100%; max-width: none; box-shadow: none; margin: 0; }
+}
+
+/* ─── SCREEN ──────────────────────────────────────────────── */
+@media screen {
+  body { background: #D5D0C8; padding: 40px 0; }
+  .cover { max-width: 794px; margin: 0 auto; box-shadow: 0 4px 24px rgba(0,0,0,0.22); }
+  .toc { max-width: 794px; margin: 0 auto; box-shadow: 0 4px 24px rgba(0,0,0,0.1); }
+  .doc { max-width: 794px; margin: 0 auto; background: white; box-shadow: 0 2px 16px rgba(0,0,0,0.10); }
+  .page-break { height: 12px; background: transparent; }
+}
+
+/* ─── COVER ───────────────────────────────────────────────── */
+.cover {
+  min-height: 100vh;
+  background: var(--green);
+  display: flex;
+  flex-direction: column;
+  padding: 64px 64px;
+  position: relative;
+  overflow: hidden;
+}
+.cover-deco-1 {
+  position: absolute; right: -80px; top: -80px;
+  width: 420px; height: 420px;
+  border: 90px solid rgba(245,166,35,0.12);
+  border-radius: 50%;
+}
+.cover-deco-2 {
+  position: absolute; right: 120px; bottom: 80px;
+  width: 200px; height: 200px;
+  border: 50px solid rgba(255,255,255,0.05);
+  border-radius: 50%;
+}
+.cover-deco-3 {
+  position: absolute; left: -40px; bottom: 160px;
+  width: 160px; height: 160px;
+  border: 40px solid rgba(245,166,35,0.08);
+  border-radius: 50%;
+}
+.cover-brand {
+  display: flex; align-items: center; gap: 10px;
+  color: white; font-size: 16px; font-weight: 600;
+  position: relative; z-index: 1;
+}
+.cover-leaf {
+  width: 30px; height: 30px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+}
+.cover-body {
+  flex: 1; display: flex; flex-direction: column;
+  justify-content: flex-end; position: relative; z-index: 1;
+}
+.cover-tag {
+  font-size: 11px; font-weight: 500; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--amber);
+  margin-bottom: 16px;
+}
+.cover-title {
+  font-size: 44px; font-weight: 600; color: white;
+  line-height: 1.15; margin-bottom: 20px;
+}
+.cover-title span { color: var(--amber); }
+.cover-subtitle {
+  font-size: 16px; color: rgba(255,255,255,0.65);
+  max-width: 480px; line-height: 1.6; margin-bottom: 48px;
+}
+.cover-meta {
+  display: flex; gap: 40px;
+}
+.cover-meta-item { }
+.cover-meta-label {
+  font-size: 11px; font-weight: 500; letter-spacing: 0.06em;
+  text-transform: uppercase; color: rgba(255,255,255,0.4);
+  margin-bottom: 4px;
+}
+.cover-meta-value {
+  font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.85);
+}
+.cover-rule {
+  width: 48px; height: 3px;
+  background: var(--amber); border-radius: 2px;
+  margin-bottom: 32px;
+}
+
+/* ─── DOC SHELL ───────────────────────────────────────────── */
+.doc { padding: 56px 64px; }
+
+/* ─── SECTION ─────────────────────────────────────────────── */
+.section { margin-bottom: 60px; }
+.section-kicker {
+  font-size: 11px; font-weight: 500; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--amber);
+  margin-bottom: 8px;
+}
+.section-title {
+  font-size: 26px; font-weight: 600; color: var(--charcoal);
+  margin-bottom: 6px; line-height: 1.2;
+}
+.section-sub {
+  font-size: 14px; color: var(--muted); margin-bottom: 28px;
+}
+.section-rule {
+  width: 100%; height: 1px;
+  background: var(--border); margin-bottom: 32px;
+}
+.lead {
+  font-size: 16px; line-height: 1.8; color: var(--charcoal);
+  margin-bottom: 20px; max-width: 680px;
+}
+p { margin-bottom: 14px; color: var(--charcoal); line-height: 1.75; }
+
+/* ─── FEATURE TABLE ───────────────────────────────────────── */
+.feature-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+.feature-table th {
+  font-size: 11px; font-weight: 500; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--muted);
+  padding: 10px 14px; text-align: left;
+  background: var(--paper); border-bottom: 1px solid var(--border);
+}
+.feature-table td {
+  padding: 11px 14px; border-bottom: 1px solid var(--border);
+  font-size: 13px; vertical-align: middle;
+}
+.feature-table tr:last-child td { border-bottom: none; }
+.badge {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px; border-radius: 99px;
+  font-size: 11px; font-weight: 500; white-space: nowrap;
+}
+.badge-done { background: var(--sage); color: #2D6A2D; }
+.badge-gap { background: #FDE8E8; color: var(--error); }
+.badge-later { background: var(--amber-soft); color: #A06A00; }
+.badge-phase { background: var(--green); color: white; }
+
+/* ─── FEATURE GRID ────────────────────────────────────────── */
+.feature-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  margin-bottom: 24px;
+}
+.feature-card {
+  background: var(--linen); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px 18px;
+}
+.feature-card-title {
+  font-size: 13px; font-weight: 600; color: var(--charcoal);
+  margin-bottom: 6px; display: flex; align-items: center; gap: 8px;
+}
+.feature-card-icon {
+  width: 22px; height: 22px; border-radius: 6px;
+  background: var(--sage); display: flex; align-items: center;
+  justify-content: center; font-size: 12px; flex-shrink: 0;
+}
+.feature-card-body { font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+/* ─── CALLOUT ─────────────────────────────────────────────── */
+.callout {
+  background: var(--linen); border-left: 3px solid var(--green);
+  border-radius: 0 8px 8px 0; padding: 14px 18px; margin-bottom: 20px;
+}
+.callout.amber { border-left-color: var(--amber); }
+.callout.error { border-left-color: var(--error); background: #FFF5F5; }
+.callout-title { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+.callout-body { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+/* ─── SCREENS GRID ────────────────────────────────────────── */
+.screens-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+  margin-bottom: 8px;
+}
+.screen-frame {
+  border: 1px solid var(--border); border-radius: 10px;
+  overflow: hidden; background: var(--linen);
+}
+.screen-chrome {
+  height: 24px; background: white;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 10px; gap: 5px;
+}
+.chrome-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+}
+.screen-content { padding: 0; font-size: 0; line-height: 0; }
+.screen-caption {
+  padding: 8px 12px; font-size: 11px; font-weight: 500;
+  color: var(--muted); border-top: 1px solid var(--border);
+  background: white; text-align: center;
+  letter-spacing: 0.03em;
+}
+
+/* ─── MINI SCREENS ────────────────────────────────────────── */
+
+/* SCREEN 01: Login */
+.s-login { display: flex; height: 180px; }
+.s-login-left {
+  width: 42%; background: var(--green);
+  display: flex; flex-direction: column;
+  padding: 12px; justify-content: flex-end;
+  position: relative; overflow: hidden;
+}
+.s-login-left::before {
+  content: '';
+  position: absolute; right: -20px; top: -20px;
+  width: 80px; height: 80px;
+  border: 20px solid rgba(245,166,35,0.15);
+  border-radius: 50%;
+}
+.s-login-brand {
+  font-size: 8px; font-weight: 600; color: white;
+  margin-bottom: auto; margin-top: 0;
+}
+.s-login-quote {
+  font-size: 7px; color: rgba(255,255,255,0.8);
+  line-height: 1.4;
+}
+.s-login-right {
+  flex: 1; background: var(--linen);
+  padding: 14px 12px; display: flex;
+  flex-direction: column; justify-content: center;
+}
+.s-form-title { font-size: 9px; font-weight: 600; margin-bottom: 8px; }
+.s-input {
+  height: 14px; background: white;
+  border: 1px solid var(--border); border-radius: 3px;
+  margin-bottom: 5px; width: 100%;
+}
+.s-btn {
+  height: 14px; background: var(--green);
+  border-radius: 3px; width: 100%; margin-top: 4px;
+}
+.s-demo-btns { display: flex; gap: 4px; margin-top: 5px; }
+.s-demo-btn {
+  height: 12px; flex: 1; background: white;
+  border: 1px solid var(--border); border-radius: 3px;
+}
+
+/* SCREEN 02: Student Dashboard */
+.s-dashboard { display: flex; height: 180px; }
+.s-sidebar {
+  width: 36px; background: var(--paper);
+  border-right: 1px solid var(--border);
+  padding: 6px 4px; display: flex; flex-direction: column; gap: 3px;
+}
+.s-nav-dot {
+  width: 28px; height: 6px; border-radius: 2px;
+  background: var(--border);
+}
+.s-nav-dot.active { background: var(--green); }
+.s-main { flex: 1; padding: 8px; }
+.s-topbar {
+  height: 14px; background: white;
+  border-bottom: 1px solid var(--border);
+  margin: -8px -8px 8px; padding: 0 8px;
+  display: flex; align-items: center; gap: 4px;
+}
+.s-topbar-brand { font-size: 6px; font-weight: 600; color: var(--green); }
+.s-topbar-bell {
+  width: 10px; height: 10px; background: var(--amber);
+  border-radius: 50%; margin-left: auto; font-size: 5px;
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-weight: 600;
+}
+.s-page-title { font-size: 7px; font-weight: 600; margin-bottom: 6px; }
+.s-stat-row { display: flex; gap: 4px; margin-bottom: 6px; }
+.s-stat {
+  flex: 1; background: white; border: 1px solid var(--border);
+  border-radius: 4px; padding: 4px;
+}
+.s-stat-val { font-size: 9px; font-weight: 600; }
+.s-stat-lbl { font-size: 5px; color: var(--muted); margin-top: 1px; }
+.s-todo-title { font-size: 6px; font-weight: 600; margin-bottom: 4px; }
+.s-todo-row {
+  display: flex; align-items: center; gap: 3px;
+  background: white; border: 1px solid var(--border);
+  border-radius: 3px; padding: 3px 4px; margin-bottom: 3px;
+}
+.s-pill { font-size: 5px; background: var(--sage); color: var(--green); padding: 1px 4px; border-radius: 99px; white-space: nowrap; }
+.s-row-title { font-size: 6px; flex: 1; }
+.s-badge { font-size: 4px; padding: 1px 4px; border-radius: 99px; }
+.s-badge-sub { background: var(--sage); color: #2D6A2D; }
+.s-badge-pend { background: var(--amber-soft); color: #A06A00; }
+.s-badge-over { background: #FDE8E8; color: var(--error); }
+
+/* SCREEN 03: Class Modules */
+.s-modules { height: 180px; display: flex; flex-direction: column; }
+.s-class-header {
+  background: var(--green); padding: 8px 10px;
+}
+.s-class-name { font-size: 8px; font-weight: 600; color: white; margin-bottom: 3px; }
+.s-class-meta { font-size: 6px; color: rgba(255,255,255,0.7); margin-bottom: 5px; }
+.s-week-bar { height: 3px; background: rgba(255,255,255,0.2); border-radius: 99px; }
+.s-week-fill { height: 100%; width: 37.5%; background: var(--amber); border-radius: 99px; }
+.s-tabs { display: flex; border-bottom: 1px solid var(--border); background: white; }
+.s-tab {
+  font-size: 6px; padding: 5px 8px; color: var(--muted);
+  border-bottom: 2px solid transparent; cursor: pointer;
+}
+.s-tab.active { color: var(--green); font-weight: 500; border-bottom-color: var(--green); }
+.s-mod-list { flex: 1; padding: 6px; background: var(--linen); overflow: hidden; display: flex; flex-direction: column; gap: 4px; }
+.s-mod-row {
+  display: flex; align-items: center; gap: 5px;
+  background: white; border: 1px solid var(--border);
+  border-radius: 4px; padding: 4px 6px;
+}
+.s-mod-icon {
+  width: 12px; height: 12px; border-radius: 3px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 7px; flex-shrink: 0;
+}
+.s-mod-icon.complete { background: var(--sage); }
+.s-mod-icon.progress { background: var(--amber-soft); }
+.s-mod-icon.locked { background: var(--paper); }
+.s-mod-title { font-size: 6px; font-weight: 500; flex: 1; }
+.s-mod-meta { font-size: 5px; color: var(--muted); }
+.s-progress-mini { width: 40px; height: 3px; background: var(--border); border-radius: 99px; overflow: hidden; }
+.s-prog-fill { height: 100%; background: var(--amber); border-radius: 99px; }
+.s-locked-label { font-size: 5px; color: var(--muted); background: var(--paper); padding: 1px 4px; border-radius: 99px; }
+
+/* SCREEN 04: Assignment + Feedback */
+.s-assignments { height: 180px; display: flex; flex-direction: column; }
+.s-assign-list { flex: 1; padding: 6px; background: var(--linen); overflow: hidden; display: flex; flex-direction: column; gap: 4px; }
+.s-assign-row {
+  background: white; border: 1px solid var(--border);
+  border-radius: 4px; padding: 5px 6px;
+}
+.s-assign-title { font-size: 6px; font-weight: 500; margin-bottom: 2px; }
+.s-assign-due { font-size: 5px; color: var(--muted); }
+.s-feedback-panel {
+  background: var(--linen); border: 1px solid var(--border);
+  border-radius: 4px; padding: 5px 6px; margin-top: 2px;
+}
+.s-grade-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: var(--sage); border-radius: 3px;
+  padding: 2px 6px; margin-bottom: 4px;
+}
+.s-grade-text { font-size: 9px; font-weight: 600; color: var(--green); }
+.s-feedback-quote {
+  font-size: 6px; color: var(--muted); font-style: italic;
+  line-height: 1.5; margin-bottom: 4px;
+}
+.s-file-chip {
+  display: inline-flex; align-items: center; gap: 3px;
+  background: var(--paper); border-radius: 3px;
+  padding: 2px 5px; font-size: 5px; color: var(--muted);
+}
+
+/* SCREEN 05: Attendance */
+.s-attendance { height: 180px; display: flex; flex-direction: column; }
+.s-checkin-card {
+  margin: 6px; background: var(--sage);
+  border: 1px solid #C8E6C9; border-radius: 5px;
+  padding: 8px; text-align: center;
+}
+.s-checkin-icon { font-size: 14px; margin-bottom: 3px; }
+.s-checkin-label { font-size: 7px; font-weight: 600; color: #2D6A2D; margin-bottom: 1px; }
+.s-checkin-sub { font-size: 6px; color: #4A7A4A; }
+.s-attend-bar-wrap { margin: 0 6px 6px; }
+.s-attend-bar-label { font-size: 6px; color: var(--muted); display: flex; justify-content: space-between; margin-bottom: 3px; }
+.s-attend-track { height: 5px; background: var(--border); border-radius: 99px; overflow: hidden; }
+.s-attend-fill { height: 100%; width: 78%; background: var(--green); border-radius: 99px; }
+.s-attend-table { margin: 0 6px; background: white; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+.s-attend-row { display: flex; align-items: center; gap: 4px; padding: 3px 5px; border-bottom: 1px solid var(--border); }
+.s-attend-row:last-child { border-bottom: none; }
+.s-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.s-dot.present { background: #2D6A2D; }
+.s-dot.absent { background: var(--error); }
+.s-attend-date { font-size: 5px; color: var(--muted); width: 36px; }
+.s-attend-session { font-size: 5px; flex: 1; }
+
+/* SCREEN 06: SpeedGrader */
+.s-speedgrader { display: flex; height: 180px; flex-direction: column; }
+.s-sg-topbar {
+  height: 18px; background: var(--paper);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 8px;
+  gap: 6px; font-size: 6px; color: var(--muted);
+}
+.s-sg-title { font-size: 7px; font-weight: 500; color: var(--charcoal); flex: 1; text-align: center; }
+.s-sg-nav { display: flex; gap: 3px; }
+.s-sg-nav-btn {
+  width: 14px; height: 10px; border: 1px solid var(--border);
+  border-radius: 2px; background: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 6px;
+}
+.s-sg-body { flex: 1; display: flex; }
+.s-sg-preview {
+  flex: 1; background: var(--paper);
+  padding: 6px; display: flex; flex-direction: column; gap: 4px;
+}
+.s-sg-doc {
+  flex: 1; background: white; border: 1px solid var(--border);
+  border-radius: 4px; padding: 6px;
+}
+.s-sg-doc-header { font-size: 5px; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+.s-sg-doc-line { height: 4px; background: var(--paper); border-radius: 2px; margin-bottom: 3px; }
+.s-sg-grader {
+  width: 90px; background: white;
+  border-left: 1px solid var(--border);
+  padding: 6px; display: flex; flex-direction: column; gap: 5px;
+}
+.s-sg-student { display: flex; align-items: center; gap: 4px; margin-bottom: 2px; }
+.s-mini-avatar {
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--green); color: white;
+  font-size: 5px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
+}
+.s-sg-student-name { font-size: 6px; font-weight: 500; }
+.s-grade-input {
+  height: 18px; background: var(--linen);
+  border: 1px solid var(--border); border-radius: 3px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 600; color: var(--charcoal);
+}
+.s-feedback-ta {
+  height: 36px; background: var(--linen);
+  border: 1px solid var(--border); border-radius: 3px; padding: 3px;
+}
+.s-feedback-line { height: 3px; background: var(--border); border-radius: 2px; margin-bottom: 2px; }
+.s-toggle-row { display: flex; align-items: center; gap: 3px; }
+.s-mini-toggle { width: 16px; height: 8px; background: var(--green); border-radius: 99px; position: relative; }
+.s-mini-knob { position: absolute; right: 1px; top: 1px; width: 6px; height: 6px; background: white; border-radius: 50%; }
+.s-sg-save {
+  height: 14px; background: var(--green);
+  border-radius: 3px; display: flex; align-items: center;
+  justify-content: center; font-size: 6px; color: white;
+  font-weight: 500;
+}
+
+/* SCREEN 07: Attendance PIN */
+.s-pin { height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--linen); padding: 10px; }
+.s-pin-card {
+  background: #1A1917; border-radius: 8px;
+  padding: 16px 20px; text-align: center; width: 160px;
+}
+.s-pin-active { font-size: 6px; font-weight: 500; letter-spacing: 0.1em; color: var(--amber); text-transform: uppercase; margin-bottom: 8px; }
+.s-pin-digits { font-family: 'Courier New', monospace; font-size: 28px; font-weight: 600; color: white; letter-spacing: 8px; margin-bottom: 6px; }
+.s-pin-timer { font-size: 6px; color: rgba(255,255,255,0.5); font-family: monospace; margin-bottom: 6px; }
+.s-pin-context { font-size: 6px; color: rgba(255,255,255,0.4); margin-bottom: 8px; }
+.s-end-btn {
+  font-size: 6px; color: rgba(255,255,255,0.6);
+  border: 1px solid rgba(255,255,255,0.2); border-radius: 3px;
+  padding: 3px 8px; display: inline-block;
+}
+.s-checkin-feed { margin-top: 8px; width: 160px; }
+.s-checkin-item {
+  display: flex; align-items: center; gap: 5px;
+  background: white; border: 1px solid var(--border);
+  border-radius: 3px; padding: 4px 6px; margin-bottom: 3px;
+}
+.s-checkin-dot { width: 6px; height: 6px; border-radius: 50%; background: #2D6A2D; }
+.s-checkin-name { font-size: 6px; font-weight: 500; }
+.s-checkin-time { font-size: 5px; color: var(--muted); margin-left: auto; }
+
+/* SCREEN 08: Roster + Modal */
+.s-roster { height: 180px; position: relative; overflow: hidden; display: flex; flex-direction: column; }
+.s-roster-content { padding: 6px; flex: 1; }
+.s-roster-toprow { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.s-roster-search {
+  height: 12px; width: 80px; background: white;
+  border: 1px solid var(--border); border-radius: 3px;
+}
+.s-msg-btn {
+  height: 12px; background: white; border: 1px solid var(--border);
+  border-radius: 3px; padding: 0 6px; font-size: 5px; color: var(--charcoal);
+  display: flex; align-items: center;
+}
+.s-roster-table { width: 100%; }
+.s-roster-th { font-size: 5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; padding: 3px 4px; background: var(--paper); }
+.s-roster-td { font-size: 6px; padding: 3px 4px; border-bottom: 1px solid var(--border); }
+.s-attend-chip { display: inline-block; padding: 1px 5px; border-radius: 99px; font-size: 5px; font-weight: 500; }
+.s-attend-green { background: var(--sage); color: #2D6A2D; }
+.s-attend-amber { background: var(--amber-soft); color: #A06A00; }
+.s-attend-red { background: #FDE8E8; color: var(--error); }
+.s-modal-overlay {
+  position: absolute; inset: 0;
+  background: rgba(26,25,23,0.4);
+  display: flex; align-items: center; justify-content: center;
+}
+.s-modal-box {
+  background: white; border: 1px solid var(--border);
+  border-radius: 6px; width: 140px; padding: 10px;
+}
+.s-modal-title { font-size: 8px; font-weight: 600; margin-bottom: 8px; }
+.s-modal-label { font-size: 5px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 3px; }
+.s-modal-select {
+  width: 100%; height: 14px; background: var(--linen);
+  border: 1px solid var(--border); border-radius: 3px;
+  margin-bottom: 6px; padding: 0 4px; font-size: 6px;
+}
+.s-modal-input { width: 100%; height: 12px; background: white; border: 1px solid var(--border); border-radius: 3px; margin-bottom: 6px; }
+.s-modal-ta { width: 100%; height: 24px; background: white; border: 1px solid var(--border); border-radius: 3px; margin-bottom: 6px; }
+.s-sending-pill {
+  font-size: 5px; background: var(--amber-soft); color: #A06A00;
+  border-radius: 99px; padding: 2px 6px; margin-bottom: 6px;
+  display: inline-block;
+}
+.s-modal-btns { display: flex; gap: 4px; }
+.s-modal-cancel { flex: 1; height: 14px; background: white; border: 1px solid var(--border); border-radius: 3px; font-size: 5px; display: flex; align-items: center; justify-content: center; }
+.s-modal-send { flex: 1; height: 14px; background: var(--green); border-radius: 3px; font-size: 5px; color: white; display: flex; align-items: center; justify-content: center; }
+
+/* ─── PHASE CARDS ──────────────────────────────────────────── */
+.phase-list { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; }
+.phase-card {
+  display: flex; gap: 20px; align-items: flex-start;
+  padding: 20px; background: var(--linen);
+  border: 1px solid var(--border); border-radius: 10px;
+}
+.phase-number {
+  width: 36px; height: 36px; border-radius: 8px;
+  background: var(--green); color: white;
+  font-size: 14px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.phase-body { flex: 1; }
+.phase-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+.phase-problem { font-size: 13px; color: var(--muted); margin-bottom: 10px; line-height: 1.5; }
+.phase-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.phase-tag {
+  font-size: 11px; font-weight: 500; padding: 2px 8px;
+  border-radius: 99px; border: 1px solid var(--border);
+  color: var(--muted); background: white;
+}
+.phase-effort {
+  font-size: 11px; font-weight: 500;
+  color: var(--green); background: var(--sage);
+  padding: 2px 8px; border-radius: 99px;
+}
+
+/* ─── CANVAS TABLE ─────────────────────────────────────────── */
+.canvas-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+.canvas-table th {
+  font-size: 11px; font-weight: 500; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--muted);
+  padding: 10px 14px; text-align: left;
+  background: var(--paper); border-bottom: 1px solid var(--border);
+}
+.canvas-table td {
+  padding: 11px 14px; border-bottom: 1px solid var(--border);
+  font-size: 13px; vertical-align: middle;
+}
+.canvas-table tr:last-child td { border-bottom: none; }
+
+/* ─── GAP LIST ─────────────────────────────────────────────── */
+.gap-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 24px; }
+.gap-card {
+  background: white; border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px;
+}
+.gap-category {
+  font-size: 10px; font-weight: 500; letter-spacing: 0.07em;
+  text-transform: uppercase; margin-bottom: 10px;
+}
+.gap-category.functional { color: var(--error); }
+.gap-category.ux { color: #A06A00; }
+.gap-category.infra { color: var(--green); }
+.gap-item {
+  font-size: 12px; color: var(--charcoal); line-height: 1.5;
+  padding: 6px 0; border-bottom: 1px solid var(--border);
+  display: flex; gap: 6px;
+}
+.gap-item:last-child { border-bottom: none; }
+.gap-bullet { color: var(--muted); flex-shrink: 0; }
+
+/* ─── FLOW DIAGRAM ─────────────────────────────────────────── */
+.flow { display: flex; flex-direction: column; gap: 0; margin-bottom: 24px; }
+.flow-item {
+  display: flex; gap: 16px; align-items: flex-start;
+}
+.flow-track { display: flex; flex-direction: column; align-items: center; }
+.flow-node {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--green); color: white;
+  font-size: 13px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.flow-line { width: 2px; height: 24px; background: var(--border); }
+.flow-content { padding-top: 4px; padding-bottom: 20px; }
+.flow-title { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+.flow-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+/* ─── DESIGN TOKENS ────────────────────────────────────────── */
+.token-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
+.token-swatch {
+  border-radius: 8px; overflow: hidden;
+  border: 1px solid var(--border);
+}
+.token-color { height: 48px; }
+.token-info { padding: 6px 8px; background: white; }
+.token-name { font-size: 10px; font-weight: 500; }
+.token-hex { font-size: 9px; color: var(--muted); font-family: monospace; }
+
+/* ─── SUMMARY STAT ─────────────────────────────────────────── */
+.summary-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 32px; }
+.summary-stat { text-align: center; padding: 20px 12px; background: var(--linen); border: 1px solid var(--border); border-radius: 10px; }
+.summary-stat-val { font-size: 28px; font-weight: 600; color: var(--green); margin-bottom: 4px; }
+.summary-stat-lbl { font-size: 12px; color: var(--muted); }
+
+/* ─── FOOTER ───────────────────────────────────────────────── */
+.doc-footer {
+  margin-top: 60px; padding-top: 24px;
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.footer-brand { font-size: 13px; font-weight: 600; color: var(--green); }
+.footer-meta { font-size: 12px; color: var(--muted); }
+
+/* ─── TOC ──────────────────────────────────────────────────── */
+.toc { padding: 80px 64px; background: var(--linen); min-height: 100vh; display: flex; flex-direction: column; justify-content: center; }
+.toc-title { font-size: 13px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 32px; }
+.toc-item { display: flex; align-items: baseline; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.toc-num { font-size: 12px; font-weight: 600; color: var(--green); width: 20px; flex-shrink: 0; }
+.toc-label { font-size: 16px; font-weight: 500; color: var(--charcoal); flex: 1; }
+.toc-dots { flex: 1; border-bottom: 1px dotted var(--border); }
+.toc-page { font-size: 12px; color: var(--muted); }
+.toc-section-tag { font-size: 11px; color: var(--amber); font-weight: 500; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     COVER PAGE
+═══════════════════════════════════════════════════════════ -->
+<div class="cover">
+  <div class="cover-deco-1"></div>
+  <div class="cover-deco-2"></div>
+  <div class="cover-deco-3"></div>
+
+  <div class="cover-brand">
+    <div class="cover-leaf">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8C8 10 5.9 16.17 3.82 19.34L5.71 21l1-1c.97.97 2.62 1 3.66 0C12 18.5 21 14 17 8z"/></svg>
+    </div>
+    Love Inc · LMS
+  </div>
+
+  <div class="cover-body">
+    <div class="cover-tag">Product Update · May 2026</div>
+    <div class="cover-rule"></div>
+    <div class="cover-title">Where We Are,<br>What's <span>Next</span>.</div>
+    <div class="cover-subtitle">
+      A complete picture of what has been built, what the data says about where we can improve, and a sequenced roadmap for the next phase of the Love Inc LMS.
+    </div>
+    <div class="cover-meta">
+      <div class="cover-meta-item">
+        <div class="cover-meta-label">Status</div>
+        <div class="cover-meta-value">Core v1 Complete</div>
+      </div>
+      <div class="cover-meta-item">
+        <div class="cover-meta-label">Next Phase</div>
+        <div class="cover-meta-value">6 Features Planned</div>
+      </div>
+      <div class="cover-meta-item">
+        <div class="cover-meta-label">Campuses</div>
+        <div class="cover-meta-value">Ashesi · KNUST · UMaT · Legon</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TABLE OF CONTENTS
+═══════════════════════════════════════════════════════════ -->
+<div class="toc">
+  <div class="toc-title">Contents</div>
+
+  <div class="toc-item">
+    <div class="toc-num">01</div>
+    <div class="toc-label">What We're Building</div>
+    <div class="toc-dots"></div>
+  </div>
+  <div class="toc-item">
+    <div class="toc-num">02</div>
+    <div class="toc-label">Current State — What's Built</div>
+    <div class="toc-dots"></div>
+  </div>
+  <div class="toc-item">
+    <div class="toc-num">03</div>
+    <div class="toc-label">Design Direction — The New UI</div>
+    <div class="toc-dots"></div>
+  </div>
+  <div class="toc-item">
+    <div class="toc-num">04</div>
+    <div class="toc-label">Canvas LMS Research — What We Learned</div>
+    <div class="toc-dots"></div>
+  </div>
+  <div class="toc-item">
+    <div class="toc-num">05</div>
+    <div class="toc-label">Current Gaps & Issues</div>
+    <div class="toc-dots"></div>
+  </div>
+  <div class="toc-item">
+    <div class="toc-num">06</div>
+    <div class="toc-label">The Roadmap — 6 Phases</div>
+    <div class="toc-dots"></div>
+  </div>
+  <div class="toc-item">
+    <div class="toc-num">07</div>
+    <div class="toc-label">Next Steps</div>
+    <div class="toc-dots"></div>
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 01 — WHAT WE'RE BUILDING
+═══════════════════════════════════════════════════════════ -->
+<div class="doc">
+  <div class="section">
+    <div class="section-kicker">01 · Product Vision</div>
+    <div class="section-title">What We're Building</div>
+    <div class="section-rule"></div>
+
+    <p class="lead">
+      Love Inc LMS is a discipleship learning management system built specifically for university campus church communities in Ghana. It is not a generic LMS. It is a community platform — built for real people in a specific context.
+    </p>
+
+    <p>
+      The platform serves two roles: <strong>Tutors</strong> (spiritual mentors and leaders) who create and manage discipleship classes, and <strong>Students</strong> (university undergraduates at Ashesi, KNUST, UMaT, and Legon) who enrol, learn, submit work, and track their growth.
+    </p>
+
+    <p>
+      Unlike Canvas, Blackboard, or Moodle — which are built for academic institutions with thousands of courses and enterprise IT teams — this platform is built for a close-knit community. The design language, copy tone, and feature set are all intentional for that context. It should feel like community software, not course software.
+    </p>
+
+    <div class="callout">
+      <div class="callout-title">The Design Principle</div>
+      <div class="callout-body">Students should never have to hunt for what they owe. Tutors should never have to leave the platform to understand what their class needs. Everything on this platform serves those two goals.</div>
+    </div>
+
+    <div class="summary-stats">
+      <div class="summary-stat">
+        <div class="summary-stat-val">2</div>
+        <div class="summary-stat-lbl">User roles</div>
+      </div>
+      <div class="summary-stat">
+        <div class="summary-stat-val">4</div>
+        <div class="summary-stat-lbl">Target campuses</div>
+      </div>
+      <div class="summary-stat">
+        <div class="summary-stat-val">25+</div>
+        <div class="summary-stat-lbl">API endpoints live</div>
+      </div>
+      <div class="summary-stat">
+        <div class="summary-stat-val">33</div>
+        <div class="summary-stat-lbl">Frontend pages built</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 02 — WHAT'S BUILT
+═══════════════════════════════════════════════════════════ -->
+<div class="doc">
+  <div class="section">
+    <div class="section-kicker">02 · Current State</div>
+    <div class="section-title">What's Been Built</div>
+    <div class="section-sub">The core platform is fully implemented end-to-end. No stubs, no placeholder pages.</div>
+    <div class="section-rule"></div>
+
+    <table class="feature-table avoid-break">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>What it does</th>
+          <th>Who uses it</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Authentication</strong></td>
+          <td>Register, login, JWT token, role-based redirect, middleware route guards</td>
+          <td>Both</td>
+          <td><span class="badge badge-done">Complete</span></td>
+        </tr>
+        <tr>
+          <td><strong>Classes</strong></td>
+          <td>Tutors create classes with auto-generated invite codes; students join via code at /join</td>
+          <td>Both</td>
+          <td><span class="badge badge-done">Complete</span></td>
+        </tr>
+        <tr>
+          <td><strong>Curriculum Modules</strong></td>
+          <td>Create modules (Week 1, Week 2…), add items (PDF, video, link, text), upload files to storage, reorder and delete</td>
+          <td>Both</td>
+          <td><span class="badge badge-done">Complete</span></td>
+        </tr>
+        <tr>
+          <td><strong>Assignments</strong></td>
+          <td>Create with due dates; student PDF upload (max 15MB, validated); auto late detection; submission count tracking</td>
+          <td>Both</td>
+          <td><span class="badge badge-done">Complete</span></td>
+        </tr>
+        <tr>
+          <td><strong>Attendance</strong></td>
+          <td>Tutor starts a session → 4-digit PIN; 10-min expiry; student check-in; double check-in blocked; history with present/absent counts</td>
+          <td>Both</td>
+          <td><span class="badge badge-done">Complete</span></td>
+        </tr>
+        <tr>
+          <td><strong>Roster</strong></td>
+          <td>Searchable list of enrolled students with attendance % and colour-coded status badges</td>
+          <td>Tutor</td>
+          <td><span class="badge badge-done">Complete</span></td>
+        </tr>
+        <tr>
+          <td><strong>Profiles</strong></td>
+          <td>Profile pages for both roles</td>
+          <td>Both</td>
+          <td><span class="badge badge-done">Complete</span></td>
+        </tr>
+        <tr>
+          <td><strong>Role-Based Access</strong></td>
+          <td>Students and tutors enforced at middleware, API guard, and database RLS levels</td>
+          <td>System</td>
+          <td><span class="badge badge-done">Complete</span></td>
+        </tr>
+        <tr>
+          <td><strong>File Storage</strong></td>
+          <td>Student submissions and module PDFs upload to Supabase storage with RLS protection</td>
+          <td>System</td>
+          <td><span class="badge badge-done">Complete</span></td>
+        </tr>
+        <tr>
+          <td><strong>Announcements</strong></td>
+          <td>Tutor broadcasts to class; student reads chronological list per class</td>
+          <td>Both</td>
+          <td><span class="badge badge-gap">Not built</span></td>
+        </tr>
+        <tr>
+          <td><strong>Notifications</strong></td>
+          <td>In-app bell with unread count; triggered by new content and feedback</td>
+          <td>Both</td>
+          <td><span class="badge badge-gap">Not built</span></td>
+        </tr>
+        <tr>
+          <td><strong>Submission Feedback</strong></td>
+          <td>Tutor grades and leaves comments; student sees feedback when released</td>
+          <td>Both</td>
+          <td><span class="badge badge-gap">Not built</span></td>
+        </tr>
+        <tr>
+          <td><strong>Module Gating</strong></td>
+          <td>Lock modules until prior modules are completed; student progress tracking</td>
+          <td>Both</td>
+          <td><span class="badge badge-gap">Not built</span></td>
+        </tr>
+        <tr>
+          <td><strong>Targeted Messaging</strong></td>
+          <td>Message filtered groups of students (by attendance, submission status)</td>
+          <td>Tutor</td>
+          <td><span class="badge badge-gap">Not built</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout">
+      <div class="callout-title">Stack</div>
+      <div class="callout-body">
+        <strong>Frontend:</strong> Next.js 16, Tailwind CSS 4, React Query — deployed on Vercel.<br>
+        <strong>Backend:</strong> NestJS 11, Passport JWT — deployed on Render (Docker).<br>
+        <strong>Database:</strong> Supabase (PostgreSQL + Auth + Storage) with Row-Level Security on all tables.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 03 — DESIGN DIRECTION
+═══════════════════════════════════════════════════════════ -->
+<div class="doc">
+  <div class="section">
+    <div class="section-kicker">03 · Design Direction</div>
+    <div class="section-title">The New UI — Prototype</div>
+    <div class="section-sub">A complete UI overhaul was prototyped to validate the visual direction before implementation. The design departs significantly from the current UI.</div>
+    <div class="section-rule"></div>
+
+    <p>
+      The existing UI is too generic — it lacks the personality, warmth, and community feel that Love Inc deserves. The new design system is built around a <strong>"Warm Academic"</strong> aesthetic: intimate like a church community, clean like a university tool, and distinctly youthful.<br>
+      <a href="file:///Users/calebokwesiearthur/Documents/Love%20Inc%20LMS%20%E2%80%94%20Design%20Screens-Prototype.pdf" target="_blank" rel="noopener noreferrer"><strong>PDF</strong></a> &nbsp;|&nbsp;
+      <a href="file:///Users/calebokwesiearthur/Downloads/LoveInc-LMS%20(1)/LoveInc%20LMS.html" target="_blank" rel="noopener noreferrer"><strong>Interactive Screens</strong></a>
+    </p>
+
+    <div style="margin-bottom: 28px;">
+      <div style="font-size: 13px; font-weight: 500; margin-bottom: 14px;">Design System — Colour Palette</div>
+      <div class="token-grid">
+        <div class="token-swatch">
+          <div class="token-color" style="background: #1F4037;"></div>
+          <div class="token-info">
+            <div class="token-name">Seed Green</div>
+            <div class="token-hex">#1F4037</div>
+          </div>
+        </div>
+        <div class="token-swatch">
+          <div class="token-color" style="background: #F5A623;"></div>
+          <div class="token-info">
+            <div class="token-name">Morning Amber</div>
+            <div class="token-hex">#F5A623</div>
+          </div>
+        </div>
+        <div class="token-swatch">
+          <div class="token-color" style="background: #FAF8F3;"></div>
+          <div class="token-info">
+            <div class="token-name">Linen Base</div>
+            <div class="token-hex">#FAF8F3</div>
+          </div>
+        </div>
+        <div class="token-swatch">
+          <div class="token-color" style="background: #F0ECE4;"></div>
+          <div class="token-info">
+            <div class="token-name">Warm Paper</div>
+            <div class="token-hex">#F0ECE4</div>
+          </div>
+        </div>
+        <div class="token-swatch">
+          <div class="token-color" style="background: #1A1917;"></div>
+          <div class="token-info">
+            <div class="token-name">Charcoal</div>
+            <div class="token-hex">#1A1917</div>
+          </div>
+        </div>
+      </div>
+      <div style="font-size: 12px; color: var(--muted); margin-top: 8px;">
+        Font: <strong>Inter</strong> — weights 400, 500, 600 only. No shadows. Borders always 1px. No rounded corners above 10px.
+      </div>
+    </div>
+
+    <!-- 8 SCREEN PREVIEWS -->
+    <div style="font-size: 13px; font-weight: 500; margin-bottom: 14px;">Key Screens — Prototype Preview</div>
+
+    <div class="screens-grid">
+
+      <!-- Screen 01: Login -->
+      <div class="screen-frame avoid-break">
+        <div class="screen-chrome">
+          <div class="chrome-dot" style="background:#FF5F57"></div>
+          <div class="chrome-dot" style="background:#FFBD2E"></div>
+          <div class="chrome-dot" style="background:#28C840"></div>
+        </div>
+        <div class="screen-content">
+          <div class="s-login">
+            <div class="s-login-left">
+              <div class="s-login-brand">🌿 Love Inc</div>
+              <div class="s-login-quote">"Discipleship is not a program. It is a relationship."<br><span style="font-size:5px;opacity:0.6">— Community Charter, Love Inc</span></div>
+            </div>
+            <div class="s-login-right">
+              <div class="s-form-title">Welcome back</div>
+              <div class="s-input"></div>
+              <div class="s-input"></div>
+              <div class="s-btn"></div>
+              <div style="font-size:5px;color:var(--muted);text-align:center;margin:5px 0">or try the demo</div>
+              <div class="s-demo-btns">
+                <div class="s-demo-btn"></div>
+                <div class="s-demo-btn"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="screen-caption">Screen 01 — Login</div>
+      </div>
+
+      <!-- Screen 02: Student Dashboard -->
+      <div class="screen-frame avoid-break">
+        <div class="screen-chrome">
+          <div class="chrome-dot" style="background:#FF5F57"></div>
+          <div class="chrome-dot" style="background:#FFBD2E"></div>
+          <div class="chrome-dot" style="background:#28C840"></div>
+        </div>
+        <div class="screen-content">
+          <div class="s-dashboard">
+            <div class="s-sidebar">
+              <div class="s-nav-dot active"></div>
+              <div class="s-nav-dot"></div>
+              <div class="s-nav-dot"></div>
+              <div class="s-nav-dot"></div>
+            </div>
+            <div class="s-main">
+              <div class="s-topbar">
+                <div class="s-topbar-brand">🌿 Love Inc</div>
+                <div style="flex:1;height:8px;background:var(--linen);border-radius:3px;margin:0 8px"></div>
+                <div class="s-topbar-bell">3</div>
+                <div style="width:16px;height:16px;border-radius:50%;background:var(--green);margin-left:4px"></div>
+              </div>
+              <div class="s-page-title">Good morning, Ama 👋</div>
+              <div class="s-stat-row">
+                <div class="s-stat"><div class="s-stat-val">3</div><div class="s-stat-lbl">Classes</div></div>
+                <div class="s-stat"><div class="s-stat-val">78%</div><div class="s-stat-lbl">Attendance</div></div>
+                <div class="s-stat"><div class="s-stat-val">1/3</div><div class="s-stat-lbl">Submitted</div></div>
+                <div class="s-stat"><div class="s-stat-val">2</div><div class="s-stat-lbl">Due soon</div></div>
+              </div>
+              <div class="s-todo-title">Your To-Do</div>
+              <div class="s-todo-row">
+                <span class="s-pill">Foundations</span>
+                <span class="s-row-title">Reflection Essay</span>
+                <span class="s-badge s-badge-sub">Submitted</span>
+              </div>
+              <div class="s-todo-row">
+                <span class="s-pill">Prayer & SD</span>
+                <span class="s-row-title">Prayer Journal</span>
+                <span class="s-badge s-badge-pend">Pending</span>
+              </div>
+              <div class="s-todo-row">
+                <span class="s-pill">Life of Paul</span>
+                <span class="s-row-title">Read Acts 1–5</span>
+                <span class="s-badge s-badge-over">Overdue</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="screen-caption">Screen 02 — Student Dashboard</div>
+      </div>
+
+      <!-- Screen 03: Class Modules -->
+      <div class="screen-frame avoid-break">
+        <div class="screen-chrome">
+          <div class="chrome-dot" style="background:#FF5F57"></div>
+          <div class="chrome-dot" style="background:#FFBD2E"></div>
+          <div class="chrome-dot" style="background:#28C840"></div>
+        </div>
+        <div class="screen-content">
+          <div class="s-modules">
+            <div class="s-class-header">
+              <div class="s-class-name">Foundations of Faith</div>
+              <div class="s-class-meta">Elder Kojo Mensah · 12 enrolled · Week 3 of 8</div>
+              <div class="s-week-bar"><div class="s-week-fill"></div></div>
+            </div>
+            <div class="s-tabs">
+              <div class="s-tab active">Modules</div>
+              <div class="s-tab">Assignments</div>
+              <div class="s-tab">Attendance</div>
+              <div class="s-tab">Announcements</div>
+            </div>
+            <div class="s-mod-list">
+              <div class="s-mod-row">
+                <div class="s-mod-icon complete">✓</div>
+                <div style="flex:1"><div class="s-mod-title">Week 1: Who Is God?</div><div class="s-mod-meta">All complete</div></div>
+              </div>
+              <div class="s-mod-row">
+                <div class="s-mod-icon complete">✓</div>
+                <div style="flex:1"><div class="s-mod-title">Week 2: Grace & Identity</div><div class="s-mod-meta">All complete</div></div>
+              </div>
+              <div class="s-mod-row">
+                <div class="s-mod-icon progress">◑</div>
+                <div style="flex:1"><div class="s-mod-title">Week 3: Living by Faith</div><div class="s-mod-meta">1 of 3 done</div></div>
+                <div class="s-progress-mini"><div class="s-prog-fill" style="width:33%"></div></div>
+              </div>
+              <div class="s-mod-row" style="opacity:0.55">
+                <div class="s-mod-icon locked">🔒</div>
+                <div style="flex:1"><div class="s-mod-title">Week 4: Community & Church</div><div class="s-mod-meta">Complete Week 3 to unlock</div></div>
+                <div class="s-locked-label">Locked</div>
+              </div>
+              <div class="s-mod-row" style="opacity:0.45">
+                <div class="s-mod-icon locked">🔒</div>
+                <div style="flex:1"><div class="s-mod-title">Week 5: Spiritual Warfare</div></div>
+                <div class="s-locked-label">Locked</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="screen-caption">Screen 03 — Class Modules (with gating)</div>
+      </div>
+
+      <!-- Screen 04: Assignments + Feedback -->
+      <div class="screen-frame avoid-break">
+        <div class="screen-chrome">
+          <div class="chrome-dot" style="background:#FF5F57"></div>
+          <div class="chrome-dot" style="background:#FFBD2E"></div>
+          <div class="chrome-dot" style="background:#28C840"></div>
+        </div>
+        <div class="screen-content">
+          <div class="s-assignments">
+            <div class="s-class-header">
+              <div class="s-class-name">Foundations of Faith</div>
+              <div class="s-class-meta">Elder Kojo Mensah · 12 enrolled · Week 3 of 8</div>
+              <div class="s-week-bar"><div class="s-week-fill"></div></div>
+            </div>
+            <div class="s-tabs">
+              <div class="s-tab">Modules</div>
+              <div class="s-tab active">Assignments</div>
+              <div class="s-tab">Attendance</div>
+              <div class="s-tab">Announcements</div>
+            </div>
+            <div class="s-assign-list">
+              <div class="s-assign-row">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+                  <div class="s-assign-title">Reflection Essay: Who Is God?</div>
+                  <span class="s-badge s-badge-sub" style="font-size:5px;padding:1px 4px">Submitted</span>
+                </div>
+                <div class="s-assign-due">Submitted Mar 15</div>
+                <div class="s-feedback-panel">
+                  <div class="s-grade-chip">
+                    <div class="s-grade-text">A−</div>
+                    <div style="font-size:6px;color:var(--green);font-weight:500">Released</div>
+                  </div>
+                  <div class="s-feedback-quote">"Excellent reflection on the nature of grace. Your insights were particularly thoughtful…"</div>
+                  <div class="s-file-chip">📄 reflection_essay.pdf · 856 KB</div>
+                </div>
+              </div>
+              <div class="s-assign-row">
+                <div style="display:flex;align-items:center;justify-content:space-between">
+                  <div class="s-assign-title">Prayer Journal Entry</div>
+                  <span class="s-badge s-badge-pend" style="font-size:5px;padding:1px 4px">Pending</span>
+                </div>
+                <div class="s-assign-due">Due in 3 days · May 5, 2025</div>
+              </div>
+              <div class="s-assign-row" style="border-left:2px solid var(--error)">
+                <div style="display:flex;align-items:center;justify-content:space-between">
+                  <div class="s-assign-title">Read Acts 1–5 and summarize</div>
+                  <span class="s-badge s-badge-over" style="font-size:5px;padding:1px 4px">Overdue</span>
+                </div>
+                <div class="s-assign-due" style="color:var(--error)">Overdue by 2 days · Apr 30, 2025</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="screen-caption">Screen 04 — Assignments + Feedback View</div>
+      </div>
+
+      <!-- Screen 05: Attendance Check-In -->
+      <div class="screen-frame avoid-break">
+        <div class="screen-chrome">
+          <div class="chrome-dot" style="background:#FF5F57"></div>
+          <div class="chrome-dot" style="background:#FFBD2E"></div>
+          <div class="chrome-dot" style="background:#28C840"></div>
+        </div>
+        <div class="screen-content">
+          <div class="s-attendance">
+            <div class="s-class-header">
+              <div class="s-class-name">Foundations of Faith</div>
+              <div class="s-class-meta">Attendance</div>
+              <div class="s-week-bar"><div class="s-week-fill"></div></div>
+            </div>
+            <div class="s-tabs">
+              <div class="s-tab">Modules</div>
+              <div class="s-tab">Assignments</div>
+              <div class="s-tab active">Attendance</div>
+            </div>
+            <div class="s-checkin-card">
+              <div class="s-checkin-icon">✓</div>
+              <div class="s-checkin-label">Checked in successfully!</div>
+              <div class="s-checkin-sub">Today, 9:04 AM · Session: Week 3 — Living by Faith</div>
+            </div>
+            <div class="s-attend-bar-wrap">
+              <div class="s-attend-bar-label"><span>Overall attendance</span><span>78%</span></div>
+              <div class="s-attend-track"><div class="s-attend-fill"></div></div>
+              <div style="font-size:5px;color:var(--muted);margin-top:2px">7 of 9 sessions attended</div>
+            </div>
+            <div class="s-attend-table">
+              <div class="s-attend-row"><div class="s-dot present"></div><div class="s-attend-date">Apr 26</div><div class="s-attend-session">Week 9 — Prayer & Intercession</div></div>
+              <div class="s-attend-row"><div class="s-dot absent"></div><div class="s-attend-date">Apr 12</div><div class="s-attend-session">Week 7 — Evangelism</div></div>
+              <div class="s-attend-row"><div class="s-dot present"></div><div class="s-attend-date">Apr 5</div><div class="s-attend-session">Week 6 — Worship & Praise</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="screen-caption">Screen 05 — Attendance Check-In (success state)</div>
+      </div>
+
+      <!-- Screen 06: SpeedGrader -->
+      <div class="screen-frame avoid-break">
+        <div class="screen-chrome">
+          <div class="chrome-dot" style="background:#FF5F57"></div>
+          <div class="chrome-dot" style="background:#FFBD2E"></div>
+          <div class="chrome-dot" style="background:#28C840"></div>
+        </div>
+        <div class="screen-content">
+          <div class="s-speedgrader">
+            <div class="s-sg-topbar">
+              <span>← Back</span>
+              <div class="s-sg-title">Prayer Journal Entry — 12 submissions</div>
+              <div style="font-size:6px;color:var(--muted)">3 of 12</div>
+              <div class="s-sg-nav">
+                <div class="s-sg-nav-btn">‹</div>
+                <div class="s-sg-nav-btn">›</div>
+              </div>
+            </div>
+            <div class="s-sg-body">
+              <div class="s-sg-preview">
+                <div class="s-sg-doc">
+                  <div class="s-sg-doc-header">📄 Student Submission · Kwame Asante</div>
+                  <div style="font-weight:600;font-size:7px;margin-bottom:4px">Prayer Journal — Week 3</div>
+                  <div class="s-sg-doc-line" style="width:100%"></div>
+                  <div class="s-sg-doc-line" style="width:90%"></div>
+                  <div class="s-sg-doc-line" style="width:95%"></div>
+                  <div class="s-sg-doc-line" style="width:80%"></div>
+                  <div class="s-sg-doc-line" style="width:100%"></div>
+                  <div class="s-sg-doc-line" style="width:88%"></div>
+                  <div class="s-sg-doc-line" style="width:75%"></div>
+                </div>
+                <div style="margin-top:4px;font-size:5px;color:var(--muted)">📄 prayer_journal_week3.pdf · 412 KB</div>
+              </div>
+              <div class="s-sg-grader">
+                <div class="s-sg-student">
+                  <div class="s-mini-avatar">KA</div>
+                  <div><div class="s-sg-student-name">Kwame Asante</div><div style="font-size:5px;color:var(--muted)">2 hours ago</div></div>
+                </div>
+                <div style="display:flex;gap:4px;font-size:5px">
+                  <span style="background:var(--linen);padding:1px 4px;border-radius:3px;color:var(--muted)">Not submitted · 5</span>
+                  <span style="background:var(--sage);padding:1px 4px;border-radius:3px;color:#2D6A2D">Reviewed · 6</span>
+                </div>
+                <div class="s-grade-input">B+</div>
+                <div class="s-feedback-ta">
+                  <div class="s-feedback-line" style="width:100%"></div>
+                  <div class="s-feedback-line" style="width:90%"></div>
+                  <div class="s-feedback-line" style="width:80%"></div>
+                </div>
+                <div class="s-toggle-row">
+                  <div class="s-mini-toggle"><div class="s-mini-knob"></div></div>
+                  <span style="font-size:6px">Release to student</span>
+                </div>
+                <div class="s-sg-save">Save &amp; next</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="screen-caption">Screen 06 — SpeedGrader (Inline Review)</div>
+      </div>
+
+      <!-- Screen 07: Attendance PIN -->
+      <div class="screen-frame avoid-break">
+        <div class="screen-chrome">
+          <div class="chrome-dot" style="background:#FF5F57"></div>
+          <div class="chrome-dot" style="background:#FFBD2E"></div>
+          <div class="chrome-dot" style="background:#28C840"></div>
+        </div>
+        <div class="screen-content">
+          <div class="s-pin">
+            <div class="s-pin-card">
+              <div class="s-pin-active">Active Session</div>
+              <div class="s-pin-digits">7 4 2 9</div>
+              <div class="s-pin-timer">08:32 remaining</div>
+              <div class="s-pin-context">Foundations of Faith · Saturday class</div>
+              <div class="s-end-btn">End session</div>
+            </div>
+            <div class="s-checkin-feed">
+              <div class="s-checkin-item">
+                <div class="s-checkin-dot"></div>
+                <div class="s-checkin-name">Ama Boateng</div>
+                <div class="s-checkin-time">just now</div>
+              </div>
+              <div class="s-checkin-item">
+                <div class="s-checkin-dot"></div>
+                <div class="s-checkin-name">Kwame Asante</div>
+                <div class="s-checkin-time">1 min ago</div>
+              </div>
+              <div style="font-size:5px;color:var(--muted);text-align:center;padding:3px">Waiting for more students…</div>
+            </div>
+          </div>
+        </div>
+        <div class="screen-caption">Screen 07 — Session PIN Display (Tutor)</div>
+      </div>
+
+      <!-- Screen 08: Roster + Message Modal -->
+      <div class="screen-frame avoid-break">
+        <div class="screen-chrome">
+          <div class="chrome-dot" style="background:#FF5F57"></div>
+          <div class="chrome-dot" style="background:#FFBD2E"></div>
+          <div class="chrome-dot" style="background:#28C840"></div>
+        </div>
+        <div class="screen-content">
+          <div class="s-roster">
+            <div class="s-roster-content">
+              <div style="font-size:9px;font-weight:600;margin-bottom:4px">Foundations of Faith</div>
+              <div style="font-size:6px;color:var(--muted);margin-bottom:6px">12 students enrolled</div>
+              <div class="s-roster-toprow">
+                <div class="s-roster-search"></div>
+                <div class="s-msg-btn">✈ Message students</div>
+              </div>
+              <table class="s-roster-table">
+                <tr><th class="s-roster-th">Student</th><th class="s-roster-th">Enrolled</th><th class="s-roster-th">Attendance</th></tr>
+                <tr>
+                  <td class="s-roster-td"><strong>Ama Boateng</strong></td>
+                  <td class="s-roster-td" style="color:var(--muted)">Mar 1</td>
+                  <td class="s-roster-td"><span class="s-attend-chip s-attend-green">78%</span></td>
+                </tr>
+                <tr>
+                  <td class="s-roster-td"><strong>Kwame Asante</strong></td>
+                  <td class="s-roster-td" style="color:var(--muted)">Mar 1</td>
+                  <td class="s-roster-td"><span class="s-attend-chip s-attend-green">89%</span></td>
+                </tr>
+                <tr>
+                  <td class="s-roster-td"><strong>Efua Mensah</strong></td>
+                  <td class="s-roster-td" style="color:var(--muted)">Mar 1</td>
+                  <td class="s-roster-td"><span class="s-attend-chip s-attend-red">56%</span></td>
+                </tr>
+                <tr>
+                  <td class="s-roster-td"><strong>Adjoa Owusu</strong></td>
+                  <td class="s-roster-td" style="color:var(--muted)">Mar 5</td>
+                  <td class="s-roster-td"><span class="s-attend-chip s-attend-amber">67%</span></td>
+                </tr>
+              </table>
+            </div>
+            <div class="s-modal-overlay">
+              <div class="s-modal-box">
+                <div class="s-modal-title">Message Students</div>
+                <div class="s-modal-label">Send to</div>
+                <select class="s-modal-select"><option>Below 60% attendance (3 students)</option></select>
+                <div class="s-modal-label">Subject</div>
+                <div class="s-modal-input" style="font-size:6px;padding:3px;color:var(--charcoal)">Attendance reminder</div>
+                <div class="s-modal-label">Message</div>
+                <div class="s-modal-ta" style="font-size:5px;padding:3px;color:var(--muted)">Hi [name], we noticed your attendance has been lower than usual…</div>
+                <div class="s-sending-pill">Sending to 3 students</div>
+                <div class="s-modal-btns">
+                  <div class="s-modal-cancel">Cancel</div>
+                  <div class="s-modal-send">Send message</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="screen-caption">Screen 08 — Roster + Targeted Message Modal</div>
+      </div>
+
+    </div><!-- /screens-grid -->
+
+    <div class="callout amber" style="margin-top:8px">
+      <div class="callout-title">Design Decisions Worth Noting</div>
+      <div class="callout-body">
+        No box-shadows anywhere — depth comes from background tonal contrast. Active nav items use a 2px left green border + white background, not a filled highlight. Burgundy is replaced entirely — the amber accent is used sparingly (max 3× per screen). The dark PIN display on Screen 07 uses full dark mode (#1A1917) without a theme switch — it's a one-off pattern for a one-off moment.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 04 — CANVAS RESEARCH
+═══════════════════════════════════════════════════════════ -->
+<div class="doc">
+  <div class="section">
+    <div class="section-kicker">04 · Competitive Research</div>
+    <div class="section-title">What Canvas LMS Taught Us</div>
+    <div class="section-sub">Canvas holds 41% of the US higher-ed LMS market. Understanding what it gets right — and wrong — informed our roadmap directly.</div>
+    <div class="section-rule"></div>
+
+    <p>
+      Canvas won the market because of one structural bet: <strong>everything lives inside a hierarchy of Courses → Modules → Items</strong>, and the whole platform wraps around that spine. Every feature is either a way to put content into that structure or a way to surface it to students.
+    </p>
+
+    <div style="font-size: 14px; font-weight: 500; margin-bottom: 14px; margin-top: 24px;">What Canvas Gets Right — and We Should Borrow</div>
+
+    <table class="canvas-table avoid-break">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>What Canvas does</th>
+          <th>Our gap</th>
+          <th>Priority</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Unified To-Do List</strong></td>
+          <td>A single cross-course feed of upcoming assignments, sorted by due date. Students never open each class individually.</td>
+          <td>Students must navigate class-by-class to find what's due</td>
+          <td><span class="badge badge-phase">Phase 3</span></td>
+        </tr>
+        <tr>
+          <td><strong>Announcement System</strong></td>
+          <td>Broadcast to entire class. Scheduled posting. Email triggered automatically. Separate from messaging.</td>
+          <td>No way for tutors to communicate with their class at all</td>
+          <td><span class="badge badge-phase">Phase 1</span></td>
+        </tr>
+        <tr>
+          <td><strong>SpeedGrader</strong></td>
+          <td>Split pane — student PDF left, grading panel right. Sequential student navigation. Audio/text comments. No downloading.</td>
+          <td>Tutors see a file link only. No in-platform review or feedback.</td>
+          <td><span class="badge badge-phase">Phase 4</span></td>
+        </tr>
+        <tr>
+          <td><strong>Module Prerequisites</strong></td>
+          <td>Lock Week 2 until Week 1 is complete. Configurable per-item completion type (view / mark done / score above X%).</td>
+          <td>Modules are a flat, unordered list. No sequencing rules.</td>
+          <td><span class="badge badge-phase">Phase 5</span></td>
+        </tr>
+        <tr>
+          <td><strong>Notification System</strong></td>
+          <td>Per-category, per-channel frequency settings. Email, SMS, push. All configurable per user.</td>
+          <td>Students get no alerts when content or feedback is posted.</td>
+          <td><span class="badge badge-phase">Phase 2</span></td>
+        </tr>
+        <tr>
+          <td><strong>Message Students Who</strong></td>
+          <td>From gradebook: one click to message "everyone who hasn't submitted" or "everyone below 60%". Targeted, contextual.</td>
+          <td>No messaging system at all.</td>
+          <td><span class="badge badge-phase">Phase 6</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="font-size: 14px; font-weight: 500; margin-bottom: 14px; margin-top: 32px;">What Canvas Gets Wrong — We Must NOT Copy</div>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-card-title">
+          <div class="feature-card-icon" style="background:#FDE8E8">⚠</div>
+          Course-to-course inconsistency
+        </div>
+        <div class="feature-card-body">Canvas lets every instructor restructure their navigation. Students face a different UI per class. Our navigation is fixed, consistent, opinionated — and that stays.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-title">
+          <div class="feature-card-icon" style="background:#FDE8E8">⚠</div>
+          The Inbox (buried messaging)
+        </div>
+        <div class="feature-card-body">Canvas's internal messaging is too easy to miss. Students regularly miss important communications. If we build messaging, it must surface in the notification bell — not a separate system.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-title">
+          <div class="feature-card-icon" style="background:#FDE8E8">⚠</div>
+          Two parallel quiz engines
+        </div>
+        <div class="feature-card-body">Canvas shipped "New Quizzes" alongside "Classic Quizzes" for 5 years. Paralysis by technical debt. We never ship v2 of a feature without retiring v1.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-title">
+          <div class="feature-card-icon" style="background:#FDE8E8">⚠</div>
+          Gradebook complexity
+        </div>
+        <div class="feature-card-body">Canvas's gradebook is a full spreadsheet. Most tutors find it intimidating. Our scope stays simple — a grade and a comment per submission, not a weighted formula system.</div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="callout-title">The Core Insight</div>
+      <div class="callout-body">Canvas's #1 design principle is: students should never have to hunt for what they owe. Everything — the calendar, the To-Do list, the notifications — is just a different surface of the same answer to "what do I need to do today?" We adopted this principle as our own.</div>
+    </div>
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 05 — CURRENT GAPS
+═══════════════════════════════════════════════════════════ -->
+<div class="doc">
+  <div class="section">
+    <div class="section-kicker">05 · Honest Assessment</div>
+    <div class="section-title">Current Gaps & Issues</div>
+    <div class="section-sub">What the platform is missing, ranked by how much it hurts users right now.</div>
+    <div class="section-rule"></div>
+
+    <div class="gap-grid">
+      <div class="gap-card avoid-break">
+        <div class="gap-category functional">Functional Gaps</div>
+        <div class="gap-item"><span class="gap-bullet">—</span>No announcements — tutors cannot communicate news to their class</div>
+        <div class="gap-item"><span class="gap-bullet">—</span>No notifications — students learn of new content only if they open the app</div>
+        <div class="gap-item"><span class="gap-bullet">—</span>No feedback loop — tutors cannot grade or respond to submitted work</div>
+        <div class="gap-item"><span class="gap-bullet">—</span>No module sequencing — students can skip ahead in the curriculum</div>
+        <div class="gap-item"><span class="gap-bullet">—</span>No password reset — forgotten passwords have no recovery path</div>
+        <div class="gap-item"><span class="gap-bullet">—</span>No way to unenrol a student from a class</div>
+      </div>
+      <div class="gap-card avoid-break">
+        <div class="gap-category ux">UX & Polish</div>
+        <div class="gap-item"><span class="gap-bullet">—</span>Student dashboard pulls stats from all classes — no per-class breakdown</div>
+        <div class="gap-item"><span class="gap-bullet">—</span>Empty state coverage unverified for edge cases (zero classes, zero submissions)</div>
+        <div class="gap-item"><span class="gap-bullet">—</span>Video module items cannot be previewed in-browser — just an external link</div>
+        <div class="gap-item"><span class="gap-bullet">—</span>Current UI lacks personality and community feel — too generic</div>
+        <div class="gap-item"><span class="gap-bullet">—</span>No mobile optimisation verified — sidebar layout breaks on small screens</div>
+      </div>
+      <div class="gap-card avoid-break">
+        <div class="gap-category infra">Infrastructure</div>
+        <div class="gap-item"><span class="gap-bullet">—</span>No CI/CD — deployment to Render and Vercel is fully manual</div>
+        <div class="gap-item"><span class="gap-bullet">—</span>No automated tests on the web side (Jest exists in API only)</div>
+        <div class="gap-item"><span class="gap-bullet">—</span>No error monitoring (no Sentry or equivalent)</div>
+        <div class="gap-item"><span class="gap-bullet">—</span>No analytics — no visibility into feature usage or engagement patterns</div>
+      </div>
+    </div>
+
+    <div style="font-size: 14px; font-weight: 500; margin-bottom: 14px; margin-top: 8px;">Bigger Features Not Yet Scoped</div>
+
+    <table class="feature-table avoid-break">
+      <thead>
+        <tr><th>Feature</th><th>Why it matters</th><th>Horizon</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Push / email notifications</td>
+          <td>Students need to be reached outside the app, especially for urgent announcements</td>
+          <td><span class="badge badge-later">Later</span></td>
+        </tr>
+        <tr>
+          <td>Mobile app / PWA</td>
+          <td>Most Ghanaian students primarily access the internet via mobile</td>
+          <td><span class="badge badge-later">Later</span></td>
+        </tr>
+        <tr>
+          <td>Tutor analytics</td>
+          <td>Engagement over time, completion rates, at-risk student flagging</td>
+          <td><span class="badge badge-later">Later</span></td>
+        </tr>
+        <tr>
+          <td>Multi-campus support</td>
+          <td>Currently single community — does not scale to a federation of campus chapters</td>
+          <td><span class="badge badge-later">Later</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 06 — ROADMAP
+═══════════════════════════════════════════════════════════ -->
+<div class="doc">
+  <div class="section">
+    <div class="section-kicker">06 · Implementation Roadmap</div>
+    <div class="section-title">The Next 6 Phases</div>
+    <div class="section-sub">Each phase is independently shippable. Stop anywhere and the system is coherent and useful.</div>
+    <div class="section-rule"></div>
+
+    <div class="phase-list">
+
+      <div class="phase-card avoid-break">
+        <div class="phase-number">1</div>
+        <div class="phase-body">
+          <div class="phase-title">Announcements</div>
+          <div class="phase-problem">Tutors have no way to communicate with their class. Students have no idea when something important changes, unless they open the app and happen to look.</div>
+          <div style="font-size: 12px; color: var(--charcoal); line-height: 1.7; margin-bottom: 10px;">
+            <strong>DB:</strong> New <code>announcements</code> table (id, class_id, tutor_id, title, body, scheduled_at, created_at)<br>
+            <strong>API:</strong> POST, GET, PATCH, DELETE — tutors see all including drafts; students see only published<br>
+            <strong>Web (Tutor):</strong> New "Announcements" tab in class nav; create/edit modal with optional scheduled date picker<br>
+            <strong>Web (Student):</strong> Read-only chronological list; unread dot for announcements since last visit
+          </div>
+          <div class="phase-tags">
+            <span class="phase-effort">Low effort</span>
+            <span class="phase-tag">New DB table</span>
+            <span class="phase-tag">New API module</span>
+            <span class="phase-tag">2 new UI tabs</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="phase-card avoid-break">
+        <div class="phase-number">2</div>
+        <div class="phase-body">
+          <div class="phase-title">In-App Notification Bell</div>
+          <div class="phase-problem">Announcements are useless if nobody sees them. This phase adds the platform-level alerting backbone that every future phase hooks into.</div>
+          <div style="font-size: 12px; color: var(--charcoal); line-height: 1.7; margin-bottom: 10px;">
+            <strong>DB:</strong> New <code>notifications</code> table (id, user_id, type enum, title, body, resource_type, resource_id, read, created_at)<br>
+            <strong>API:</strong> GET /notifications, PATCH read, PATCH read-all — no user-facing create; other services trigger internally<br>
+            <strong>Web (Both):</strong> Bell icon in Topbar with unread badge; dropdown with notification list; click → navigate to resource + mark read<br>
+            <strong>Triggers:</strong> New announcement → enrolled students notified. New assignment → enrolled students. New module → enrolled students.
+          </div>
+          <div class="phase-tags">
+            <span class="phase-effort">Medium effort</span>
+            <span class="phase-tag">New DB table</span>
+            <span class="phase-tag">Topbar component change</span>
+            <span class="phase-tag">Internal service hooks</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="phase-card avoid-break">
+        <div class="phase-number">3</div>
+        <div class="phase-body">
+          <div class="phase-title">Unified Student Dashboard — To-Do</div>
+          <div class="phase-problem">Students must open each class individually to discover what they owe. This is the #1 friction Canvas eliminated — a single view of all upcoming work.</div>
+          <div style="font-size: 12px; color: var(--charcoal); line-height: 1.7; margin-bottom: 10px;">
+            <strong>DB:</strong> No schema changes — data exists across assignments, submissions, and enrollments<br>
+            <strong>API:</strong> New GET /students/me/todo (all assignments across enrolled classes, with submission status, sorted by due date). New GET /students/me/summary (aggregate stats)<br>
+            <strong>Web (Student):</strong> Dashboard redesign — stat cards from summary endpoint; To-Do list with filter tabs (All / Upcoming / Overdue / Submitted); recent announcements sidebar
+          </div>
+          <div class="phase-tags">
+            <span class="phase-effort">Medium effort</span>
+            <span class="phase-tag">No schema changes</span>
+            <span class="phase-tag">2 new API endpoints</span>
+            <span class="phase-tag">Dashboard page redesign</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="phase-card avoid-break">
+        <div class="phase-number">4</div>
+        <div class="phase-body">
+          <div class="phase-title">Submission Feedback & Inline Review</div>
+          <div class="phase-problem">Tutors can see who submitted but cannot review or respond to work. Students submit into a void. This closes the most important pedagogical gap in the platform.</div>
+          <div style="font-size: 12px; color: var(--charcoal); line-height: 1.7; margin-bottom: 10px;">
+            <strong>DB:</strong> Add to submissions: feedback (text), grade (text), feedback_at (timestamp), grade_released (boolean)<br>
+            <strong>API:</strong> PATCH /assignments/:id/submissions/:id/feedback — tutor writes grade + feedback, toggles release; triggers student notification on release<br>
+            <strong>Web (Tutor):</strong> Split-pane review panel — student PDF inline (iframe), grade input + feedback textarea + release toggle, Prev/Next student navigation<br>
+            <strong>Web (Student):</strong> Feedback section appears on submitted assignment when released; "Awaiting feedback" neutral state when not yet released
+          </div>
+          <div class="phase-tags">
+            <span class="phase-effort">High effort</span>
+            <span class="phase-tag">Schema migration</span>
+            <span class="phase-tag">New API endpoint</span>
+            <span class="phase-tag">SpeedGrader UI</span>
+            <span class="phase-tag">Hooks Phase 2</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="phase-card avoid-break">
+        <div class="phase-number">5</div>
+        <div class="phase-body">
+          <div class="phase-title">Module Sequencing & Gating</div>
+          <div class="phase-problem">Modules are a flat, unordered list. Tutors cannot enforce a curriculum path. Students can skip to Week 8 without completing Week 1.</div>
+          <div style="font-size: 12px; color: var(--charcoal); line-height: 1.7; margin-bottom: 10px;">
+            <strong>DB:</strong> Add prerequisite_module_id to modules; new module_item_completions and module_completions tables<br>
+            <strong>API:</strong> POST /modules/items/:id/complete; GET /modules/class/:id updated to return per-student completion state; POST /modules/class/:id/reorder<br>
+            <strong>Web (Tutor):</strong> Drag/reorder handles; prerequisite dropdown in module edit modal; per-item completion toggle<br>
+            <strong>Web (Student):</strong> Locked module state with padlock + unlock condition; Mark as complete button; per-module progress bar
+          </div>
+          <div class="phase-tags">
+            <span class="phase-effort">Medium effort</span>
+            <span class="phase-tag">2 new DB tables</span>
+            <span class="phase-tag">3 new API endpoints</span>
+            <span class="phase-tag">Module UI updates</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="phase-card avoid-break">
+        <div class="phase-number">6</div>
+        <div class="phase-body">
+          <div class="phase-title">Targeted Messaging ("Message Students Who")</div>
+          <div class="phase-problem">Tutors want to nudge specific students — those who haven't submitted, those with low attendance — without manually picking through the roster. This is the Canvas "Message Students Who" pattern.</div>
+          <div style="font-size: 12px; color: var(--charcoal); line-height: 1.7; margin-bottom: 10px;">
+            <strong>DB:</strong> New messages and message_recipients tables; filter_type enum (all, not_submitted, low_attendance, manual)<br>
+            <strong>API:</strong> POST /classes/:id/messages — resolves filter → recipient list → notification per student → logs to messages; GET /classes/:id/messages<br>
+            <strong>Web (Tutor):</strong> "Message students" button on Roster page with filter selector; "Message who hasn't submitted" one-click from assignment submissions page<br>
+            <strong>Web (Student):</strong> Receives as bell notification (Phase 2). No reply in v1.
+          </div>
+          <div class="phase-tags">
+            <span class="phase-effort">Medium effort</span>
+            <span class="phase-tag">2 new DB tables</span>
+            <span class="phase-tag">Depends on Phase 2</span>
+            <span class="phase-tag">2 tutor entry points</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 07 — NEXT STEPS
+═══════════════════════════════════════════════════════════ -->
+<div class="doc">
+  <div class="section">
+    <div class="section-kicker">07 · Sequencing & Next Steps</div>
+    <div class="section-title">How to Ship This</div>
+    <div class="section-sub">The rationale behind the phase order — why each phase unlocks the next.</div>
+    <div class="section-rule"></div>
+
+    <div class="flow">
+      <div class="flow-item">
+        <div class="flow-track">
+          <div class="flow-node">1</div>
+          <div class="flow-line"></div>
+        </div>
+        <div class="flow-content">
+          <div class="flow-title">Announcements — First real tutor→class communication</div>
+          <div class="flow-desc">Standalone. No dependencies. Ships fastest. Immediately useful. Every class needs this from day one.</div>
+        </div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-track">
+          <div class="flow-node">2</div>
+          <div class="flow-line"></div>
+        </div>
+        <div class="flow-content">
+          <div class="flow-title">Notification Bell — The backbone for everything that follows</div>
+          <div class="flow-desc">Announcements are useless if students don't see them. Build the alerting infrastructure now. Phases 4 and 6 both hook into this system — it must exist first.</div>
+        </div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-track">
+          <div class="flow-node">3</div>
+          <div class="flow-line"></div>
+        </div>
+        <div class="flow-content">
+          <div class="flow-title">Unified To-Do — Biggest student UX win, lowest risk</div>
+          <div class="flow-desc">No schema changes. One new API endpoint. High impact for students. Ships fast and proves the new dashboard design direction.</div>
+        </div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-track">
+          <div class="flow-node">4</div>
+          <div class="flow-line"></div>
+        </div>
+        <div class="flow-content">
+          <div class="flow-title">Submission Feedback — Closes the grading loop</div>
+          <div class="flow-desc">Shifts the platform from "submit and forget" to an actual pedagogical cycle. Students need to know their work matters. Hooks into Phase 2 for grade-release notification.</div>
+        </div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-track">
+          <div class="flow-node">5</div>
+          <div class="flow-line"></div>
+        </div>
+        <div class="flow-content">
+          <div class="flow-title">Module Gating — Adds curriculum structure</div>
+          <div class="flow-desc">Depends on modules working well (they do). Adds new tables but doesn't touch existing data. Tutors can now build a true learning journey, not just a file list.</div>
+        </div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-track">
+          <div class="flow-node" style="background:var(--amber);color:var(--charcoal)">6</div>
+        </div>
+        <div class="flow-content">
+          <div class="flow-title">Targeted Messaging — Most valuable once engagement data exists</div>
+          <div class="flow-desc">Last because it depends on Phase 2 (notification delivery) and is most powerful when tutors have real submission and attendance data to filter against.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top: 32px; margin-bottom: 32px;">
+      <div class="callout-title">Immediate Next Steps</div>
+      <div class="callout-body">
+        1. <strong>Approve the UI direction</strong> — review the prototype and sign off on the design system before any implementation begins.<br>
+        2. <strong>Begin Phase 1</strong> — Announcements. Database migration, NestJS module, two new UI tabs. Estimated: 1–2 days.<br>
+        3. <strong>Phase 2 immediately after</strong> — Notification Bell. The backbone. Without it, Phase 1 doesn't reach its full value.<br>
+        4. <strong>Apply the new design system</strong> — the UI redesign should be applied alongside Phase 1–3, not as a separate project.
+      </div>
+    </div>
+
+    <div class="doc-footer">
+      <div class="footer-brand">🌿 Love Inc LMS</div>
+      <div class="footer-meta">Product Update · May 2026 · Confidential</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Print button (hidden in print) -->
+<div class="no-print" style="position:fixed;bottom:24px;right:24px;z-index:999">
+  <button onclick="window.print()" style="background:#1F4037;color:white;border:none;padding:12px 20px;border-radius:8px;font-family:Inter,sans-serif;font-size:14px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:8px">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+    Save as PDF
+  </button>
+</div>
+
+</body>
+</html>

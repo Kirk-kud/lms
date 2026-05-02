@@ -60,20 +60,24 @@ The app uses these channels to show live attendance updates when a tutor starts 
 
 ---
 
-## 5. Verify the submissions storage bucket
+## 5. Verify the storage buckets
 
-The migration script creates the `submissions` bucket and its policies automatically. To confirm:
+The migration scripts create the `submissions` and `modules` buckets automatically. To confirm:
 
 1. Go to **Storage** in the left sidebar.
-2. You should see a bucket named **submissions** with **Private** access.
-3. Click the bucket, then open the **Policies** tab and confirm three policies exist:
+2. You should see a bucket named **submissions** with **Private** access and a bucket named **modules** with **Public** access.
+3. Click the `submissions` bucket, then open the **Policies** tab and confirm three policies exist:
    - `students_upload` — INSERT
    - `students_read_own` — SELECT (own folder)
    - `tutors_read_submissions` — SELECT (all)
 
-If the bucket is missing (some Supabase plans restrict storage DDL in the SQL editor), create it manually:
+If the `submissions` bucket is missing (some Supabase plans restrict storage DDL in the SQL editor), create it manually:
 1. Click **New bucket**, name it `submissions`, leave **Public** unchecked, and click **Save**.
 2. Then add the three policies above via **Storage → Policies → New policy** using the SQL from the migration file.
+
+If the `modules` bucket is missing, create it manually:
+1. Click **New bucket**, name it `modules`, enable **Public bucket**, and click **Save**.
+2. Set the file size limit to 25 MB and restrict allowed MIME types to `application/pdf`.
 
 ---
 

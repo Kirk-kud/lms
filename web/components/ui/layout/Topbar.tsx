@@ -7,7 +7,7 @@ import globalWhite from '@/public/global_white.png'
 interface TopbarProps {
   userName: string
   userInitials: string
-  role: 'tutor' | 'student'
+  role: 'admin' | 'tutor' | 'student'
   onSignOut?: () => void
   onProfile?: () => void
 }
@@ -45,7 +45,7 @@ export default function Topbar({ userName, userInitials, role, onSignOut, onProf
       <div ref={menuRef} className="flex justify-end" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '12px' }}>
         {/* Role chip */}
         <div className="bg-[#333333] text-white text-[11px] px-2.5 py-1 rounded-full font-medium select-none">
-          {role === 'tutor' ? 'Tutor' : 'Student'}
+          {role === 'admin' ? 'Admin' : role === 'tutor' ? 'Tutor' : 'Student'}
         </div>
 
         {/* Avatar + name trigger */}
@@ -132,7 +132,7 @@ export default function Topbar({ userName, userInitials, role, onSignOut, onProf
                   {userName}
                 </p>
                 <p style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '2px', marginBottom: 0 }}>
-                  {role === 'tutor' ? 'Tutor' : 'Student'}
+                  {role === 'admin' ? 'Admin' : role === 'tutor' ? 'Tutor' : 'Student'}
                 </p>
               </div>
 

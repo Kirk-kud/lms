@@ -1,5 +1,12 @@
 import { Type } from 'class-transformer';
-import { IsDateString, IsInt, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Min,
+} from 'class-validator';
 
 export class CreateAssignmentDto {
   @IsUUID()
@@ -19,6 +26,10 @@ export class CreateAssignmentDto {
 
   @IsDateString()
   due_date: string;
+
+  @IsOptional()
+  @IsUUID()
+  cohort_id?: string;
 }
 
 export class UpdateAssignmentDto {
@@ -33,4 +44,8 @@ export class UpdateAssignmentDto {
   @IsOptional()
   @IsDateString()
   due_date?: string;
+
+  @IsOptional()
+  @IsUUID()
+  cohort_id?: string;
 }

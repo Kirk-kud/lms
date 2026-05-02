@@ -37,7 +37,7 @@ interface RegisterResponse {
     id: string
     email: string
     full_name: string
-    role: 'tutor' | 'student'
+    role: 'admin' | 'tutor' | 'student'
   }
 }
 
@@ -71,7 +71,8 @@ export default function RegisterPageClient() {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [role, setRole] = useState<'tutor' | 'student'>('student')
+  const [role, setRole] = useState<'admin' | 'tutor' | 'student'>('student')
+  const [taCode, setTaCode] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -79,6 +80,26 @@ export default function RegisterPageClient() {
     setIsLoading(true)
 
     try {
+      // For tutor (TA) registration, validate the invite code first
+      if (role === 'tutor') {
+        if (!taCode.trim()) {
+          toast.error('Invite code required', { description: 'Enter your tutor invite code to continue.' })
+          setIsLoading(false)
+          return
+        }
+        const redeemRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ta-invites/redeem`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: taCode.trim().toUpperCase() }),
+        })
+        const redeemJson = (await redeemRes.json()) as { data?: { valid: boolean } }
+        if (!redeemRes.ok || !redeemJson.data?.valid) {
+          toast.error('Invalid invite code', { description: 'This code is invalid or has already been used.' })
+          setIsLoading(false)
+          return
+        }
+      }
+
       await apiClient.post<RegisterResponse>('/auth/register', {
         full_name: fullName,
         email,
@@ -104,7 +125,9 @@ export default function RegisterPageClient() {
       toast.success(`Welcome to Love Inc, ${fullName.split(' ')[0]}!`, {
         description: 'Your account has been created successfully.',
       })
-      router.push(userRole === 'tutor' ? '/tutor/dashboard' : '/student/dashboard')
+      if (userRole === 'admin') router.push('/admin/dashboard')
+      else if (userRole === 'tutor') router.push('/tutor/dashboard')
+      else router.push('/student/dashboard')
     } catch (err) {
       toast.error('Registration failed', {
         description: err instanceof ApiError ? err.message : 'Something went wrong. Please try again.',
@@ -281,6 +304,29 @@ export default function RegisterPageClient() {
                     </button>
                   ))}
                 </div>
+
+                {role === 'tutor' && (
+                  <div style={{ marginTop: '12px' }}>
+                    <label htmlFor="taCode" className="text-label" style={labelStyle}>
+                      Tutor invite code
+                    </label>
+                    <input
+                      id="taCode"
+                      type="text"
+                      autoComplete="off"
+                      placeholder="e.g. ABCD1234"
+                      value={taCode}
+                      onChange={(e) => setTaCode(e.target.value.toUpperCase())}
+                      onFocus={focusInput}
+                      onBlur={blurInput}
+                      className="text-body-sm"
+                      style={{ ...inputStyle, letterSpacing: '0.08em', textTransform: 'uppercase' }}
+                    />
+                    <p style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '4px' }}>
+                      Get this code from the admin (Sir PY).
+                    </p>
+                  </div>
+                )}
               </div>
 
               <button

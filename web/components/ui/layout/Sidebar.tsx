@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface SidebarProps {
-  variant: 'tutor' | 'student';
+  variant: 'admin' | 'student' | 'tutor';
   activeItem: string;
   onNavigate: (item: string) => void;
   onSignOut: () => void;
@@ -44,6 +44,12 @@ const IconSettings = () => (
   </svg>
 );
 
+const IconCohorts = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+    <path d="M5 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM2 9c0-1.1.9-2 2-2h2c.55 0 1.05.22 1.41.59A4 4 0 0 0 7 9v4H2V9zm7 0c0-.55.12-1.07.34-1.54A2 2 0 0 1 10 7h2a2 2 0 0 1 2 2v4h-5V9z" />
+  </svg>
+);
+
 const IconHome = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
     <path d="M8 1L2 6v8h3v-4h2v4h3V6l-6-5z" />
@@ -66,7 +72,7 @@ type Section = {
   items: NavItem[];
 };
 
-const TUTOR_SECTIONS: Section[] = [
+const ADMIN_SECTIONS: Section[] = [
   {
     name: 'TEACH',
     items: [
@@ -79,6 +85,7 @@ const TUTOR_SECTIONS: Section[] = [
   {
     name: 'CLASS',
     items: [
+      { label: 'Cohorts', icon: <IconCohorts /> },
       { label: 'Roster', icon: <IconRoster /> },
       { label: 'Settings', icon: <IconSettings /> },
     ],
@@ -97,13 +104,31 @@ const STUDENT_SECTIONS: Section[] = [
   },
 ];
 
+const TUTOR_SECTIONS: Section[] = [
+  {
+    name: 'COHORT',
+    items: [
+      { label: 'Dashboard', icon: <IconOverview /> },
+      { label: 'My Cohort', icon: <IconRoster /> },
+    ],
+  },
+  {
+    name: 'CONTENT',
+    items: [
+      { label: 'Modules', icon: <IconModules /> },
+      { label: 'Assignments', icon: <IconAssignments /> },
+      { label: 'Attendance', icon: <IconAttendance /> },
+    ],
+  },
+];
+
 export default function Sidebar({
   variant,
   activeItem,
   onNavigate,
   onSignOut,
 }: SidebarProps) {
-  const sections = variant === 'tutor' ? TUTOR_SECTIONS : STUDENT_SECTIONS;
+  const sections = variant === 'admin' ? ADMIN_SECTIONS : variant === 'tutor' ? TUTOR_SECTIONS : STUDENT_SECTIONS;
 
   return (
     <div

@@ -6,10 +6,11 @@ import {
   SetMetadata,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import type { UserRole } from './auth.dto';
 import type { JwtPayload } from './jwt.strategy';
 
 export const ROLES_KEY = 'roles';
-export const Roles = (...roles: string[]) => SetMetadata(ROLES_KEY, roles);
+export const Roles = (...roles: UserRole[]) => SetMetadata(ROLES_KEY, roles);
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -23,7 +24,7 @@ export class RolesGuard implements CanActivate {
     if (!required || required.length === 0) return true;
 
     const { user } = context.switchToHttp().getRequest<{ user: JwtPayload }>();
-    if (!user || !required.includes(user.role)) {
+    if (!user?.role || !required.includes(user.role)) {
       throw new ForbiddenException('Insufficient permissions');
     }
     return true;

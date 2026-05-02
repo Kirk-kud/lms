@@ -1,5 +1,7 @@
 import { IsEmail, IsIn, IsString, MinLength } from 'class-validator';
 
+export type UserRole = 'admin' | 'tutor' | 'student';
+
 export class RegisterDto {
   @IsEmail()
   email: string;
@@ -11,8 +13,8 @@ export class RegisterDto {
   @IsString()
   full_name: string;
 
-  @IsIn(['tutor', 'student'])
-  role: 'tutor' | 'student';
+  @IsIn(['admin', 'tutor', 'student'])
+  role: UserRole;
 }
 
 export class LoginDto {

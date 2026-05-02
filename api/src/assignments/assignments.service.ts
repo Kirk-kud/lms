@@ -5,6 +5,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
+import {
+  assertCohortBelongsToClass,
+  getTutorCohortForClass,
+} from '../common/access.helper';
 import { CreateAssignmentDto, UpdateAssignmentDto } from './assignments.dto';
 
 const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15 MB
@@ -32,12 +36,13 @@ export class AssignmentsService {
   private async assertStudentEnrolled(classId: string, studentId: string) {
     const { data } = await this.supabase.adminClient
       .from('enrollments')
-      .select('id')
+      .select('id, cohort_id')
       .eq('class_id', classId)
       .eq('student_id', studentId)
       .maybeSingle();
 
     if (!data) throw new ForbiddenException('Not enrolled in this class');
+    return data;
   }
 
   private async assertTutorOwnsAssignment(
@@ -58,18 +63,51 @@ export class AssignmentsService {
   // ----------------------------------------------------------------
   // GET /assignments/class/:classId
   // ----------------------------------------------------------------
-  async findByClass(classId: string, userId: string, role: string) {
-    if (role === 'tutor') {
+  async findByClass(
+    classId: string,
+    userId: string,
+    role: string | null,
+    cohortId?: string,
+  ) {
+    if (!classId) throw new BadRequestException('class_id is required');
+
+    let scopedCohortId: string | null | undefined = cohortId;
+
+    if (role === 'admin') {
       await this.assertTutorOwnsClass(classId, userId);
+      if (cohortId) {
+        await assertCohortBelongsToClass(this.supabase, classId, cohortId);
+      }
+    } else if (role === 'tutor') {
+      const cohort = await getTutorCohortForClass(
+        this.supabase,
+        classId,
+        userId,
+      );
+      if (cohortId && cohortId !== cohort.id) throw new ForbiddenException();
+      scopedCohortId = cohort.id;
     } else {
-      await this.assertStudentEnrolled(classId, userId);
+      const enrollment = await this.assertStudentEnrolled(classId, userId);
+      if (cohortId && cohortId !== enrollment.cohort_id)
+        throw new ForbiddenException();
+      scopedCohortId = enrollment.cohort_id;
     }
 
-    const { data: assignments, error } = await this.supabase.adminClient
+    let query = this.supabase.adminClient
       .from('assignments')
       .select('*')
       .eq('class_id', classId)
       .order('week_number', { ascending: true });
+
+    if (role === 'admin' && cohortId) {
+      query = query.eq('cohort_id', cohortId);
+    } else if (role !== 'admin') {
+      query = scopedCohortId
+        ? query.or(`cohort_id.is.null,cohort_id.eq.${scopedCohortId}`)
+        : query.is('cohort_id', null);
+    }
+
+    const { data: assignments, error } = await query;
 
     if (error) throw new BadRequestException(error.message);
     const list = assignments ?? [];
@@ -77,7 +115,7 @@ export class AssignmentsService {
 
     const assignmentIds = list.map((a) => a.id);
 
-    if (role === 'tutor') {
+    if (role === 'admin' || role === 'tutor') {
       return this.enrichForTutor(classId, list, assignmentIds);
     }
     return this.enrichForStudent(userId, list, assignmentIds);
@@ -109,7 +147,11 @@ export class AssignmentsService {
     const enrolled = enrolledCount ?? 0;
     return assignments.map((a) => {
       const submission_count = countByAssignment.get(a.id) ?? 0;
-      return { ...a, submission_count, missing_count: enrolled - submission_count };
+      return {
+        ...a,
+        submission_count,
+        missing_count: enrolled - submission_count,
+      };
     });
   }
 
@@ -139,6 +181,13 @@ export class AssignmentsService {
   // ----------------------------------------------------------------
   async create(tutorId: string, dto: CreateAssignmentDto) {
     await this.assertTutorOwnsClass(dto.class_id, tutorId);
+    if (dto.cohort_id) {
+      await assertCohortBelongsToClass(
+        this.supabase,
+        dto.class_id,
+        dto.cohort_id,
+      );
+    }
 
     const { data, error } = await this.supabase.adminClient
       .from('assignments')
@@ -148,6 +197,7 @@ export class AssignmentsService {
         description: dto.description ?? null,
         week_number: dto.week_number,
         due_date: dto.due_date,
+        cohort_id: dto.cohort_id ?? null,
       })
       .select()
       .single();
@@ -164,7 +214,17 @@ export class AssignmentsService {
     tutorId: string,
     dto: UpdateAssignmentDto,
   ) {
-    await this.assertTutorOwnsAssignment(assignmentId, tutorId);
+    const assignment = await this.assertTutorOwnsAssignment(
+      assignmentId,
+      tutorId,
+    );
+    if (dto.cohort_id) {
+      await assertCohortBelongsToClass(
+        this.supabase,
+        assignment.class_id,
+        dto.cohort_id,
+      );
+    }
 
     const { data, error } = await this.supabase.adminClient
       .from('assignments')
@@ -201,7 +261,8 @@ export class AssignmentsService {
       .eq('id', assignmentId)
       .single();
 
-    if (aErr || !assignment) throw new NotFoundException('Assignment not found');
+    if (aErr || !assignment)
+      throw new NotFoundException('Assignment not found');
     await this.assertTutorOwnsClass(assignment.class_id, tutorId);
 
     // All enrolled students
@@ -217,7 +278,7 @@ export class AssignmentsService {
       .eq('assignment_id', assignmentId);
 
     const submittedByStudent = new Map(
-      (submissions ?? []).map((s) => [(s.student as any).id, s]),
+      (submissions ?? []).map((s) => [s.student.id, s]),
     );
 
     return (enrollments ?? []).map((e) => {
@@ -253,10 +314,12 @@ export class AssignmentsService {
       .eq('id', assignmentId)
       .single();
 
-    if (aErr || !assignment) throw new NotFoundException('Assignment not found');
+    if (aErr || !assignment)
+      throw new NotFoundException('Assignment not found');
     await this.assertStudentEnrolled(assignment.class_id, studentId);
 
-    const status = new Date() > new Date(assignment.due_date) ? 'late' : 'submitted';
+    const status =
+      new Date() > new Date(assignment.due_date) ? 'late' : 'submitted';
 
     const storagePath = `${studentId}/${assignmentId}/${Date.now()}_${file.originalname}`;
 

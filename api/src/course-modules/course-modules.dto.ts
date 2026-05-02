@@ -19,6 +19,10 @@ export class CreateModuleDto {
   @IsInt()
   @Type(() => Number)
   order_index: number;
+
+  @IsOptional()
+  @IsUUID()
+  cohort_id?: string;
 }
 
 export class UpdateModuleDto {
@@ -30,6 +34,10 @@ export class UpdateModuleDto {
   @IsInt()
   @Type(() => Number)
   order_index?: number;
+
+  @IsOptional()
+  @IsUUID()
+  cohort_id?: string;
 }
 
 export class CreateModuleItemDto {

@@ -8,12 +8,18 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { SupabaseService } from '../supabase/supabase.service';
 import {
+  assertCohortBelongsToClass,
+  getTutorCohortForClass,
+} from '../common/access.helper';
+import {
   CreateModuleDto,
   CreateModuleItemDto,
   ReorderItemsDto,
   UpdateModuleDto,
   UpdateModuleItemDto,
 } from './course-modules.dto';
+
+const MAX_MODULE_PDF_SIZE = 25 * 1024 * 1024; // 25 MB
 
 @Injectable()
 export class CourseModulesService {
@@ -46,12 +52,13 @@ export class CourseModulesService {
   private async assertStudentEnrolled(classId: string, studentId: string) {
     const { data } = await this.supabase.adminClient
       .from('enrollments')
-      .select('id')
+      .select('id, cohort_id')
       .eq('class_id', classId)
       .eq('student_id', studentId)
       .maybeSingle();
 
     if (!data) throw new ForbiddenException('Not enrolled in this class');
+    return data;
   }
 
   /** Resolves a module to its class_id and verifies tutor owns that class. */
@@ -76,7 +83,7 @@ export class CourseModulesService {
       .single();
 
     if (error || !item) throw new NotFoundException('Item not found');
-    const classId = (item.module as any).class_id as string;
+    const classId = item.module.class_id as string;
     await this.assertTutorOwnsClass(classId, tutorId);
     return item;
   }
@@ -84,19 +91,55 @@ export class CourseModulesService {
   // ----------------------------------------------------------------
   // GET /modules/class/:classId
   // ----------------------------------------------------------------
-  async findByClass(classId: string, userId: string, role: string) {
-    if (role === 'tutor') {
+  async findByClass(
+    classId: string,
+    userId: string,
+    role: string | null,
+    cohortId?: string,
+  ) {
+    if (!classId) throw new BadRequestException('class_id is required');
+
+    let scopedCohortId: string | null | undefined = cohortId;
+
+    if (role === 'admin') {
       await this.assertTutorOwnsClass(classId, userId);
+      if (cohortId) {
+        await assertCohortBelongsToClass(this.supabase, classId, cohortId);
+      }
+    } else if (role === 'tutor') {
+      const cohort = await getTutorCohortForClass(
+        this.supabase,
+        classId,
+        userId,
+      );
+      if (cohortId && cohortId !== cohort.id) throw new ForbiddenException();
+      scopedCohortId = cohort.id;
     } else {
-      await this.assertStudentEnrolled(classId, userId);
+      const enrollment = await this.assertStudentEnrolled(classId, userId);
+      if (cohortId && cohortId !== enrollment.cohort_id)
+        throw new ForbiddenException();
+      scopedCohortId = enrollment.cohort_id;
     }
 
-    const { data, error } = await this.supabase.adminClient
+    let query = this.supabase.adminClient
       .from('modules')
       .select('*, items:module_items(*)')
       .eq('class_id', classId)
       .order('order_index', { ascending: true })
-      .order('order_index', { ascending: true, referencedTable: 'module_items' });
+      .order('order_index', {
+        ascending: true,
+        referencedTable: 'module_items',
+      });
+
+    if (role === 'admin' && cohortId) {
+      query = query.eq('cohort_id', cohortId);
+    } else if (role !== 'admin') {
+      query = scopedCohortId
+        ? query.or(`cohort_id.is.null,cohort_id.eq.${scopedCohortId}`)
+        : query.is('cohort_id', null);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw new BadRequestException(error.message);
     return data ?? [];
@@ -107,10 +150,22 @@ export class CourseModulesService {
   // ----------------------------------------------------------------
   async create(tutorId: string, dto: CreateModuleDto) {
     await this.assertTutorOwnsClass(dto.class_id, tutorId);
+    if (dto.cohort_id) {
+      await assertCohortBelongsToClass(
+        this.supabase,
+        dto.class_id,
+        dto.cohort_id,
+      );
+    }
 
     const { data, error } = await this.supabase.adminClient
       .from('modules')
-      .insert({ class_id: dto.class_id, title: dto.title, order_index: dto.order_index })
+      .insert({
+        class_id: dto.class_id,
+        title: dto.title,
+        order_index: dto.order_index,
+        cohort_id: dto.cohort_id ?? null,
+      })
       .select()
       .single();
 
@@ -122,7 +177,14 @@ export class CourseModulesService {
   // PATCH /modules/:id
   // ----------------------------------------------------------------
   async update(moduleId: string, tutorId: string, dto: UpdateModuleDto) {
-    await this.assertTutorOwnsModule(moduleId, tutorId);
+    const mod = await this.assertTutorOwnsModule(moduleId, tutorId);
+    if (dto.cohort_id) {
+      await assertCohortBelongsToClass(
+        this.supabase,
+        mod.class_id,
+        dto.cohort_id,
+      );
+    }
 
     const { data, error } = await this.supabase.adminClient
       .from('modules')
@@ -158,18 +220,30 @@ export class CourseModulesService {
     dto: CreateModuleItemDto,
     file?: Express.Multer.File,
   ) {
-    this.logger.log(`createItem called - moduleId=${moduleId}, type=${dto.type}, hasFile=${!!file}`);
-    
+    this.logger.log(
+      `createItem called - moduleId=${moduleId}, type=${dto.type}, hasFile=${!!file}`,
+    );
+
     const mod = await this.assertTutorOwnsModule(moduleId, tutorId);
     let contentUrl = dto.content_url ?? null;
 
-    if (dto.type === 'pdf' && file) {
-      this.logger.log(`Uploading PDF - filename=${file.originalname}, size=${file.buffer.length}`);
+    if (dto.type === 'pdf') {
+      if (!file) throw new BadRequestException('PDF file is required');
+      if (file.mimetype !== 'application/pdf') {
+        throw new BadRequestException('Only PDF files are accepted');
+      }
+      if (file.size > MAX_MODULE_PDF_SIZE) {
+        throw new BadRequestException('PDF file must be under 25 MB');
+      }
+
+      this.logger.log(
+        `Uploading PDF - filename=${file.originalname}, size=${file.buffer.length}`,
+      );
       // Sanitize filename: remove special characters, replace spaces with underscores
       const sanitized = file.originalname
         .replace(/[^a-zA-Z0-9.\-_]/g, '_')
         .replace(/\s+/g, '_');
-      const path = `modules/${mod.class_id}/${Date.now()}_${sanitized}`;
+      const path = `${mod.class_id}/${Date.now()}_${sanitized}`;
       const { error: uploadError } = await this.supabase.adminClient.storage
         .from('modules')
         .upload(path, file.buffer, {
@@ -178,7 +252,9 @@ export class CourseModulesService {
         });
 
       if (uploadError) {
-        this.logger.error(`Supabase upload error: ${JSON.stringify(uploadError)}`);
+        this.logger.error(
+          `Supabase upload error: ${JSON.stringify(uploadError)}`,
+        );
         throw new BadRequestException(uploadError.message);
       }
 
@@ -210,11 +286,7 @@ export class CourseModulesService {
   // ----------------------------------------------------------------
   // PATCH /modules/items/:itemId
   // ----------------------------------------------------------------
-  async updateItem(
-    itemId: string,
-    tutorId: string,
-    dto: UpdateModuleItemDto,
-  ) {
+  async updateItem(itemId: string, tutorId: string, dto: UpdateModuleItemDto) {
     await this.assertTutorOwnsItem(itemId, tutorId);
 
     const { data, error } = await this.supabase.adminClient
@@ -236,10 +308,13 @@ export class CourseModulesService {
 
     // Delete storage file for PDFs
     if (item.type === 'pdf' && item.content_url) {
-      const storagePath = (item.content_url as string).replace(this.storageUrl, '');
+      const storagePath = (item.content_url as string).replace(
+        this.storageUrl,
+        '',
+      );
       if (storagePath) {
         await this.supabase.adminClient.storage
-          .from('submissions')
+          .from('modules')
           .remove([storagePath]);
       }
     }
@@ -272,7 +347,10 @@ export class CourseModulesService {
       .from('modules')
       .select('*, items:module_items(*)')
       .eq('id', moduleId)
-      .order('order_index', { ascending: true, referencedTable: 'module_items' })
+      .order('order_index', {
+        ascending: true,
+        referencedTable: 'module_items',
+      })
       .single();
 
     if (error) throw new BadRequestException(error.message);

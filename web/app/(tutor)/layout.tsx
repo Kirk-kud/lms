@@ -1,40 +1,37 @@
 'use client'
 
-import { useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import Sidebar from '@/components/ui/layout/Sidebar'
 import Topbar from '@/components/ui/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
-import { useClasses } from '@/lib/hooks/useClasses'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 
 function activeItemFromPath(pathname: string): string {
-  if (/\/tutor\/classes\/[^/]+\/modules/.test(pathname)) return 'Modules'
-  if (/\/tutor\/classes\/[^/]+\/assignments/.test(pathname)) return 'Assignments'
-  if (/\/tutor\/classes\/[^/]+\/attendance/.test(pathname)) return 'Attendance'
-  if (/\/tutor\/classes\/[^/]+\/roster/.test(pathname)) return 'Roster'
-  if (/\/tutor\/classes\/[^/]+\/settings/.test(pathname)) return 'Settings'
-  return 'Overview'
+  if (pathname.includes('/tutor/cohort')) return 'My Cohort'
+  if (pathname.includes('/tutor/modules')) return 'Modules'
+  if (pathname.includes('/tutor/assignments')) return 'Assignments'
+  if (pathname.includes('/tutor/attendance')) return 'Attendance'
+  return 'Dashboard'
 }
 
-const TUTOR_SEGMENTS: Record<string, string> = {
-  Modules: 'modules',
-  Assignments: 'assignments',
-  Attendance: 'attendance',
-  Roster: 'roster',
-  Settings: 'settings',
+const NAV_ROUTES: Record<string, string> = {
+  Dashboard: '/tutor/dashboard',
+  'My Cohort': '/tutor/cohort',
+  Modules: '/tutor/modules',
+  Assignments: '/tutor/assignments',
+  Attendance: '/tutor/attendance',
 }
 
-const IconOverview = ({ active }: { active: boolean }) => (
+const IconDashboard = ({ active }: { active: boolean }) => (
   <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor" className={active ? 'text-[#8B1A2F]' : 'text-[#9CA3AF]'}>
     <path d="M2 3h4v4H2V3zm6 0h4v4H8V3zM2 9h4v4H2V9zm6 0h4v4h-4V9z" />
+  </svg>
+)
+
+const IconCohort = ({ active }: { active: boolean }) => (
+  <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor" className={active ? 'text-[#8B1A2F]' : 'text-[#9CA3AF]'}>
+    <path d="M5 3a3 3 0 1 1 6 0A3 3 0 0 1 5 3zM1 14s-1 0-1-1 1-4 7-4 7 3 7 4-1 1-1 1H1zm10-4.5a5 5 0 0 1 2 1 3 3 0 0 1 1 2.5s0 1-1 1h-1.5c.1-.3.2-.7.2-1C11.7 11.6 10.4 10.1 9 9.3a7.4 7.4 0 0 1 2-.8z" />
   </svg>
 )
 
@@ -61,11 +58,7 @@ export default function TutorLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname()
   const qc = useQueryClient()
   const { user } = useUser()
-  const { data: classes = [] } = useClasses(user?.id)
-  const [pickerOpen, setPickerOpen] = useState(false)
-  const [pendingLabel, setPendingLabel] = useState('')
 
-  const urlClassId = pathname.match(/\/tutor\/classes\/([^/]+)/)?.[1]
   const activeItem = activeItemFromPath(pathname)
 
   const fullName: string = (user?.user_metadata?.full_name as string) ?? ''
@@ -77,24 +70,8 @@ export default function TutorLayout({ children }: { children: React.ReactNode })
     .toUpperCase()
 
   const handleNavigate = (label: string) => {
-    if (label === 'Overview') {
-      router.push('/tutor/dashboard')
-      return
-    }
-    const segment = TUTOR_SEGMENTS[label]
-    if (!segment) return
-    if (urlClassId) {
-      router.push(`/tutor/classes/${urlClassId}/${segment}`)
-    } else {
-      setPendingLabel(label)
-      setPickerOpen(true)
-    }
-  }
-
-  const handlePickClass = (classId: string) => {
-    setPickerOpen(false)
-    const segment = TUTOR_SEGMENTS[pendingLabel]
-    if (segment) router.push(`/tutor/classes/${classId}/${segment}`)
+    const route = NAV_ROUTES[label]
+    if (route) router.push(route)
   }
 
   const handleSignOut = async () => {
@@ -123,8 +100,11 @@ export default function TutorLayout({ children }: { children: React.ReactNode })
       </div>
 
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t-[0.5px] border-[#E5E5E5] h-[calc(56px+env(safe-area-inset-bottom))] px-6 pb-[env(safe-area-inset-bottom)] flex items-center justify-between">
-        <button onClick={() => handleNavigate('Overview')} aria-label="Overview">
-          <IconOverview active={activeItem === 'Overview'} />
+        <button onClick={() => handleNavigate('Dashboard')} aria-label="Dashboard">
+          <IconDashboard active={activeItem === 'Dashboard'} />
+        </button>
+        <button onClick={() => handleNavigate('My Cohort')} aria-label="My Cohort">
+          <IconCohort active={activeItem === 'My Cohort'} />
         </button>
         <button onClick={() => handleNavigate('Modules')} aria-label="Modules">
           <IconModules active={activeItem === 'Modules'} />
@@ -136,35 +116,6 @@ export default function TutorLayout({ children }: { children: React.ReactNode })
           <IconAttendance active={activeItem === 'Attendance'} />
         </button>
       </nav>
-
-      <Dialog open={pickerOpen} onOpenChange={(v) => !v && setPickerOpen(false)}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="text-[15px] font-medium">Choose a class</DialogTitle>
-          </DialogHeader>
-          <div className="mt-2 space-y-2">
-            {classes.length === 0 ? (
-              <p className="text-[13px] text-[#9CA3AF]">No classes yet. Create one from the Classes page.</p>
-            ) : (
-              classes.map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => handlePickClass(c.id)}
-                  className="w-full text-left border border-[#E5E5E5] rounded-xl p-4 hover:border-[#8B1A2F]/30 hover:bg-[#FAFAFA] transition-all"
-                >
-                  <p className="text-[14px] font-medium text-[#111]">{c.title}</p>
-                  {c.description && (
-                    <p className="text-[12px] text-[#6B7280] mt-1 line-clamp-2">{c.description}</p>
-                  )}
-                  <p className="text-[11px] text-[#9CA3AF] mt-1">
-                    {c.enrolled_count} {c.enrolled_count === 1 ? 'student' : 'students'}
-                  </p>
-                </button>
-              ))
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

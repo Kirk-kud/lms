@@ -1,10 +1,10 @@
 import type { Metadata } from 'next'
-import ProfilePageClient from './page.client'
+import ProfileView from '@/components/ui/shared/ProfileView'
 
 export const metadata: Metadata = {
-  title: 'Profile · Love\u00A0Inc',
+  title: 'Profile · Love Inc',
 }
 
 export default function TutorProfilePage() {
-  return <ProfilePageClient />
+  return <ProfileView />
 }

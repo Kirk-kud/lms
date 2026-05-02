@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { apiClient } from '@/lib/api'
+import { apiClient, ApiError } from '@/lib/api'
 
 export interface ModuleItem {
   id: string
@@ -44,24 +44,37 @@ export function useCreateModule() {
 export function useAddModuleItem() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       moduleId,
-      classId: _classId,
       formData,
     }: {
       moduleId: string
       classId: string
       formData: FormData
-    }) =>
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/modules/${moduleId}/items`, {
+    }) => {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/modules/${moduleId}/items`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('access_token') ?? ''}`,
         },
         body: formData,
       })
-        .then((r) => r.json())
-        .then((j) => j.data as ModuleItem),
+
+      const json = (await res.json().catch(() => null)) as {
+        data?: ModuleItem
+        message?: string
+      } | null
+
+      if (!res.ok) {
+        throw new ApiError(res.status, json?.message ?? 'Unable to add item')
+      }
+
+      if (!json?.data) {
+        throw new ApiError(res.status, 'Invalid API response')
+      }
+
+      return json.data
+    },
     onSuccess: (_data, vars) =>
       qc.invalidateQueries({ queryKey: ['modules', vars.classId] }),
   })
