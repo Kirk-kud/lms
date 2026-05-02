@@ -174,8 +174,37 @@ export default function JoinClassPageClient() {
             justifyContent: 'center',
             padding: '0 48px',
             backgroundColor: '#FFFFFF',
+            position: 'relative',
           }}
         >
+          {/* Back button */}
+          <button
+            onClick={() => router.back()}
+            aria-label="Go back"
+            style={{
+              position: 'absolute',
+              top: '24px',
+              right: '24px',
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              border: '1px solid #ECE6E0',
+              backgroundColor: '#FFFFFF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              color: '#6B6168',
+              transition: 'background-color 120ms ease',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#FAF7F4')}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FFFFFF')}
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M11 3L3 11M3 3l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          </button>
+
           <div style={{ width: '100%', maxWidth: '360px' }}>
             {/* Mobile logo */}
             <div className="md:hidden flex flex-col items-center" style={{ marginBottom: '24px' }}>
