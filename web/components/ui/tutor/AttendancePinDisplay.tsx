@@ -19,17 +19,20 @@ export default function AttendancePinDisplay({
   onEndSession,
 }: AttendancePinDisplayProps) {
   const [timeLeft, setTimeLeft] = useState('')
+  const [secondsLeft, setSecondsLeft] = useState(0)
   const [isExpired, setIsExpired] = useState(false)
 
   useEffect(() => {
     const update = () => {
       const diff = expiresAt.getTime() - Date.now()
       if (diff <= 0) {
+        setSecondsLeft(0)
         setIsExpired(true)
         setTimeLeft('Expired')
         return
       }
       const s = Math.floor(diff / 1000)
+      setSecondsLeft(s)
       const m = Math.floor(s / 60)
       const sec = s % 60
       setTimeLeft(m > 0 ? `${m}m ${sec}s` : `${sec}s`)
@@ -40,7 +43,6 @@ export default function AttendancePinDisplay({
     return () => clearInterval(id)
   }, [expiresAt])
 
-  const secondsLeft = Math.floor((expiresAt.getTime() - Date.now()) / 1000)
   const isLow = secondsLeft > 0 && secondsLeft < 60
 
   const handleCopy = async () => {

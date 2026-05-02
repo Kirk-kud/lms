@@ -2,7 +2,6 @@
 
 import { use, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useUser } from '@/lib/hooks/useUser'
 import { useModules, ModuleItem } from '@/lib/hooks/useModules'
 import { useClass } from '@/lib/hooks/useClasses'
 import { SkeletonCard } from '@/components/ui/shared/SkeletonCard'
@@ -154,7 +153,6 @@ function ModuleSection({ module, onItemClick }: {
 export default function StudentModulesPageClient({ params }: { params: Promise<{ id: string }> }) {
   const { id: classId } = use(params)
   const router = useRouter()
-  const { user } = useUser()
   const {
     data: classData,
     isLoading: isClassLoading,

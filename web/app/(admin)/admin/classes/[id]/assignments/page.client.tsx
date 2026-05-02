@@ -176,11 +176,9 @@ function SubmissionsInbox({ assignmentId, enrolledCount }: { assignmentId: strin
 
 function AssignmentCard({
   assignment,
-  classId,
   onDelete,
 }: {
   assignment: Assignment
-  classId: string
   onDelete: () => void
 }) {
   const [expanded, setExpanded] = useState(false)
@@ -373,7 +371,6 @@ export default function AssignmentsPageClient({ params }: { params: Promise<{ id
               <AssignmentCard
                 key={a.id}
                 assignment={a}
-                classId={classId}
                 onDelete={async () => {
                   try {
                     await deleteAssignment.mutateAsync({ assignmentId: a.id, classId })

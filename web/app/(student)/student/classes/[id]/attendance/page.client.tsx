@@ -64,11 +64,10 @@ export default function StudentAttendancePageClient({ params }: { params: Promis
   const checkedInAt = activeRow?.checked_in_at ? new Date(activeRow.checked_in_at) : undefined
 
   useEffect(() => {
-    if (activeRow?.session?.is_active) {
-      setSessionActive(true)
-    } else if (!activeRow) {
-      setSessionActive(false)
-    }
+    const timeoutId = window.setTimeout(() => {
+      setSessionActive(Boolean(activeRow?.session?.is_active))
+    }, 0)
+    return () => window.clearTimeout(timeoutId)
   }, [activeRow?.session?.id, activeRow?.session?.is_active])
 
   useEffect(() => {

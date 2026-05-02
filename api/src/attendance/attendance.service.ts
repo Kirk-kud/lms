@@ -6,7 +6,10 @@ import {
 } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import type { JwtPayload } from '../auth/jwt.strategy';
-import { assertTutorOwnsCohort, getTutorCohortForClass } from '../common/access.helper';
+import {
+  assertTutorOwnsCohort,
+  getTutorCohortForClass,
+} from '../common/access.helper';
 import { CheckInDto, CreateSessionDto } from './attendance.dto';
 
 @Injectable()

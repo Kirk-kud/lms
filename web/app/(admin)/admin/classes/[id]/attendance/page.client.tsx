@@ -21,7 +21,7 @@ import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { ApiError } from '@/lib/api'
 
-function SessionHistoryRow({ session, classId }: { session: AttendanceSession; classId: string }) {
+function SessionHistoryRow({ session }: { session: AttendanceSession }) {
   const [expanded, setExpanded] = useState(false)
   const { data: records } = useSessionRecords(expanded ? session.id : '')
 
@@ -159,7 +159,7 @@ export default function AttendancePageClient({ params }: { params: Promise<{ id:
       )
       .subscribe()
     return () => { supabase.removeChannel(channel) }
-  }, [activeSession?.id, classId, qc])
+  }, [activeSession, classId, qc])
 
   const handleStartSession = async () => {
     try {
@@ -270,7 +270,7 @@ export default function AttendancePageClient({ params }: { params: Promise<{ id:
           {pastSessions
             .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime())
             .map((session) => (
-              <SessionHistoryRow key={session.id} session={session} classId={classId} />
+              <SessionHistoryRow key={session.id} session={session} />
             ))}
         </div>
       )}

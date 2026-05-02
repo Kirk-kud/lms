@@ -46,7 +46,6 @@ export function useAddModuleItem() {
   return useMutation({
     mutationFn: async ({
       moduleId,
-      classId: _classId,
       formData,
     }: {
       moduleId: string

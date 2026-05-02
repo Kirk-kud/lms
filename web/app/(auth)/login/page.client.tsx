@@ -60,8 +60,8 @@ export default function LoginPageClient() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       })
-      const json = (await res.json()) as { data: LoginResponse; message: string }
-      if (!res.ok) throw new Error((json as any).message ?? 'Invalid credentials')
+      const json = (await res.json()) as { data: LoginResponse; message?: string }
+      if (!res.ok) throw new Error(json.message ?? 'Invalid credentials')
 
       const { access_token, user } = json.data
       localStorage.setItem('access_token', access_token)
