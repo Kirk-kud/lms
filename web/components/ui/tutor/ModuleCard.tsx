@@ -17,7 +17,7 @@ interface Item {
 interface ModuleCardProps {
   title: string
   items: Item[]
-  mode: 'tutor' | 'student'
+  mode: 'admin' | 'student'
   completedItems?: string[]
   onAddItem?: () => void
   onDeleteItem?: (id: string) => void
@@ -91,7 +91,7 @@ export default function ModuleCard({
           </span>
         </div>
 
-        {mode === 'tutor' && (
+        {mode === 'admin' && (
           <div className="flex items-center gap-1.5">
             <button
               onClick={onAddItem}
@@ -166,7 +166,7 @@ export default function ModuleCard({
                       <DownloadIcon />
                     </span>
                   )}
-                  {mode === 'tutor' && (
+                  {mode === 'admin' && (
                     <button
                       onClick={(e) => { e.stopPropagation(); onDeleteItem?.(item.id) }}
                       className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center text-[#9CA3AF] hover:text-[#991B1B] transition-all"

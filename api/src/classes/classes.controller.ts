@@ -1,4 +1,14 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import type { Request } from 'express';
 import { createResponse } from '../common/response.helper';
 import { Roles, RolesGuard } from '../auth/role.guard';
@@ -12,7 +22,7 @@ export class ClassesController {
   constructor(private readonly classesService: ClassesService) {}
 
   @Post()
-  @Roles('tutor')
+  @Roles('admin')
   async create(@Req() req: Request, @Body() dto: CreateClassDto) {
     const user = req.user as JwtPayload;
     const data = await this.classesService.create(user.sub, dto);
@@ -44,7 +54,7 @@ export class ClassesController {
   }
 
   @Get(':id/roster')
-  @Roles('tutor')
+  @Roles('admin')
   async getRoster(@Req() req: Request, @Param('id') id: string) {
     const user = req.user as JwtPayload;
     const data = await this.classesService.getRoster(id, user.sub);
@@ -52,7 +62,7 @@ export class ClassesController {
   }
 
   @Delete(':id')
-  @Roles('tutor')
+  @Roles('admin')
   @HttpCode(200)
   async remove(@Req() req: Request, @Param('id') id: string) {
     const user = req.user as JwtPayload;

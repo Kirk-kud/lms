@@ -54,7 +54,7 @@ function ClassCard({ id, title, description, enrolledCount, inviteCode }: {
 
   return (
     <div
-      onClick={() => router.push(`/tutor/classes/${id}/modules`)}
+      onClick={() => router.push(`/admin/classes/${id}/modules`)}
       className="border border-[#E5E5E5] rounded-xl p-5 cursor-pointer hover:border-[#8B1A2F]/30 hover:bg-[#FAFAFA] transition-all"
     >
       <div className="flex items-start justify-between gap-3">
@@ -248,7 +248,7 @@ export default function ClassesPageClient() {
       <CreateClassModal
         open={showCreate}
         onClose={() => setShowCreate(false)}
-        onCreated={(id) => router.push(`/tutor/classes/${id}/modules`)}
+        onCreated={(id) => router.push(`/admin/classes/${id}/modules`)}
       />
     </div>
   )

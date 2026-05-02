@@ -12,7 +12,7 @@ export default function ProfileView() {
 
   const fullName = (user?.user_metadata?.full_name as string) ?? ''
   const email = user?.email ?? ''
-  const role = (user?.user_metadata?.role as 'student' | 'tutor' | null) ?? null
+  const role = (user?.user_metadata?.role as 'student' | 'admin' | 'tutor' | null) ?? null
   const initials = fullName
     .split(' ')
     .map((w) => w[0] ?? '')
@@ -69,7 +69,7 @@ export default function ProfileView() {
           </p>
           {role && (
             <div style={{ marginTop: '6px' }}>
-              <StatusBadge variant="wine" label={role === 'tutor' ? 'Tutor' : 'Student'} />
+              <StatusBadge variant="wine" label={role === 'admin' ? 'Admin' : role === 'tutor' ? 'Tutor' : 'Student'} />
             </div>
           )}
         </div>
@@ -144,7 +144,7 @@ export default function ProfileView() {
             Role
           </span>
           {role ? (
-            <StatusBadge variant="wine" label={role === 'tutor' ? 'Tutor' : 'Student'} />
+            <StatusBadge variant="wine" label={role === 'admin' ? 'Admin' : role === 'tutor' ? 'Tutor' : 'Student'} />
           ) : (
             <span style={{ fontSize: '13px', color: '#9CA3AF' }}>—</span>
           )}

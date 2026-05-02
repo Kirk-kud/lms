@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UploadedFile,
   UseGuards,
@@ -24,6 +25,22 @@ import { AssignmentsService } from './assignments.service';
 export class AssignmentsController {
   constructor(private readonly service: AssignmentsService) {}
 
+  @Get()
+  async findByQuery(
+    @Req() req: Request,
+    @Query('class_id') classId: string,
+    @Query('cohort_id') cohortId?: string,
+  ) {
+    const user = req.user as JwtPayload;
+    const data = await this.service.findByClass(
+      classId,
+      user.sub,
+      user.role,
+      cohortId,
+    );
+    return createResponse(data, 'Assignments fetched');
+  }
+
   // Literal segment 'class' declared before param routes
   @Get('class/:classId')
   async findByClass(@Req() req: Request, @Param('classId') classId: string) {
@@ -33,7 +50,7 @@ export class AssignmentsController {
   }
 
   @Post()
-  @Roles('tutor')
+  @Roles('admin')
   async create(@Req() req: Request, @Body() dto: CreateAssignmentDto) {
     const user = req.user as JwtPayload;
     const data = await this.service.create(user.sub, dto);
@@ -41,7 +58,7 @@ export class AssignmentsController {
   }
 
   @Get(':id/submissions')
-  @Roles('tutor')
+  @Roles('admin')
   async getSubmissions(@Req() req: Request, @Param('id') id: string) {
     const user = req.user as JwtPayload;
     const data = await this.service.getSubmissions(id, user.sub);
@@ -62,7 +79,7 @@ export class AssignmentsController {
   }
 
   @Patch(':id')
-  @Roles('tutor')
+  @Roles('admin')
   async update(
     @Req() req: Request,
     @Param('id') id: string,
@@ -74,7 +91,7 @@ export class AssignmentsController {
   }
 
   @Delete(':id')
-  @Roles('tutor')
+  @Roles('admin')
   async remove(@Req() req: Request, @Param('id') id: string) {
     const user = req.user as JwtPayload;
     await this.service.remove(id, user.sub);

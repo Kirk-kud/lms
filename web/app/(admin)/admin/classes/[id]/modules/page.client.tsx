@@ -235,9 +235,9 @@ export default function ModulesPageClient({ params }: { params: Promise<{ id: st
   const didSuccessRef = useRef(false)
 
   useEffect(() => {
-    router.prefetch(`/tutor/classes/${classId}/assignments`)
-    router.prefetch(`/tutor/classes/${classId}/attendance`)
-    router.prefetch(`/tutor/classes/${classId}/roster`)
+    router.prefetch(`/admin/classes/${classId}/assignments`)
+    router.prefetch(`/admin/classes/${classId}/attendance`)
+    router.prefetch(`/admin/classes/${classId}/roster`)
   }, [classId, router])
 
   useEffect(() => {
@@ -296,16 +296,16 @@ export default function ModulesPageClient({ params }: { params: Promise<{ id: st
     <div className="p-8 max-w-3xl">
       <nav className="flex items-center gap-2 text-[12px] text-[#9CA3AF] mb-6">
         <button
-          onClick={() => router.push('/tutor/classes')}
-          onMouseEnter={() => router.prefetch('/tutor/classes')}
+          onClick={() => router.push('/admin/classes')}
+          onMouseEnter={() => router.prefetch('/admin/classes')}
           className="hover:text-[#111] transition-colors"
         >
           Classes
         </button>
         <span>/</span>
         <button
-          onClick={() => router.push(`/tutor/classes/${classId}/modules`)}
-          onMouseEnter={() => router.prefetch(`/tutor/classes/${classId}/modules`)}
+          onClick={() => router.push(`/admin/classes/${classId}/modules`)}
+          onMouseEnter={() => router.prefetch(`/admin/classes/${classId}/modules`)}
           className="hover:text-[#111] transition-colors"
         >
           {isClassLoading ? (
@@ -372,7 +372,7 @@ export default function ModulesPageClient({ params }: { params: Promise<{ id: st
                 key={mod.id}
                 title={mod.title}
                 items={mod.items}
-                mode="tutor"
+                mode="admin"
                 onAddItem={() => handleAddItem(mod.id)}
                 onDeleteItem={handleDeleteItem}
                 onDeleteModule={() => handleDeleteModule(mod.id)}

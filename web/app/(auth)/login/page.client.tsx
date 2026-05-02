@@ -72,7 +72,7 @@ export default function LoginPageClient() {
       toast.success(`Welcome back${user.full_name ? `, ${user.full_name.split(' ')[0]}` : ''}!`, {
         description: 'You have been signed in successfully.',
       })
-      router.push(user.role === 'tutor' ? '/tutor/dashboard' : '/student/dashboard')
+      router.push(user.role === 'admin' ? '/admin/dashboard' : user.role === 'tutor' ? '/tutor/dashboard' : '/student/dashboard')
     } catch (err) {
       toast.error('Sign in failed', {
         description: err instanceof Error ? err.message : 'Something went wrong. Please try again.',
