@@ -201,7 +201,7 @@ export default function Sidebar({
   return (
     <div
       style={{
-        width: '220px',
+        width: '260px',
         backgroundColor: '#FAF7F4',
         borderRight: '1px solid #ECE6E0',
         display: 'flex',

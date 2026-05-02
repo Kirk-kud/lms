@@ -106,8 +106,10 @@ export default function StudentDashboardPageClient() {
     refetchClasses(); refetchAssignments(); refetchModules(); refetchAttendance()
   }
 
+  const nextAssignment = pendingAssignments[0] ?? null
+
   return (
-    <div style={{ padding: '28px 32px', maxWidth: '900px' }}>
+    <div style={{ padding: '28px 32px' }}>
       {/* Page header */}
       <div style={{ marginBottom: '24px' }}>
         <h1
@@ -157,92 +159,174 @@ export default function StudentDashboardPageClient() {
       )}
 
       {!isLoading && primaryClass && (
-        /* Due soon panel */
-        <div
-          style={{
-            backgroundColor: '#FFFFFF',
-            border: '1px solid #ECE6E0',
-            borderRadius: '8px',
-            overflow: 'hidden',
-          }}
-        >
-          {/* Panel header */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '20px', alignItems: 'start' }}>
+
+          {/* Left: Due soon */}
           <div
             style={{
-              padding: '14px 20px',
-              borderBottom: '1px solid #ECE6E0',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #ECE6E0',
+              borderRadius: '8px',
+              overflow: 'hidden',
             }}
           >
-            <h2 style={{ fontSize: '14px', fontWeight: 600, color: '#0A0A0B', margin: 0 }}>
-              Due soon
-            </h2>
-            <button
-              onClick={() => router.push(`/student/classes/${classId}/assignments`)}
+            <div
               style={{
-                fontSize: '12.5px',
-                color: '#8B1A2F',
-                fontWeight: 500,
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: 0,
+                padding: '14px 20px',
+                borderBottom: '1px solid #ECE6E0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
               }}
             >
-              View all
-            </button>
-          </div>
-
-          {/* Table header */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 130px 120px 60px',
-              padding: '8px 20px',
-              borderBottom: '1px solid #ECE6E0',
-              backgroundColor: '#FAF7F4',
-            }}
-          >
-            {['Assignment', 'Week', 'Due', ''].map((col) => (
-              <span
-                key={col}
-                style={{
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  color: '#9C949A',
-                }}
+              <h2 style={{ fontSize: '14px', fontWeight: 600, color: '#0A0A0B', margin: 0 }}>
+                Due soon
+              </h2>
+              <button
+                onClick={() => router.push(`/student/classes/${classId}/assignments`)}
+                style={{ fontSize: '12.5px', color: '#8B1A2F', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
               >
-                {col}
-              </span>
-            ))}
+                View all
+              </button>
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 130px 120px 60px',
+                padding: '8px 20px',
+                borderBottom: '1px solid #ECE6E0',
+                backgroundColor: '#FAF7F4',
+              }}
+            >
+              {['Assignment', 'Week', 'Due', ''].map((col) => (
+                <span key={col} style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9C949A' }}>
+                  {col}
+                </span>
+              ))}
+            </div>
+
+            {pendingAssignments.length === 0 ? (
+              <p style={{ padding: '24px 20px', fontSize: '13.5px', color: '#9C949A', margin: 0 }}>
+                All caught up — nothing pending!
+              </p>
+            ) : (
+              pendingAssignments.map((a) => {
+                const status = getStatusInfo(a, now)
+                const isOverdue = new Date(a.due_date) < now
+                return (
+                  <DueRow
+                    key={a.id}
+                    title={a.title}
+                    week={a.week_number}
+                    dueDate={a.due_date}
+                    statusColor={status.color}
+                    isOverdue={isOverdue}
+                    onClick={() => router.push(`/student/classes/${classId}/assignments`)}
+                  />
+                )
+              })
+            )}
           </div>
 
-          {/* Rows */}
-          {pendingAssignments.length === 0 ? (
-            <p style={{ padding: '24px 20px', fontSize: '13.5px', color: '#9C949A', margin: 0 }}>
-              All caught up — nothing pending!
-            </p>
-          ) : (
-            pendingAssignments.map((a) => {
-              const status = getStatusInfo(a, now)
-              const isOverdue = new Date(a.due_date) < now
-              return (
-                <DueRow
-                  key={a.id}
-                  title={a.title}
-                  week={a.week_number}
-                  dueDate={a.due_date}
-                  statusColor={status.color}
-                  isOverdue={isOverdue}
-                  onClick={() => router.push(`/student/classes/${classId}/assignments`)}
-                />
-              )
-            })
-          )}
+          {/* Right: Notice board */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+            {/* What's next */}
+            <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #ECE6E0', borderRadius: '8px', overflow: 'hidden' }}>
+              <div style={{ padding: '14px 20px', borderBottom: '1px solid #ECE6E0' }}>
+                <h2 style={{ fontSize: '14px', fontWeight: 600, color: '#0A0A0B', margin: 0 }}>What&apos;s next</h2>
+              </div>
+              <div style={{ padding: '16px 20px' }}>
+                {nextAssignment ? (
+                  <>
+                    <p style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.10em', color: '#8B1A2F', margin: '0 0 6px 0' }}>
+                      Week {nextAssignment.week_number}
+                    </p>
+                    <p style={{ fontSize: '14px', fontWeight: 600, color: '#0A0A0B', margin: '0 0 6px 0', lineHeight: 1.4 }}>
+                      {nextAssignment.title}
+                    </p>
+                    <p style={{ fontSize: '12px', color: '#9C949A', margin: '0 0 14px 0' }}>
+                      Due {format(new Date(nextAssignment.due_date), 'EEE, d MMM')}
+                    </p>
+                    <button
+                      onClick={() => router.push(`/student/classes/${classId}/assignments`)}
+                      style={{
+                        width: '100%',
+                        height: '34px',
+                        backgroundColor: '#8B1A2F',
+                        color: '#FFFFFF',
+                        border: 'none',
+                        borderRadius: '6px',
+                        fontSize: '12.5px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      View assignment
+                    </button>
+                  </>
+                ) : (
+                  <p style={{ fontSize: '13.5px', color: '#9C949A', margin: 0 }}>
+                    Nothing pending — you&apos;re all caught up!
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Course modules */}
+            <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #ECE6E0', borderRadius: '8px', overflow: 'hidden' }}>
+              <div style={{ padding: '14px 20px', borderBottom: '1px solid #ECE6E0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <h2 style={{ fontSize: '14px', fontWeight: 600, color: '#0A0A0B', margin: 0 }}>Course modules</h2>
+                <button
+                  onClick={() => router.push(`/student/classes/${classId}/modules`)}
+                  style={{ fontSize: '12.5px', color: '#8B1A2F', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                >
+                  View all
+                </button>
+              </div>
+              {modules.length === 0 ? (
+                <p style={{ padding: '16px 20px', fontSize: '13.5px', color: '#9C949A', margin: 0 }}>
+                  No modules yet.
+                </p>
+              ) : (
+                modules.slice(0, 5).map((m, i) => (
+                  <div
+                    key={m.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '11px 20px',
+                      borderBottom: i < Math.min(modules.length, 5) - 1 ? '1px solid #ECE6E0' : 'none',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '6px',
+                        backgroundColor: '#FAF7F4',
+                        border: '1px solid #ECE6E0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <span style={{ fontSize: '11px', fontWeight: 700, color: '#8B1A2F' }}>
+                        {m.order_index ?? i + 1}
+                      </span>
+                    </div>
+                    <p style={{ fontSize: '13px', fontWeight: 500, color: '#0A0A0B', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {m.title}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+
+          </div>
         </div>
       )}
     </div>
