@@ -59,7 +59,7 @@ export default function TutorDashboardClient() {
   ]
 
   return (
-    <div style={{ padding: '28px 32px', maxWidth: '900px' }}>
+    <div style={{ padding: '28px 32px' }}>
       {/* Page header */}
       <div style={{ marginBottom: '24px' }}>
         <p
