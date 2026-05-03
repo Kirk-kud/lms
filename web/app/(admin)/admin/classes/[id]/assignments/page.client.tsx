@@ -397,7 +397,7 @@ export default function AssignmentsPageClient({ params }: { params: Promise<{ id
     : 0
 
   return (
-    <div className="p-8 max-w-3xl">
+    <div className="p-8">
       <nav className="flex items-center gap-2 text-[12px] text-[#9CA3AF] mb-6">
         <button
           onClick={() => router.push('/admin/classes')}

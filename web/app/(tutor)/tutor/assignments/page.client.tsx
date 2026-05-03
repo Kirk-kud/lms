@@ -21,7 +21,7 @@ export default function TutorAssignmentsClient() {
 
   if (classesLoading || isLoading) {
     return (
-      <div className="p-6 max-w-3xl">
+      <div className="p-6">
         <SkeletonCard lines={4} />
       </div>
     )
