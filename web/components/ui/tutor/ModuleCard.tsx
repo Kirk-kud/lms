@@ -138,10 +138,13 @@ export default function ModuleCard({
           {items.map((item) => {
             const isCompleted = completedItems.includes(item.id)
             return (
-              <button
+              <div
                 key={item.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => onItemClick(item)}
-                className="w-full flex items-center gap-3 py-2.5 text-left hover:bg-[#FAFAFA] -mx-5 px-5 transition-colors group first:mt-2"
+                onKeyDown={(e) => e.key === 'Enter' && onItemClick(item)}
+                className="w-full flex items-center gap-3 py-2.5 text-left hover:bg-[#FAFAFA] -mx-5 px-5 transition-colors group first:mt-2 cursor-pointer"
               >
                 <FileChip type={item.type} />
                 <div className="flex-1 min-w-0">
@@ -179,7 +182,7 @@ export default function ModuleCard({
                     </button>
                   )}
                 </div>
-              </button>
+              </div>
             )
           })}
         </div>

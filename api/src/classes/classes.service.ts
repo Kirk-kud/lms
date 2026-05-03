@@ -50,10 +50,12 @@ export class ClassesService {
   // ----------------------------------------------------------------
   async findAll(userId: string, role: string | null) {
     if (role === 'admin') {
+      // Admin sees every class in the system
       const { data, error } = await this.supabase.adminClient
         .from('classes')
-        .select('*, enrollments(count)')
-        .eq('tutor_id', userId)
+        .select(
+          'id, tutor_id, title, description, invite_code, zoom_link, created_at, enrollments(count), cohorts(count), tutor:profiles!tutor_id(full_name, email)',
+        )
         .order('created_at', { ascending: false });
 
       if (error) throw new BadRequestException(error.message);
@@ -64,7 +66,7 @@ export class ClassesService {
       const { data, error } = await this.supabase.adminClient
         .from('cohorts')
         .select(
-          'class:classes(*, enrollments(count)), cohort_id:id, cohort_name:name',
+          'class:classes(id, tutor_id, title, description, invite_code, zoom_link, created_at, enrollments(count)), cohort_id:id, cohort_name:name',
         )
         .eq('ta_id', userId)
         .order('created_at', { ascending: false });
@@ -83,7 +85,9 @@ export class ClassesService {
     // student
     const { data, error } = await this.supabase.adminClient
       .from('enrollments')
-      .select('enrolled_at, cohort_id, class:classes(*, enrollments(count))')
+      .select(
+        'enrolled_at, cohort_id, class:classes(id, tutor_id, title, description, invite_code, zoom_link, created_at, enrollments(count))',
+      )
       .eq('student_id', userId)
       .order('enrolled_at', { ascending: false });
 
@@ -105,14 +109,16 @@ export class ClassesService {
   async findOne(classId: string, userId: string, role: string | null) {
     const { data: cls, error } = await this.supabase.adminClient
       .from('classes')
-      .select('*, tutor:profiles!tutor_id(*), enrollments(count)')
+      .select(
+        'id, tutor_id, title, description, invite_code, zoom_link, created_at, tutor:profiles!tutor_id(id, full_name, email, role, avatar_initials, created_at), enrollments(count)',
+      )
       .eq('id', classId)
       .single();
 
     if (error || !cls) throw new NotFoundException('Class not found');
 
     if (role === 'admin') {
-      if (cls.tutor_id !== userId) throw new ForbiddenException();
+      // Admin can access any class
     } else if (role === 'tutor') {
       const { data: cohort } = await this.supabase.adminClient
         .from('cohorts')
@@ -213,8 +219,7 @@ export class ClassesService {
   // ----------------------------------------------------------------
   // GET /classes/:id/roster
   // ----------------------------------------------------------------
-  async getRoster(classId: string, tutorId: string) {
-    // Verify ownership
+  async getRoster(classId: string, userId: string, role: string | null) {
     const { data: cls, error: clsError } = await this.supabase.adminClient
       .from('classes')
       .select('id, tutor_id')
@@ -222,9 +227,9 @@ export class ClassesService {
       .single();
 
     if (clsError || !cls) throw new NotFoundException('Class not found');
-    if (cls.tutor_id !== tutorId) throw new ForbiddenException();
+    if (role !== 'admin' && cls.tutor_id !== userId)
+      throw new ForbiddenException();
 
-    // Enrollments + student profiles
     const { data: enrollments, error: enrError } =
       await this.supabase.adminClient
         .from('enrollments')
@@ -234,13 +239,11 @@ export class ClassesService {
 
     if (enrError) throw new BadRequestException(enrError.message);
 
-    // Total session count for this class
     const { count: totalSessions } = await this.supabase.adminClient
       .from('attendance_sessions')
       .select('*', { count: 'exact', head: true })
       .eq('class_id', classId);
 
-    // Attendance records for all sessions of this class
     const { data: sessions } = await this.supabase.adminClient
       .from('attendance_sessions')
       .select('id')
@@ -263,7 +266,6 @@ export class ClassesService {
       }
     }
 
-    // Submission counts per student for this class's assignments
     const { data: assignments } = await this.supabase.adminClient
       .from('assignments')
       .select('id')
@@ -306,7 +308,7 @@ export class ClassesService {
   // ----------------------------------------------------------------
   // DELETE /classes/:id
   // ----------------------------------------------------------------
-  async remove(classId: string, tutorId: string) {
+  async remove(classId: string, userId: string, role: string | null) {
     const { data: cls, error } = await this.supabase.adminClient
       .from('classes')
       .select('id, tutor_id')
@@ -314,7 +316,8 @@ export class ClassesService {
       .single();
 
     if (error || !cls) throw new NotFoundException('Class not found');
-    if (cls.tutor_id !== tutorId) throw new ForbiddenException();
+    if (role !== 'admin' && cls.tutor_id !== userId)
+      throw new ForbiddenException();
 
     const { error: deleteError } = await this.supabase.adminClient
       .from('classes')
@@ -332,10 +335,13 @@ export class ClassesService {
   }
 
   private flattenCountSingle(row: any): any {
-    const { enrollments, ...rest } = row;
+    const { enrollments, cohorts, ...rest } = row;
     const enrolled_count: number = Array.isArray(enrollments)
       ? (enrollments[0]?.count ?? 0)
       : 0;
-    return { ...rest, enrolled_count };
+    const cohort_count: number = Array.isArray(cohorts)
+      ? (cohorts[0]?.count ?? 0)
+      : 0;
+    return { ...rest, enrolled_count, cohort_count };
   }
 }

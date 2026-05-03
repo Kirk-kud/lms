@@ -20,7 +20,11 @@ export class AttendanceService {
   // Access helpers
   // ----------------------------------------------------------------
 
-  private async assertTutorOwnsClass(classId: string, tutorId: string) {
+  private async assertTutorOwnsClass(
+    classId: string,
+    tutorId: string,
+    role?: string | null,
+  ) {
     const { data, error } = await this.supabase.adminClient
       .from('classes')
       .select('id, tutor_id')
@@ -28,7 +32,8 @@ export class AttendanceService {
       .single();
 
     if (error || !data) throw new NotFoundException('Class not found');
-    if (data.tutor_id !== tutorId) throw new ForbiddenException();
+    if (role !== 'admin' && data.tutor_id !== tutorId)
+      throw new ForbiddenException();
     return data;
   }
 
@@ -46,8 +51,12 @@ export class AttendanceService {
   // ----------------------------------------------------------------
   // POST /attendance/sessions
   // ----------------------------------------------------------------
-  async createSession(tutorId: string, dto: CreateSessionDto) {
-    await this.assertTutorOwnsClass(dto.class_id, tutorId);
+  async createSession(
+    tutorId: string,
+    role: string | null,
+    dto: CreateSessionDto,
+  ) {
+    await this.assertTutorOwnsClass(dto.class_id, tutorId, role);
 
     // Deactivate any existing active sessions for this class
     await this.supabase.adminClient
@@ -97,7 +106,7 @@ export class AttendanceService {
   // ----------------------------------------------------------------
   async getSessionsByClass(classId: string, user: JwtPayload) {
     if (user.role === 'admin') {
-      await this.assertTutorOwnsClass(classId, user.sub);
+      await this.assertTutorOwnsClass(classId, user.sub, user.role);
     } else if (user.role === 'tutor') {
       // Validates the tutor has a cohort in this class — throws 403 if not
       await getTutorCohortForClass(this.supabase, classId, user.sub);
@@ -161,7 +170,7 @@ export class AttendanceService {
     if (sErr || !session) throw new NotFoundException('Session not found');
 
     if (user.role === 'admin') {
-      await this.assertTutorOwnsClass(session.class_id, user.sub);
+      await this.assertTutorOwnsClass(session.class_id, user.sub, user.role);
       if (cohortId) {
         await this.assertCohortInSessionClass(cohortId, session.class_id);
       }

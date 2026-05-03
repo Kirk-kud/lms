@@ -9,6 +9,7 @@ export async function assertAdminOwnsClass(
   supabase: SupabaseService,
   classId: string,
   adminId: string,
+  role?: string | null,
 ) {
   const { data, error } = await supabase.adminClient
     .from('classes')
@@ -17,7 +18,8 @@ export async function assertAdminOwnsClass(
     .single();
 
   if (error || !data) throw new NotFoundException('Class not found');
-  if (data.tutor_id !== adminId) throw new ForbiddenException();
+  if (role !== 'admin' && data.tutor_id !== adminId)
+    throw new ForbiddenException();
   return data;
 }
 

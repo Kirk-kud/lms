@@ -9,7 +9,7 @@ import { EmptyState } from '@/components/ui/shared/EmptyState'
 
 export default function TutorAssignmentsClient() {
   const { user } = useUser()
-  const { data: classes = [], isLoading: classesLoading } = useClasses(user?.id)
+  const { data: classes = [], isLoading: classesLoading } = useClasses()
   const cls = classes[0] as (typeof classes[0] & { cohort_name?: string }) | undefined
   const classId = cls?.id ?? ''
   const cohortName = (cls as { cohort_name?: string } | undefined)?.cohort_name ?? 'My Cohort'

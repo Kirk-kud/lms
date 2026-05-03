@@ -3,5 +3,5 @@
 import ProfileView from '@/components/ui/shared/ProfileView'
 
 export default function ProfilePageClient() {
-  return <ProfileView />
+  return <ProfileView fullWidth />
 }

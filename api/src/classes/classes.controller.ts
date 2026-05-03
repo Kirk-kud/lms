@@ -57,7 +57,7 @@ export class ClassesController {
   @Roles('admin')
   async getRoster(@Req() req: Request, @Param('id') id: string) {
     const user = req.user as JwtPayload;
-    const data = await this.classesService.getRoster(id, user.sub);
+    const data = await this.classesService.getRoster(id, user.sub, user.role);
     return createResponse(data, 'Roster fetched');
   }
 
@@ -66,7 +66,7 @@ export class ClassesController {
   @HttpCode(200)
   async remove(@Req() req: Request, @Param('id') id: string) {
     const user = req.user as JwtPayload;
-    await this.classesService.remove(id, user.sub);
+    await this.classesService.remove(id, user.sub, user.role);
     return createResponse(null, 'Class deleted');
   }
 }

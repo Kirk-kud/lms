@@ -37,7 +37,11 @@ export class CourseModulesService {
   // Access helpers
   // ----------------------------------------------------------------
 
-  private async assertTutorOwnsClass(classId: string, tutorId: string) {
+  private async assertTutorOwnsClass(
+    classId: string,
+    tutorId: string,
+    role?: string | null,
+  ) {
     const { data, error } = await this.supabase.adminClient
       .from('classes')
       .select('id, tutor_id')
@@ -45,7 +49,8 @@ export class CourseModulesService {
       .single();
 
     if (error || !data) throw new NotFoundException('Class not found');
-    if (data.tutor_id !== tutorId) throw new ForbiddenException();
+    if (role !== 'admin' && data.tutor_id !== tutorId)
+      throw new ForbiddenException();
     return data;
   }
 
@@ -62,7 +67,11 @@ export class CourseModulesService {
   }
 
   /** Resolves a module to its class_id and verifies tutor owns that class. */
-  private async assertTutorOwnsModule(moduleId: string, tutorId: string) {
+  private async assertTutorOwnsModule(
+    moduleId: string,
+    tutorId: string,
+    role?: string | null,
+  ) {
     const { data: mod, error } = await this.supabase.adminClient
       .from('modules')
       .select('id, class_id')
@@ -70,12 +79,16 @@ export class CourseModulesService {
       .single();
 
     if (error || !mod) throw new NotFoundException('Module not found');
-    await this.assertTutorOwnsClass(mod.class_id, tutorId);
+    await this.assertTutorOwnsClass(mod.class_id, tutorId, role);
     return mod;
   }
 
   /** Resolves a module item up the ownership chain. */
-  private async assertTutorOwnsItem(itemId: string, tutorId: string) {
+  private async assertTutorOwnsItem(
+    itemId: string,
+    tutorId: string,
+    role?: string | null,
+  ) {
     const { data: item, error } = await this.supabase.adminClient
       .from('module_items')
       .select('*, module:modules!module_id(id, class_id)')
@@ -84,7 +97,7 @@ export class CourseModulesService {
 
     if (error || !item) throw new NotFoundException('Item not found');
     const classId = item.module.class_id as string;
-    await this.assertTutorOwnsClass(classId, tutorId);
+    await this.assertTutorOwnsClass(classId, tutorId, role);
     return item;
   }
 
@@ -102,7 +115,7 @@ export class CourseModulesService {
     let scopedCohortId: string | null | undefined = cohortId;
 
     if (role === 'admin') {
-      await this.assertTutorOwnsClass(classId, userId);
+      await this.assertTutorOwnsClass(classId, userId, role);
       if (cohortId) {
         await assertCohortBelongsToClass(this.supabase, classId, cohortId);
       }
@@ -148,8 +161,8 @@ export class CourseModulesService {
   // ----------------------------------------------------------------
   // POST /modules
   // ----------------------------------------------------------------
-  async create(tutorId: string, dto: CreateModuleDto) {
-    await this.assertTutorOwnsClass(dto.class_id, tutorId);
+  async create(tutorId: string, role: string | null, dto: CreateModuleDto) {
+    await this.assertTutorOwnsClass(dto.class_id, tutorId, role);
     if (dto.cohort_id) {
       await assertCohortBelongsToClass(
         this.supabase,
@@ -176,8 +189,13 @@ export class CourseModulesService {
   // ----------------------------------------------------------------
   // PATCH /modules/:id
   // ----------------------------------------------------------------
-  async update(moduleId: string, tutorId: string, dto: UpdateModuleDto) {
-    const mod = await this.assertTutorOwnsModule(moduleId, tutorId);
+  async update(
+    moduleId: string,
+    tutorId: string,
+    role: string | null,
+    dto: UpdateModuleDto,
+  ) {
+    const mod = await this.assertTutorOwnsModule(moduleId, tutorId, role);
     if (dto.cohort_id) {
       await assertCohortBelongsToClass(
         this.supabase,
@@ -200,8 +218,8 @@ export class CourseModulesService {
   // ----------------------------------------------------------------
   // DELETE /modules/:id
   // ----------------------------------------------------------------
-  async remove(moduleId: string, tutorId: string) {
-    await this.assertTutorOwnsModule(moduleId, tutorId);
+  async remove(moduleId: string, tutorId: string, role: string | null) {
+    await this.assertTutorOwnsModule(moduleId, tutorId, role);
 
     const { error } = await this.supabase.adminClient
       .from('modules')
@@ -217,6 +235,7 @@ export class CourseModulesService {
   async createItem(
     moduleId: string,
     tutorId: string,
+    role: string | null,
     dto: CreateModuleItemDto,
     file?: Express.Multer.File,
   ) {
@@ -224,7 +243,7 @@ export class CourseModulesService {
       `createItem called - moduleId=${moduleId}, type=${dto.type}, hasFile=${!!file}`,
     );
 
-    const mod = await this.assertTutorOwnsModule(moduleId, tutorId);
+    const mod = await this.assertTutorOwnsModule(moduleId, tutorId, role);
     let contentUrl = dto.content_url ?? null;
 
     if (dto.type === 'pdf') {
@@ -286,8 +305,13 @@ export class CourseModulesService {
   // ----------------------------------------------------------------
   // PATCH /modules/items/:itemId
   // ----------------------------------------------------------------
-  async updateItem(itemId: string, tutorId: string, dto: UpdateModuleItemDto) {
-    await this.assertTutorOwnsItem(itemId, tutorId);
+  async updateItem(
+    itemId: string,
+    tutorId: string,
+    role: string | null,
+    dto: UpdateModuleItemDto,
+  ) {
+    await this.assertTutorOwnsItem(itemId, tutorId, role);
 
     const { data, error } = await this.supabase.adminClient
       .from('module_items')
@@ -303,8 +327,8 @@ export class CourseModulesService {
   // ----------------------------------------------------------------
   // DELETE /modules/items/:itemId
   // ----------------------------------------------------------------
-  async removeItem(itemId: string, tutorId: string) {
-    const item = await this.assertTutorOwnsItem(itemId, tutorId);
+  async removeItem(itemId: string, tutorId: string, role: string | null) {
+    const item = await this.assertTutorOwnsItem(itemId, tutorId, role);
 
     // Delete storage file for PDFs
     if (item.type === 'pdf' && item.content_url) {
@@ -330,8 +354,13 @@ export class CourseModulesService {
   // ----------------------------------------------------------------
   // POST /modules/:id/reorder
   // ----------------------------------------------------------------
-  async reorderItems(moduleId: string, tutorId: string, dto: ReorderItemsDto) {
-    await this.assertTutorOwnsModule(moduleId, tutorId);
+  async reorderItems(
+    moduleId: string,
+    tutorId: string,
+    role: string | null,
+    dto: ReorderItemsDto,
+  ) {
+    await this.assertTutorOwnsModule(moduleId, tutorId, role);
 
     await Promise.all(
       dto.items.map(({ item_id, order_index }) =>

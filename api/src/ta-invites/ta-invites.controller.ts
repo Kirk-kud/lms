@@ -16,7 +16,7 @@ export class TaInvitesController {
   @Roles('admin')
   async create(@Req() req: Request, @Body() dto: CreateTaInviteDto) {
     const user = req.user as JwtPayload;
-    const data = await this.service.create(user.sub, dto);
+    const data = await this.service.create(user.sub, user.role, dto);
     return createResponse(data, 'TA invite created', 201);
   }
 

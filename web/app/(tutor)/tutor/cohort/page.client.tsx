@@ -21,7 +21,7 @@ const inputStyle: React.CSSProperties = {
 
 export default function TutorCohortClient() {
   const { user } = useUser()
-  const { data: classes = [], isLoading: classesLoading } = useClasses(user?.id)
+  const { data: classes = [], isLoading: classesLoading } = useClasses()
   const cls = classes[0] as (typeof classes[0] & { cohort_id?: string; cohort_name?: string }) | undefined
   const cohortId = (cls as { cohort_id?: string } | undefined)?.cohort_id ?? ''
   const cohortName = (cls as { cohort_name?: string } | undefined)?.cohort_name ?? 'My Cohort'

@@ -6,7 +6,7 @@ import { useUser } from '@/lib/hooks/useUser'
 import { StatusBadge } from './Badge'
 import { SkeletonCard } from './SkeletonCard'
 
-export default function ProfileView() {
+export default function ProfileView({ fullWidth = false }: { fullWidth?: boolean }) {
   const { user, isLoading } = useUser()
   const router = useRouter()
 
@@ -29,7 +29,7 @@ export default function ProfileView() {
 
   if (isLoading) {
     return (
-      <div className="p-8" style={{ maxWidth: '560px' }}>
+      <div className="p-6 md:p-8" style={{ maxWidth: fullWidth ? 'none' : '560px' }}>
         <div style={{ marginBottom: '32px', height: '28px', width: '80px', backgroundColor: '#F0F0F0', borderRadius: '6px' }} />
         <SkeletonCard lines={3} />
       </div>
@@ -37,7 +37,7 @@ export default function ProfileView() {
   }
 
   return (
-    <div className="p-8" style={{ maxWidth: '560px' }}>
+    <div className="p-6 md:p-8" style={{ maxWidth: fullWidth ? 'none' : '560px' }}>
       {/* Page heading */}
       <div style={{ marginBottom: '32px' }}>
         <h1 style={{ fontSize: '22px', fontWeight: 500, color: '#111111', margin: 0 }}>Profile</h1>

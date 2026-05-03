@@ -21,7 +21,11 @@ export class AssignmentsService {
   // Access helpers
   // ----------------------------------------------------------------
 
-  private async assertTutorOwnsClass(classId: string, tutorId: string) {
+  private async assertTutorOwnsClass(
+    classId: string,
+    tutorId: string,
+    role?: string | null,
+  ) {
     const { data, error } = await this.supabase.adminClient
       .from('classes')
       .select('id, tutor_id')
@@ -29,7 +33,8 @@ export class AssignmentsService {
       .single();
 
     if (error || !data) throw new NotFoundException('Class not found');
-    if (data.tutor_id !== tutorId) throw new ForbiddenException();
+    if (role !== 'admin' && data.tutor_id !== tutorId)
+      throw new ForbiddenException();
     return data;
   }
 
@@ -48,6 +53,7 @@ export class AssignmentsService {
   private async assertTutorOwnsAssignment(
     assignmentId: string,
     tutorId: string,
+    role?: string | null,
   ) {
     const { data, error } = await this.supabase.adminClient
       .from('assignments')
@@ -56,7 +62,7 @@ export class AssignmentsService {
       .single();
 
     if (error || !data) throw new NotFoundException('Assignment not found');
-    await this.assertTutorOwnsClass(data.class_id, tutorId);
+    await this.assertTutorOwnsClass(data.class_id, tutorId, role);
     return data;
   }
 
@@ -74,7 +80,7 @@ export class AssignmentsService {
     let scopedCohortId: string | null | undefined = cohortId;
 
     if (role === 'admin') {
-      await this.assertTutorOwnsClass(classId, userId);
+      await this.assertTutorOwnsClass(classId, userId, role);
       if (cohortId) {
         await assertCohortBelongsToClass(this.supabase, classId, cohortId);
       }
@@ -119,6 +125,74 @@ export class AssignmentsService {
       return this.enrichForTutor(classId, list, assignmentIds);
     }
     return this.enrichForStudent(userId, list, assignmentIds);
+  }
+
+  async findBatchForAdmin(classIds: string[]) {
+    const ids = [...new Set(classIds.filter(Boolean))];
+    if (ids.length === 0) return {};
+
+    const { data: assignments, error } = await this.supabase.adminClient
+      .from('assignments')
+      .select('*')
+      .in('class_id', ids)
+      .order('week_number', { ascending: true });
+
+    if (error) throw new BadRequestException(error.message);
+    const list = assignments ?? [];
+    if (list.length === 0) {
+      return Object.fromEntries(ids.map((id) => [id, []]));
+    }
+
+    const assignmentIds = list.map((a) => a.id);
+    const [enrollmentResult, submissionResult] = await Promise.all([
+      this.supabase.adminClient
+        .from('enrollments')
+        .select('class_id')
+        .in('class_id', ids),
+      this.supabase.adminClient
+        .from('submissions')
+        .select('assignment_id')
+        .in('assignment_id', assignmentIds),
+    ]);
+
+    if (enrollmentResult.error) {
+      throw new BadRequestException(enrollmentResult.error.message);
+    }
+    if (submissionResult.error) {
+      throw new BadRequestException(submissionResult.error.message);
+    }
+
+    const enrolledByClass = new Map<string, number>();
+    for (const row of enrollmentResult.data ?? []) {
+      enrolledByClass.set(
+        row.class_id,
+        (enrolledByClass.get(row.class_id) ?? 0) + 1,
+      );
+    }
+
+    const submissionCountByAssignment = new Map<string, number>();
+    for (const row of submissionResult.data ?? []) {
+      submissionCountByAssignment.set(
+        row.assignment_id,
+        (submissionCountByAssignment.get(row.assignment_id) ?? 0) + 1,
+      );
+    }
+
+    const grouped: Record<string, any[]> = Object.fromEntries(
+      ids.map((id) => [id, []]),
+    );
+    for (const assignment of list) {
+      const submission_count =
+        submissionCountByAssignment.get(assignment.id) ?? 0;
+      const enrolled = enrolledByClass.get(assignment.class_id) ?? 0;
+      grouped[assignment.class_id].push({
+        ...assignment,
+        submission_count,
+        missing_count: enrolled - submission_count,
+      });
+    }
+
+    return grouped;
   }
 
   private async enrichForTutor(
@@ -179,8 +253,8 @@ export class AssignmentsService {
   // ----------------------------------------------------------------
   // POST /assignments
   // ----------------------------------------------------------------
-  async create(tutorId: string, dto: CreateAssignmentDto) {
-    await this.assertTutorOwnsClass(dto.class_id, tutorId);
+  async create(tutorId: string, role: string | null, dto: CreateAssignmentDto) {
+    await this.assertTutorOwnsClass(dto.class_id, tutorId, role);
     if (dto.cohort_id) {
       await assertCohortBelongsToClass(
         this.supabase,
@@ -212,11 +286,13 @@ export class AssignmentsService {
   async update(
     assignmentId: string,
     tutorId: string,
+    role: string | null,
     dto: UpdateAssignmentDto,
   ) {
     const assignment = await this.assertTutorOwnsAssignment(
       assignmentId,
       tutorId,
+      role,
     );
     if (dto.cohort_id) {
       await assertCohortBelongsToClass(
@@ -240,8 +316,8 @@ export class AssignmentsService {
   // ----------------------------------------------------------------
   // DELETE /assignments/:id
   // ----------------------------------------------------------------
-  async remove(assignmentId: string, tutorId: string) {
-    await this.assertTutorOwnsAssignment(assignmentId, tutorId);
+  async remove(assignmentId: string, tutorId: string, role: string | null) {
+    await this.assertTutorOwnsAssignment(assignmentId, tutorId, role);
 
     const { error } = await this.supabase.adminClient
       .from('assignments')
@@ -254,7 +330,11 @@ export class AssignmentsService {
   // ----------------------------------------------------------------
   // GET /assignments/:id/submissions
   // ----------------------------------------------------------------
-  async getSubmissions(assignmentId: string, tutorId: string) {
+  async getSubmissions(
+    assignmentId: string,
+    tutorId: string,
+    role: string | null,
+  ) {
     const { data: assignment, error: aErr } = await this.supabase.adminClient
       .from('assignments')
       .select('id, class_id')
@@ -263,7 +343,7 @@ export class AssignmentsService {
 
     if (aErr || !assignment)
       throw new NotFoundException('Assignment not found');
-    await this.assertTutorOwnsClass(assignment.class_id, tutorId);
+    await this.assertTutorOwnsClass(assignment.class_id, tutorId, role);
 
     // All enrolled students
     const { data: enrollments } = await this.supabase.adminClient

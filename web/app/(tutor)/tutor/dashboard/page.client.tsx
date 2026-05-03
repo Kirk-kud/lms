@@ -19,7 +19,7 @@ function greeting(): string {
 export default function TutorDashboardClient() {
   const router = useRouter()
   const { user } = useUser()
-  const { data: classes = [], isLoading: classesLoading } = useClasses(user?.id)
+  const { data: classes = [], isLoading: classesLoading } = useClasses()
 
   const cls = classes[0] as
     | (typeof classes[0] & { cohort_id?: string; cohort_name?: string })

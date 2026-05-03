@@ -47,6 +47,18 @@ export function useAssignments(classId: string) {
   })
 }
 
+export function useAssignmentsBatch(classIds: string[]) {
+  const uniqueIds = [...new Set(classIds.filter(Boolean))]
+  return useQuery({
+    queryKey: ['assignments-batch', uniqueIds.join(',')],
+    queryFn: () =>
+      apiClient.get<Record<string, Assignment[]>>(
+        `/assignments/batch?class_ids=${uniqueIds.join(',')}`,
+      ),
+    enabled: uniqueIds.length > 0,
+  })
+}
+
 export function useCreateAssignment() {
   const qc = useQueryClient()
   return useMutation({
@@ -57,8 +69,12 @@ export function useCreateAssignment() {
       week_number: number
       due_date: string
     }) => apiClient.post<Assignment>('/assignments', body),
-    onSuccess: (_data, vars) =>
-      qc.invalidateQueries({ queryKey: ['assignments', vars.class_id] }),
+    onSuccess: async (_data, vars) => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['assignments', vars.class_id] }),
+        qc.invalidateQueries({ queryKey: ['classes', vars.class_id] }),
+      ])
+    },
   })
 }
 
@@ -67,8 +83,13 @@ export function useDeleteAssignment() {
   return useMutation({
     mutationFn: ({ assignmentId }: { assignmentId: string; classId: string }) =>
       apiClient.delete(`/assignments/${assignmentId}`),
-    onSuccess: (_data, vars) =>
-      qc.invalidateQueries({ queryKey: ['assignments', vars.classId] }),
+    onSuccess: async (_data, vars) => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['assignments', vars.classId] }),
+        qc.invalidateQueries({ queryKey: ['submissions'] }),
+        qc.invalidateQueries({ queryKey: ['classes', vars.classId] }),
+      ])
+    },
   })
 }
 

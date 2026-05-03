@@ -15,7 +15,7 @@ const TYPE_LABELS: Record<string, string> = {
 
 export default function TutorModulesClient() {
   const { user } = useUser()
-  const { data: classes = [], isLoading: classesLoading } = useClasses(user?.id)
+  const { data: classes = [], isLoading: classesLoading } = useClasses()
   const cls = classes[0] as (typeof classes[0] & { cohort_id?: string; cohort_name?: string }) | undefined
   const classId = cls?.id ?? ''
   const cohortName = (cls as { cohort_name?: string } | undefined)?.cohort_name ?? 'My Cohort'

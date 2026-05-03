@@ -24,7 +24,7 @@ export class AttendanceController {
   @Roles('admin')
   async createSession(@Req() req: Request, @Body() dto: CreateSessionDto) {
     const user = req.user as JwtPayload;
-    const data = await this.service.createSession(user.sub, dto);
+    const data = await this.service.createSession(user.sub, user.role, dto);
     return createResponse(data, 'Session started', 201);
   }
 

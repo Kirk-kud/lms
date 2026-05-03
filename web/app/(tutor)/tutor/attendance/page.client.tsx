@@ -20,7 +20,7 @@ function useCohortSessionRecords(sessionId: string, cohortId: string) {
 
 export default function TutorAttendanceClient() {
   const { user } = useUser()
-  const { data: classes = [], isLoading: classesLoading } = useClasses(user?.id)
+  const { data: classes = [], isLoading: classesLoading } = useClasses()
   const cls = classes[0] as (typeof classes[0] & { cohort_id?: string; cohort_name?: string }) | undefined
   const classId = cls?.id ?? ''
   const cohortId = (cls as { cohort_id?: string } | undefined)?.cohort_id ?? ''

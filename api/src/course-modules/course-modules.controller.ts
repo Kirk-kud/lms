@@ -59,7 +59,7 @@ export class CourseModulesController {
   @Roles('admin')
   async create(@Req() req: Request, @Body() dto: CreateModuleDto) {
     const user = req.user as JwtPayload;
-    const data = await this.service.create(user.sub, dto);
+    const data = await this.service.create(user.sub, user.role, dto);
     return createResponse(data, 'Module created', 201);
   }
 
@@ -72,7 +72,12 @@ export class CourseModulesController {
     @Body() dto: UpdateModuleItemDto,
   ) {
     const user = req.user as JwtPayload;
-    const data = await this.service.updateItem(itemId, user.sub, dto);
+    const data = await this.service.updateItem(
+      itemId,
+      user.sub,
+      user.role,
+      dto,
+    );
     return createResponse(data, 'Item updated');
   }
 
@@ -81,7 +86,7 @@ export class CourseModulesController {
   @Roles('admin')
   async removeItem(@Req() req: Request, @Param('itemId') itemId: string) {
     const user = req.user as JwtPayload;
-    await this.service.removeItem(itemId, user.sub);
+    await this.service.removeItem(itemId, user.sub, user.role);
     return createResponse(null, 'Item deleted');
   }
 
@@ -93,7 +98,7 @@ export class CourseModulesController {
     @Body() dto: UpdateModuleDto,
   ) {
     const user = req.user as JwtPayload;
-    const data = await this.service.update(id, user.sub, dto);
+    const data = await this.service.update(id, user.sub, user.role, dto);
     return createResponse(data, 'Module updated');
   }
 
@@ -101,7 +106,7 @@ export class CourseModulesController {
   @Roles('admin')
   async remove(@Req() req: Request, @Param('id') id: string) {
     const user = req.user as JwtPayload;
-    await this.service.remove(id, user.sub);
+    await this.service.remove(id, user.sub, user.role);
     return createResponse(null, 'Module deleted');
   }
 
@@ -115,7 +120,13 @@ export class CourseModulesController {
     @UploadedFile() file?: Express.Multer.File,
   ) {
     const user = req.user as JwtPayload;
-    const data = await this.service.createItem(id, user.sub, dto, file);
+    const data = await this.service.createItem(
+      id,
+      user.sub,
+      user.role,
+      dto,
+      file,
+    );
     return createResponse(data, 'Item created', 201);
   }
 
@@ -127,7 +138,7 @@ export class CourseModulesController {
     @Body() dto: ReorderItemsDto,
   ) {
     const user = req.user as JwtPayload;
-    const data = await this.service.reorderItems(id, user.sub, dto);
+    const data = await this.service.reorderItems(id, user.sub, user.role, dto);
     return createResponse(data, 'Items reordered');
   }
 }

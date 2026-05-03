@@ -72,8 +72,8 @@ export default function RegisterPageClient() {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [role, _setRole] = useState<'admin' | 'tutor' | 'student'>('student')
-  const [taCode, _setTaCode] = useState('')
+  const [role] = useState<'admin' | 'tutor' | 'student'>('student')
+  const [taCode] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {

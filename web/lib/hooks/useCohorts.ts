@@ -60,8 +60,13 @@ export function useCreateCohort() {
   return useMutation({
     mutationFn: (body: { class_id: string; name: string; ta_id?: string; zoom_link?: string; invite_pin?: string }) =>
       apiClient.post<Cohort>('/cohorts', body),
-    onSuccess: (_data, vars) =>
-      qc.invalidateQueries({ queryKey: ['cohorts', vars.class_id] }),
+    onSuccess: async (_data, vars) => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['cohorts', vars.class_id] }),
+        qc.invalidateQueries({ queryKey: ['classes'] }),
+        qc.invalidateQueries({ queryKey: ['classes', vars.class_id] }),
+      ])
+    },
   })
 }
 
@@ -70,7 +75,13 @@ export function useUpdateCohort(classId: string) {
   return useMutation({
     mutationFn: ({ id, ...body }: { id: string; name?: string; ta_id?: string; zoom_link?: string; invite_pin?: string }) =>
       apiClient.patch<Cohort>(`/cohorts/${id}`, body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['cohorts', classId] }),
+    onSuccess: async (_data, vars) => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['cohorts', classId] }),
+        qc.invalidateQueries({ queryKey: ['cohort', vars.id] }),
+        qc.invalidateQueries({ queryKey: ['classes', classId] }),
+      ])
+    },
   })
 }
 
@@ -78,7 +89,13 @@ export function useDeleteCohort(classId: string) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => apiClient.delete(`/cohorts/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['cohorts', classId] }),
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['cohorts', classId] }),
+        qc.invalidateQueries({ queryKey: ['classes'] }),
+        qc.invalidateQueries({ queryKey: ['classes', classId] }),
+      ])
+    },
   })
 }
 
@@ -87,7 +104,13 @@ export function useAddCohortStudent(cohortId: string) {
   return useMutation({
     mutationFn: (student_id: string) =>
       apiClient.post(`/cohorts/${cohortId}/students`, { student_id }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['cohort-students', cohortId] }),
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['cohort-students', cohortId] }),
+        qc.invalidateQueries({ queryKey: ['classes'] }),
+        qc.invalidateQueries({ queryKey: ['roster'] }),
+      ])
+    },
   })
 }
 
@@ -96,6 +119,12 @@ export function useRemoveCohortStudent(cohortId: string) {
   return useMutation({
     mutationFn: (studentId: string) =>
       apiClient.delete(`/cohorts/${cohortId}/students/${studentId}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['cohort-students', cohortId] }),
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['cohort-students', cohortId] }),
+        qc.invalidateQueries({ queryKey: ['classes'] }),
+        qc.invalidateQueries({ queryKey: ['roster'] }),
+      ])
+    },
   })
 }

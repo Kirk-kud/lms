@@ -38,7 +38,7 @@ export class CohortsController {
   @Roles('admin')
   async create(@Req() req: Request, @Body() dto: CreateCohortDto) {
     const user = req.user as JwtPayload;
-    const data = await this.service.create(user.sub, dto);
+    const data = await this.service.create(user.sub, user.role, dto);
     return createResponse(data, 'Cohort created', 201);
   }
 
@@ -58,7 +58,7 @@ export class CohortsController {
     @Body() dto: UpdateCohortDto,
   ) {
     const user = req.user as JwtPayload;
-    const data = await this.service.update(id, user.sub, dto);
+    const data = await this.service.update(id, user.sub, user.role, dto);
     return createResponse(data, 'Cohort updated');
   }
 
@@ -66,7 +66,7 @@ export class CohortsController {
   @Roles('admin')
   async remove(@Req() req: Request, @Param('id') id: string) {
     const user = req.user as JwtPayload;
-    await this.service.remove(id, user.sub);
+    await this.service.remove(id, user.sub, user.role);
     return createResponse(null, 'Cohort deleted');
   }
 

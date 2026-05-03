@@ -36,8 +36,9 @@ export function useCreateModule() {
   return useMutation({
     mutationFn: (body: { class_id: string; title: string; order_index: number }) =>
       apiClient.post<CourseModule>('/modules', body),
-    onSuccess: (_data, vars) =>
-      qc.invalidateQueries({ queryKey: ['modules', vars.class_id] }),
+    onSuccess: async (_data, vars) => {
+      await qc.invalidateQueries({ queryKey: ['modules', vars.class_id] })
+    },
   })
 }
 
@@ -75,8 +76,9 @@ export function useAddModuleItem() {
 
       return json.data
     },
-    onSuccess: (_data, vars) =>
-      qc.invalidateQueries({ queryKey: ['modules', vars.classId] }),
+    onSuccess: async (_data, vars) => {
+      await qc.invalidateQueries({ queryKey: ['modules', vars.classId] })
+    },
   })
 }
 
@@ -85,8 +87,9 @@ export function useDeleteModule() {
   return useMutation({
     mutationFn: ({ moduleId }: { moduleId: string; classId: string }) =>
       apiClient.delete(`/modules/${moduleId}`),
-    onSuccess: (_data, vars) =>
-      qc.invalidateQueries({ queryKey: ['modules', vars.classId] }),
+    onSuccess: async (_data, vars) => {
+      await qc.invalidateQueries({ queryKey: ['modules', vars.classId] })
+    },
   })
 }
 
@@ -95,8 +98,9 @@ export function useDeleteModuleItem() {
   return useMutation({
     mutationFn: ({ itemId }: { itemId: string; classId: string }) =>
       apiClient.delete(`/modules/items/${itemId}`),
-    onSuccess: (_data, vars) =>
-      qc.invalidateQueries({ queryKey: ['modules', vars.classId] }),
+    onSuccess: async (_data, vars) => {
+      await qc.invalidateQueries({ queryKey: ['modules', vars.classId] })
+    },
   })
 }
 
@@ -111,7 +115,8 @@ export function useReorderItems() {
       classId: string
       items: { item_id: string; order_index: number }[]
     }) => apiClient.post<CourseModule>(`/modules/${moduleId}/reorder`, { items }),
-    onSuccess: (_data, vars) =>
-      qc.invalidateQueries({ queryKey: ['modules', vars.classId] }),
+    onSuccess: async (_data, vars) => {
+      await qc.invalidateQueries({ queryKey: ['modules', vars.classId] })
+    },
   })
 }

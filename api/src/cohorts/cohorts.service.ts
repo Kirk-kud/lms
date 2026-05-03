@@ -30,7 +30,7 @@ export class CohortsService {
       .order('created_at', { ascending: true });
 
     if (user.role === 'admin') {
-      await assertAdminOwnsClass(this.supabase, classId, user.sub);
+      await assertAdminOwnsClass(this.supabase, classId, user.sub, user.role);
     } else if (user.role === 'tutor') {
       query = query.eq('ta_id', user.sub);
     } else {
@@ -42,8 +42,8 @@ export class CohortsService {
     return data ?? [];
   }
 
-  async create(adminId: string, dto: CreateCohortDto) {
-    await assertAdminOwnsClass(this.supabase, dto.class_id, adminId);
+  async create(adminId: string, role: string | null, dto: CreateCohortDto) {
+    await assertAdminOwnsClass(this.supabase, dto.class_id, adminId, role);
     await this.assertTutorRole(dto.ta_id);
 
     const { data, error } = await this.supabase.adminClient
@@ -66,7 +66,12 @@ export class CohortsService {
     const cohort = await this.getCohort(id);
 
     if (user.role === 'admin') {
-      await assertAdminOwnsClass(this.supabase, cohort.class_id, user.sub);
+      await assertAdminOwnsClass(
+        this.supabase,
+        cohort.class_id,
+        user.sub,
+        user.role,
+      );
     } else if (user.role === 'tutor') {
       if (cohort.ta_id !== user.sub) throw new ForbiddenException();
     } else {
@@ -82,9 +87,14 @@ export class CohortsService {
     return cohort;
   }
 
-  async update(id: string, adminId: string, dto: UpdateCohortDto) {
+  async update(
+    id: string,
+    adminId: string,
+    role: string | null,
+    dto: UpdateCohortDto,
+  ) {
     const cohort = await this.getCohort(id);
-    await assertAdminOwnsClass(this.supabase, cohort.class_id, adminId);
+    await assertAdminOwnsClass(this.supabase, cohort.class_id, adminId, role);
     await this.assertTutorRole(dto.ta_id);
 
     const { data, error } = await this.supabase.adminClient
@@ -98,9 +108,9 @@ export class CohortsService {
     return data;
   }
 
-  async remove(id: string, adminId: string) {
+  async remove(id: string, adminId: string, role: string | null) {
     const cohort = await this.getCohort(id);
-    await assertAdminOwnsClass(this.supabase, cohort.class_id, adminId);
+    await assertAdminOwnsClass(this.supabase, cohort.class_id, adminId, role);
 
     const { error } = await this.supabase.adminClient
       .from('cohorts')
@@ -162,7 +172,12 @@ export class CohortsService {
   private async assertCanManageCohortStudents(id: string, user: JwtPayload) {
     const cohort = await this.getCohort(id);
     if (user.role === 'admin') {
-      await assertAdminOwnsClass(this.supabase, cohort.class_id, user.sub);
+      await assertAdminOwnsClass(
+        this.supabase,
+        cohort.class_id,
+        user.sub,
+        user.role,
+      );
     } else if (user.role === 'tutor') {
       await assertTutorOwnsCohort(this.supabase, id, user.sub);
     } else {

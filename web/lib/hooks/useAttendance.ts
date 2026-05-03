@@ -49,8 +49,13 @@ export function useStartSession() {
   return useMutation({
     mutationFn: (body: { class_id: string }) =>
       apiClient.post<AttendanceSession>('/attendance/sessions', body),
-    onSuccess: (_data, vars) =>
-      qc.invalidateQueries({ queryKey: ['attendance-sessions', vars.class_id] }),
+    onSuccess: async (_data, vars) => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['attendance-sessions', vars.class_id] }),
+        qc.invalidateQueries({ queryKey: ['session-records'] }),
+        qc.invalidateQueries({ queryKey: ['my-attendance', vars.class_id] }),
+      ])
+    },
   })
 }
 
@@ -60,7 +65,7 @@ export function useEndSession() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ classId }: { classId: string }) => {
-      qc.invalidateQueries({ queryKey: ['attendance-sessions', classId] })
+      void qc.invalidateQueries({ queryKey: ['attendance-sessions', classId] })
       return Promise.resolve()
     },
   })

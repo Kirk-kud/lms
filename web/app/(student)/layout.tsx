@@ -61,7 +61,7 @@ export default function StudentLayout({
   const pathname = usePathname()
   const qc = useQueryClient()
   const { user } = useUser()
-  const { data: classes = [] } = useClasses(user?.id)
+  const { data: classes = [] } = useClasses()
   const [pickerOpen, setPickerOpen] = useState(false)
   const [pendingLabel, setPendingLabel] = useState('')
 
