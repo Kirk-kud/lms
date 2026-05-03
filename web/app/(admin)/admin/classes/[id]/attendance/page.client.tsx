@@ -55,7 +55,7 @@ function SessionHistoryRow({ session }: { session: AttendanceSession }) {
 
       {expanded && records && (
         <div className="border-t border-[#F3F4F6] px-5 py-3">
-          <div className="grid grid-cols-2 gap-x-6 gap-y-0.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-0.5">
             <div>
               <p className="text-[11px] font-medium text-[#166534] uppercase tracking-wider mb-2">
                 Present ({records.present.length})
@@ -192,7 +192,7 @@ export default function AttendancePageClient({ params }: { params: Promise<{ id:
   const pastSessions = sessions.filter((s) => !s.is_active)
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       <nav className="flex items-center gap-2 text-[12px] text-[#9CA3AF] mb-6">
         <button
           onClick={() => router.push('/admin/classes')}

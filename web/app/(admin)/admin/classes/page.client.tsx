@@ -192,7 +192,7 @@ export default function ClassesPageClient() {
   const [showCreate, setShowCreate] = useState(false)
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-[20px] font-medium text-[#111]">Classes</h1>
         <button

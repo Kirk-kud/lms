@@ -3,29 +3,18 @@
 import { useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
-import Sidebar from '@/components/ui/layout/Sidebar'
+import StudentSidebar from '@/components/ui/student/StudentSidebar'
 import Topbar from '@/components/ui/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
 import { useClasses } from '@/lib/hooks/useClasses'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 
 function activeItemFromPath(pathname: string): string {
-  if (pathname.includes('/modules')) return 'Modules'
-  if (pathname.includes('/assignments')) return 'Assignments'
-  if (pathname.includes('/attendance')) return 'Attendance'
-  return 'Home'
-}
-
-const STUDENT_SEGMENTS: Record<string, string> = {
-  Modules: 'modules',
-  Assignments: 'assignments',
-  Attendance: 'attendance',
+  if (pathname.match(/\/student\/classes\/[^/]+\/modules/)) return 'Modules'
+  if (pathname.match(/\/student\/classes\/[^/]+\/assignments/)) return 'Assignments'
+  if (pathname.match(/\/student\/classes\/[^/]+\/attendance/)) return 'Attendance'
+  if (pathname.match(/\/student\/classes\/[^/]+$/)) return 'Overview'
+  return 'Dashboard'
 }
 
 const IconHome = ({ active }: { active: boolean }) => (
@@ -52,6 +41,12 @@ const IconAttendance = ({ active }: { active: boolean }) => (
   </svg>
 )
 
+const IconBack = ({ active }: { active: boolean }) => (
+  <svg width="20" height="20" viewBox="0 0 16 16" fill="none" className={active ? 'text-[#8B1A2F]' : 'text-[#9CA3AF]'}>
+    <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+)
+
 export default function StudentLayout({
   children,
 }: {
@@ -62,10 +57,11 @@ export default function StudentLayout({
   const qc = useQueryClient()
   const { user } = useUser()
   const { data: classes = [] } = useClasses(user?.id)
-  const [pickerOpen, setPickerOpen] = useState(false)
-  const [pendingLabel, setPendingLabel] = useState('')
+  const [classesOpen, setClassesOpen] = useState(false)
 
   const urlClassId = pathname.match(/\/student\/classes\/([^/]+)/)?.[1]
+  const isClassContext = !!urlClassId
+  const currentClass = classes.find((c) => c.id === urlClassId)
   const activeItem = activeItemFromPath(pathname)
 
   const fullName: string = (user?.user_metadata?.full_name as string) ?? ''
@@ -77,30 +73,32 @@ export default function StudentLayout({
     .toUpperCase()
 
   const handleNavigate = (label: string) => {
-    if (label === 'Home') {
+    if (label === 'Dashboard' || label === 'All Classes') {
       router.push('/student/dashboard')
+      setClassesOpen(false)
       return
     }
-    const segment = STUDENT_SEGMENTS[label]
-    if (!segment) return
-    if (urlClassId) {
-      router.push(`/student/classes/${urlClassId}/${segment}`)
-    } else if (classes.length > 0) {
-      if (classes.length === 1) {
-        router.push(`/student/classes/${classes[0].id}/${segment}`)
-      } else {
-        setPendingLabel(label)
-        setPickerOpen(true)
-      }
-    } else {
-      router.push('/join')
+    if (label === 'Classes') {
+      setClassesOpen((prev) => !prev)
+      return
     }
-  }
-
-  const handlePickClass = (classId: string) => {
-    setPickerOpen(false)
-    const segment = STUDENT_SEGMENTS[pendingLabel]
-    if (segment) router.push(`/student/classes/${classId}/${segment}`)
+    if (label === 'Overview') {
+      if (urlClassId) router.push(`/student/classes/${urlClassId}`)
+      setClassesOpen(false)
+      return
+    }
+    if (urlClassId) {
+      router.push(`/student/classes/${urlClassId}/${label.toLowerCase()}`)
+      setClassesOpen(false)
+      return
+    }
+    if (label === 'Modules' || label === 'Assignments' || label === 'Attendance') {
+      if (classes.length === 1) {
+        router.push(`/student/classes/${classes[0].id}/${label.toLowerCase()}`)
+      } else {
+        router.push('/student/dashboard')
+      }
+    }
   }
 
   const handleSignOut = async () => {
@@ -119,54 +117,190 @@ export default function StudentLayout({
 
       <div className="flex flex-1 overflow-hidden">
         <div className="hidden md:block">
-          <Sidebar
-            variant="student"
-            activeItem={activeItem}
+          <StudentSidebar
+            context={isClassContext ? 'class' : 'home'}
+            classId={urlClassId}
+            className={currentClass?.title}
+            activeItem={classesOpen ? 'Classes' : activeItem}
             onNavigate={handleNavigate}
             onSignOut={handleSignOut}
             userName={fullName}
             userInitials={initials}
           />
         </div>
+
+        {/* Classes slide-out panel */}
+        {classesOpen && (
+          <>
+            {/* Backdrop */}
+            <div
+              onClick={() => setClassesOpen(false)}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                zIndex: 40,
+                background: 'rgba(10,10,11,0.2)',
+              }}
+            />
+            {/* Panel */}
+            <div
+              className="fixed top-0 bottom-0 left-0 sm:left-[260px] w-full sm:w-[300px]"
+              style={{
+                background: '#FFFFFF',
+                borderRight: '1px solid #ECE6E0',
+                boxShadow: '4px 0 24px rgba(10,10,11,0.1)',
+                zIndex: 41,
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              {/* Panel header */}
+              <div
+                style={{
+                  padding: '18px 20px 14px',
+                  borderBottom: '1px solid #ECE6E0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexShrink: 0,
+                }}
+              >
+                <h2 style={{ fontSize: '14px', fontWeight: 700, color: '#0A0A0B', margin: 0 }}>
+                  My Classes
+                </h2>
+                <button
+                  onClick={() => setClassesOpen(false)}
+                  style={{
+                    width: '26px',
+                    height: '26px',
+                    borderRadius: '50%',
+                    border: '1px solid #ECE6E0',
+                    background: 'transparent',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#6B6168',
+                    flexShrink: 0,
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#FAF7F4')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                >
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <path d="M1 1l8 8M9 1l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Class list */}
+              <div style={{ overflowY: 'auto', flex: 1 }}>
+                {classes.length === 0 ? (
+                  <p style={{ padding: '20px', fontSize: '13px', color: '#9C949A', margin: 0 }}>
+                    No classes yet.
+                  </p>
+                ) : (
+                  classes.map((cls, i) => (
+                    <ClassDrawerItem
+                      key={cls.id}
+                      title={cls.title}
+                      description={cls.description ?? undefined}
+                      isLast={i === classes.length - 1}
+                      isActive={urlClassId === cls.id}
+                      onClick={() => {
+                        setClassesOpen(false)
+                        router.push(`/student/classes/${cls.id}`)
+                      }}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
         <main className="flex-1 overflow-y-auto bg-white pb-20 md:pb-0">{children}</main>
       </div>
 
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t-[0.5px] border-[#E5E5E5] h-[calc(56px+env(safe-area-inset-bottom))] px-6 pb-[env(safe-area-inset-bottom)] flex items-center justify-between">
-        <button onClick={() => handleNavigate('Home')} aria-label="Home">
-          <IconHome active={activeItem === 'Home'} />
-        </button>
-        <button onClick={() => handleNavigate('Modules')} aria-label="Modules">
-          <IconModules active={activeItem === 'Modules'} />
-        </button>
-        <button onClick={() => handleNavigate('Assignments')} aria-label="Assignments">
-          <IconAssignments active={activeItem === 'Assignments'} />
-        </button>
-        <button onClick={() => handleNavigate('Attendance')} aria-label="Attendance">
-          <IconAttendance active={activeItem === 'Attendance'} />
-        </button>
-      </nav>
-
-      <Dialog open={pickerOpen} onOpenChange={(v) => !v && setPickerOpen(false)}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="text-[15px] font-medium">Choose a class</DialogTitle>
-          </DialogHeader>
-          <div className="mt-2 space-y-2">
-            {classes.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => handlePickClass(c.id)}
-                className="w-full text-left border border-[#E5E5E5] rounded-xl p-4 hover:border-[#8B1A2F]/30 hover:bg-[#FAFAFA] transition-all"
-              >
-                <p className="text-[14px] font-medium text-[#111]">{c.title}</p>
-                {c.description && (
-                  <p className="text-[12px] text-[#6B7280] mt-1 line-clamp-2">{c.description}</p>
-                )}
-              </button>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Mobile bottom nav — context-aware */}
+      {isClassContext ? (
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t-[0.5px] border-[#E5E5E5] h-[calc(56px+env(safe-area-inset-bottom))] px-4 pb-[env(safe-area-inset-bottom)] flex items-center justify-between">
+          <button onClick={() => handleNavigate('All Classes')} aria-label="All Classes">
+            <IconBack active={false} />
+          </button>
+          <button onClick={() => handleNavigate('Overview')} aria-label="Overview">
+            <IconHome active={activeItem === 'Overview'} />
+          </button>
+          <button onClick={() => handleNavigate('Modules')} aria-label="Modules">
+            <IconModules active={activeItem === 'Modules'} />
+          </button>
+          <button onClick={() => handleNavigate('Assignments')} aria-label="Assignments">
+            <IconAssignments active={activeItem === 'Assignments'} />
+          </button>
+          <button onClick={() => handleNavigate('Attendance')} aria-label="Attendance">
+            <IconAttendance active={activeItem === 'Attendance'} />
+          </button>
+        </nav>
+      ) : (
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t-[0.5px] border-[#E5E5E5] h-[calc(56px+env(safe-area-inset-bottom))] px-6 pb-[env(safe-area-inset-bottom)] flex items-center justify-center">
+          <button onClick={() => handleNavigate('Dashboard')} aria-label="Dashboard">
+            <IconHome active={activeItem === 'Dashboard'} />
+          </button>
+        </nav>
+      )}
     </div>
   )
 }
+
+function ClassDrawerItem({
+  title,
+  description,
+  isLast,
+  isActive,
+  onClick,
+}: {
+  title: string
+  description?: string
+  isLast: boolean
+  isActive: boolean
+  onClick: () => void
+}) {
+  const [hovered, setHovered] = React.useState(false)
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        width: '100%',
+        padding: '14px 20px',
+        borderTop: 'none',
+        borderLeft: 'none',
+        borderRight: 'none',
+        borderBottom: isLast ? 'none' : '1px solid #ECE6E0',
+        background: isActive ? 'rgba(139,26,47,0.05)' : hovered ? '#FAF7F4' : 'transparent',
+        cursor: 'pointer',
+        textAlign: 'left',
+        transition: 'background-color 120ms ease',
+      }}
+    >
+      <p
+        style={{
+          fontSize: '13.5px',
+          fontWeight: 600,
+          color: isActive ? '#6B1525' : hovered ? '#8B1A2F' : '#8B1A2F',
+          margin: 0,
+          lineHeight: 1.3,
+        }}
+      >
+        {title}
+      </p>
+      {description && (
+        <p style={{ fontSize: '12px', color: '#9C949A', margin: '3px 0 0', lineHeight: 1.4 }}>
+          {description}
+        </p>
+      )}
+    </button>
+  )
+}
+
+import React from 'react'
