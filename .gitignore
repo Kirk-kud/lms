@@ -1,0 +1,22 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Claude Code internals
+.claude/
+skills-lock.json
+
+# Firebase CLI
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+
+# Editor
+.vscode/
+.idea/
+
+# Misc
+*.log
+*.pem
+TEAM_UPDATE.html
