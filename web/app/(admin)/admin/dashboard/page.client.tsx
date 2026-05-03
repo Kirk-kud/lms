@@ -151,7 +151,7 @@ export default function DashboardPageClient() {
   const totalSubmissions = Object.values(submissionCounts).reduce((a, b) => a + b, 0)
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       <div className="mb-6">
         <h1 className="text-[22px] font-medium text-[#111]">
           {greeting()}, {firstName}
