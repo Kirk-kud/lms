@@ -150,6 +150,7 @@ function EditCohortModal({ cohort, classId, open, onClose }: { cohort: Cohort; c
   const [name, setName] = useState(cohort.name)
   const [taId, setTaId] = useState(cohort.ta?.id ?? '')
   const [zoomLink, setZoomLink] = useState(cohort.zoom_link ?? '')
+  const [canEditModules, setCanEditModules] = useState(cohort.can_edit_modules ?? false)
   const updateCohort = useUpdateCohort(classId)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -160,6 +161,7 @@ function EditCohortModal({ cohort, classId, open, onClose }: { cohort: Cohort; c
         name: name.trim(),
         ta_id: taId.trim() || undefined,
         zoom_link: zoomLink.trim() || undefined,
+        can_edit_modules: canEditModules,
       })
       onClose()
       toast.success('Cohort updated')
@@ -210,6 +212,18 @@ function EditCohortModal({ cohort, classId, open, onClose }: { cohort: Cohort; c
               onBlur={blurInput}
             />
           </div>
+          <label className="flex items-center gap-3 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={canEditModules}
+              onChange={(e) => setCanEditModules(e.target.checked)}
+              className="w-4 h-4 accent-[#8B1A2F]"
+            />
+            <div>
+              <p className="text-[13px] text-[#111]">Allow tutor to edit modules</p>
+              <p className="text-[11px] text-[#9CA3AF]">Grants the assigned tutor full create/edit/delete access to course modules.</p>
+            </div>
+          </label>
           <div className="flex gap-2 justify-end pt-1">
             <button type="button" onClick={onClose} className="h-9 px-4 text-[13px] text-[#6B7280] border border-[#E5E5E5] rounded-lg hover:bg-[#F8F8F8] transition-colors">Cancel</button>
             <button type="submit" disabled={updateCohort.isPending} className="h-9 px-4 text-[13px] font-medium bg-black text-white rounded-lg disabled:opacity-50 hover:bg-black/90 transition-colors flex items-center gap-2">

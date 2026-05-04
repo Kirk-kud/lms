@@ -13,6 +13,9 @@ export interface ClassRecord {
   cohort_count?: number
   tutor?: { full_name: string; email: string }
   created_at: string
+  // tutor-role only
+  cohort_id?: string
+  cohort_name?: string
 }
 
 export interface RosterEntry {

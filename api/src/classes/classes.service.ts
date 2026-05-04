@@ -531,7 +531,18 @@ export class ClassesService {
         .single(),
     );
     if (clsErr || !cls) throw new NotFoundException('Class not found');
-    if (role !== 'admin' && cls.tutor_id !== adminId) throw new ForbiddenException();
+    if (role === 'tutor') {
+      // Verify tutor has a cohort in this class
+      const { data: cohort } = await this.supabase.adminClient
+        .from('cohorts')
+        .select('id')
+        .eq('class_id', classId)
+        .eq('ta_id', adminId)
+        .maybeSingle();
+      if (!cohort) throw new ForbiddenException('No cohort assigned for this class');
+    } else if (role !== 'admin') {
+      throw new ForbiddenException();
+    }
 
     // Get all already-enrolled student IDs for this class
     const { data: enrolled } = asQueryResult<{ student_id: string }>(

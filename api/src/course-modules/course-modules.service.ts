@@ -66,7 +66,22 @@ export class CourseModulesService {
     return data;
   }
 
-  /** Resolves a module to its class_id and verifies tutor owns that class. */
+  /** Checks that a tutor has can_edit_modules on their cohort in this class. */
+  private async assertTutorCanEditModules(classId: string, tutorId: string) {
+    const { data, error } = await this.supabase.adminClient
+      .from('cohorts')
+      .select('id, can_edit_modules')
+      .eq('class_id', classId)
+      .eq('ta_id', tutorId)
+      .maybeSingle();
+
+    if (error) throw new BadRequestException(error.message);
+    if (!data) throw new ForbiddenException('No cohort assigned for this class');
+    if (!data.can_edit_modules)
+      throw new ForbiddenException('Module editing is not enabled for your cohort');
+  }
+
+  /** Resolves a module to its class_id and verifies tutor owns that class (and can edit). */
   private async assertTutorOwnsModule(
     moduleId: string,
     tutorId: string,
@@ -79,7 +94,11 @@ export class CourseModulesService {
       .single();
 
     if (error || !mod) throw new NotFoundException('Module not found');
-    await this.assertTutorOwnsClass(mod.class_id, tutorId, role);
+    if (role === 'tutor') {
+      await this.assertTutorCanEditModules(mod.class_id, tutorId);
+    } else {
+      await this.assertTutorOwnsClass(mod.class_id, tutorId, role);
+    }
     return mod;
   }
 
@@ -97,7 +116,11 @@ export class CourseModulesService {
 
     if (error || !item) throw new NotFoundException('Item not found');
     const classId = item.module.class_id as string;
-    await this.assertTutorOwnsClass(classId, tutorId, role);
+    if (role === 'tutor') {
+      await this.assertTutorCanEditModules(classId, tutorId);
+    } else {
+      await this.assertTutorOwnsClass(classId, tutorId, role);
+    }
     return item;
   }
 
@@ -162,7 +185,11 @@ export class CourseModulesService {
   // POST /modules
   // ----------------------------------------------------------------
   async create(tutorId: string, role: string | null, dto: CreateModuleDto) {
-    await this.assertTutorOwnsClass(dto.class_id, tutorId, role);
+    if (role === 'tutor') {
+      await this.assertTutorCanEditModules(dto.class_id, tutorId);
+    } else {
+      await this.assertTutorOwnsClass(dto.class_id, tutorId, role);
+    }
     if (dto.cohort_id) {
       await assertCohortBelongsToClass(
         this.supabase,

@@ -291,32 +291,27 @@ function EventDot({ type }: { type: EventType }) {
 
 // ── Day events panel ─────────────────────────────────────────────────────────
 
-function EventPanel({ date, events }: { date: Date; events: CalEvent[] }) {
+function EventPanel({ date, events, className }: { date: Date; events: CalEvent[]; className?: string }) {
   const dayEvents = events.filter((e) => isSameDay(e.date, date))
 
   return (
-    <div style={{
-      width: '260px',
-      flexShrink: 0,
-      border: '0.5px solid #E5E5E5',
-      borderRadius: '12px',
-      backgroundColor: '#FAFAFA',
-      overflow: 'hidden',
-    }}>
-      <div style={{
-        padding: '14px 16px',
-        borderBottom: '0.5px solid #E5E5E5',
-        backgroundColor: '#FFFFFF',
-      }}>
-        <p style={{ fontSize: '13px', fontWeight: 700, color: '#111111', margin: 0 }}>
+    <div
+      className={[
+        'w-full rounded-xl border-[0.5px] border-[#E5E5E5] bg-[#F8F8F8] overflow-hidden flex flex-col',
+        'min-h-0 max-h-[min(50vh,320px)] lg:max-h-none',
+        className ?? '',
+      ].join(' ')}
+    >
+      <div className="shrink-0 px-3.5 py-3.5 sm:px-4 border-b-[0.5px] border-[#E5E5E5] bg-white">
+        <p className="text-[13px] font-bold text-[#111111] m-0">
           {format(date, 'EEEE')}
         </p>
-        <p style={{ fontSize: '12px', color: '#9C949A', margin: '1px 0 0' }}>
+        <p className="text-xs text-[#9C949A] mt-0.5 m-0">
           {format(date, 'MMMM d, yyyy')}
         </p>
       </div>
 
-      <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-3 sm:px-3 sm:py-3 flex flex-col gap-2">
         {dayEvents.length === 0 ? (
           <p style={{ fontSize: '12.5px', color: '#9C949A', textAlign: 'center', padding: '20px 0' }}>
             No events
@@ -353,7 +348,8 @@ function EventPanel({ date, events }: { date: Date; events: CalEvent[] }) {
 
 // ── Calendar grid ─────────────────────────────────────────────────────────────
 
-const WEEK_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const WEEK_DAYS_LONG  = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const WEEK_DAYS_SHORT = ['S',   'M',   'T',   'W',   'T',   'F',   'S'  ]
 
 function CalendarGrid({
   month,
@@ -371,18 +367,19 @@ function CalendarGrid({
   const days    = eachDayOfInterval({ start, end })
 
   return (
-    <div style={{ flex: 1, minWidth: 0 }}>
+    <div className="flex-1 min-w-0 w-full">
       {/* Week headers */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: '4px' }}>
-        {WEEK_DAYS.map((d) => (
-          <div key={d} style={{ textAlign: 'center', padding: '6px 0', fontSize: '11px', fontWeight: 700, color: '#9C949A', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-            {d}
+      <div className="grid grid-cols-7 mb-1 sm:mb-1">
+        {WEEK_DAYS_LONG.map((d, i) => (
+          <div key={d} className="text-center py-1.5 text-[11px] font-bold text-[#9C949A] uppercase tracking-[0.08em]">
+            <span className="hidden sm:inline">{d}</span>
+            <span className="sm:hidden">{WEEK_DAYS_SHORT[i]}</span>
           </div>
         ))}
       </div>
 
       {/* Day cells */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}>
+      <div className="grid grid-cols-7 gap-0.5 sm:gap-0.5">
         {days.map((day) => {
           const dayEvents   = events.filter((e) => isSameDay(e.date, day))
           const isThisMonth = isSameMonth(day, month)
@@ -397,18 +394,13 @@ function CalendarGrid({
               onClick={() => onSelectDate(day)}
               style={{
                 position: 'relative',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                padding: '6px 4px 8px',
-                borderRadius: '8px',
                 border: '0.5px solid',
                 borderColor: isSelected ? '#8B1A2F' : 'transparent',
                 backgroundColor: isSelected ? '#FEF0F0' : 'transparent',
                 cursor: 'pointer',
-                minHeight: '64px',
                 transition: 'background-color 100ms ease, border-color 100ms ease',
               }}
+              className="relative flex flex-col items-center px-1 py-1 pb-1.5 sm:px-0.5 sm:py-1 sm:pb-1.5 rounded-lg min-h-[48px] sm:min-h-[52px]"
               onMouseEnter={(e) => {
                 if (!isSelected) {
                   (e.currentTarget as HTMLElement).style.backgroundColor = '#F8F8F8'
@@ -439,7 +431,7 @@ function CalendarGrid({
 
               {/* Event dots */}
               {visibleDots.length > 0 && (
-                <div style={{ display: 'flex', gap: '3px', marginTop: '5px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                <div style={{ display: 'flex', gap: '3px', marginTop: '4px', flexWrap: 'wrap', justifyContent: 'center' }}>
                   {visibleDots.map((ev, i) => (
                     <EventDot key={i} type={ev.type} />
                   ))}
@@ -539,115 +531,86 @@ export default function CalendarPageClient() {
   const monthLabel = format(currentMonth, 'MMMM yyyy')
 
   return (
-    <div style={{ padding: '28px 32px', height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 pb-8 sm:p-6 sm:pb-8 lg:h-full lg:overflow-hidden lg:p-8 lg:pb-8">
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', gap: '16px' }}>
-        <div>
-          <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#111111', margin: 0 }}>Calendar</h1>
-          <p style={{ fontSize: '13px', color: '#6B6168', margin: '4px 0 0' }}>
+      <div className="mb-5 flex shrink-0 items-start justify-between gap-3">
+        <div className="min-w-0 flex-1 pr-1">
+          <h1 className="m-0 text-lg font-bold text-[#111111] sm:text-xl">Calendar</h1>
+          <p className="mt-1 hidden text-[13px] text-[#6B6168] sm:block">
             Meetings, assignments, attendance and announcements
           </p>
         </div>
         <button
+          type="button"
+          aria-label="Set meeting schedule"
           onClick={() => setScheduleOpen(true)}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '7px',
-            height: '36px', padding: '0 14px',
-            borderRadius: '8px', border: '0.5px solid #E5E5E5',
-            backgroundColor: '#FFFFFF', color: '#111111',
-            fontSize: '13px', fontWeight: 600, cursor: 'pointer',
-            transition: 'all 120ms ease',
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLElement).style.borderColor = '#8B1A2F'
-            ;(e.currentTarget as HTMLElement).style.color = '#8B1A2F'
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLElement).style.borderColor = '#E5E5E5'
-            ;(e.currentTarget as HTMLElement).style.color = '#111111'
-          }}
+          className="flex h-9 shrink-0 items-center justify-center gap-[7px] rounded-lg border-[0.5px] border-[#E5E5E5] bg-white px-2.5 text-[13px] font-semibold text-[#111111] transition-[border-color,color] duration-[120ms] sm:px-3.5 hover:border-[#8B1A2F] hover:text-[#8B1A2F]"
         >
           <CalendarIcon />
-          Set Schedule
+          <span className="hidden sm:inline">Set Schedule</span>
         </button>
       </div>
 
       {/* Legend */}
-      <div style={{ display: 'flex', gap: '16px', marginBottom: '20px', flexWrap: 'wrap' }}>
+      <div className="mb-4 flex flex-wrap gap-2 sm:gap-3 shrink-0">
         {(['meeting', 'assignment', 'attendance', 'announcement'] as EventType[]).map((t) => (
-          <div key={t} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div key={t} className="flex items-center gap-1 sm:gap-1.5">
             <EventDot type={t} />
-            <span style={{ fontSize: '12px', color: '#6B6168', fontWeight: 500 }}>
-              {EVENT_LABEL[t]}
+            <span className="text-[11px] font-medium text-[#6B6168] sm:text-[11.5px]">
+              <span className="hidden sm:inline">{EVENT_LABEL[t]}</span>
+              <span className="sm:hidden">{EVENT_LABEL[t].split(' ')[0]}</span>
             </span>
           </div>
         ))}
       </div>
 
       {/* Month nav */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+      <div className="mb-3.5 flex shrink-0 flex-wrap items-center gap-2 sm:gap-2.5">
         <button
+          type="button"
           onClick={() => setCurrentMonth((m) => subMonths(m, 1))}
-          style={{
-            width: '32px', height: '32px', borderRadius: '8px',
-            border: '0.5px solid #E5E5E5', backgroundColor: '#FFFFFF',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#6B6168', cursor: 'pointer', transition: 'all 100ms ease',
-          }}
-          onMouseEnter={(e) => (e.currentTarget as HTMLElement).style.borderColor = '#8B1A2F'}
-          onMouseLeave={(e) => (e.currentTarget as HTMLElement).style.borderColor = '#E5E5E5'}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border-[0.5px] border-[#E5E5E5] bg-white text-[#6B6168] transition-[border-color] duration-100 hover:border-[#8B1A2F]"
         >
           <ChevronLeft />
         </button>
 
-        <p style={{ fontSize: '15px', fontWeight: 700, color: '#111111', margin: 0, minWidth: '140px', textAlign: 'center' }}>
+        <p className="m-0 min-w-[7.5rem] flex-1 text-center text-[15px] font-bold text-[#111111] sm:min-w-[9rem] sm:flex-none">
           {monthLabel}
         </p>
 
         <button
+          type="button"
           onClick={() => setCurrentMonth((m) => addMonths(m, 1))}
-          style={{
-            width: '32px', height: '32px', borderRadius: '8px',
-            border: '0.5px solid #E5E5E5', backgroundColor: '#FFFFFF',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#6B6168', cursor: 'pointer', transition: 'all 100ms ease',
-          }}
-          onMouseEnter={(e) => (e.currentTarget as HTMLElement).style.borderColor = '#8B1A2F'}
-          onMouseLeave={(e) => (e.currentTarget as HTMLElement).style.borderColor = '#E5E5E5'}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border-[0.5px] border-[#E5E5E5] bg-white text-[#6B6168] transition-[border-color] duration-100 hover:border-[#8B1A2F]"
         >
           <ChevronRight />
         </button>
 
         <button
-          onClick={() => { setCurrentMonth(new Date()); setSelectedDate(new Date()) }}
-          style={{
-            height: '32px', padding: '0 12px', borderRadius: '8px',
-            border: '0.5px solid #E5E5E5', backgroundColor: '#FFFFFF',
-            fontSize: '12.5px', fontWeight: 600, color: '#6B6168',
-            cursor: 'pointer', transition: 'all 100ms ease',
+          type="button"
+          onClick={() => {
+            setCurrentMonth(new Date())
+            setSelectedDate(new Date())
           }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLElement).style.borderColor = '#8B1A2F'
-            ;(e.currentTarget as HTMLElement).style.color = '#8B1A2F'
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLElement).style.borderColor = '#E5E5E5'
-            ;(e.currentTarget as HTMLElement).style.color = '#6B6168'
-          }}
+          className="ml-0 h-8 shrink-0 rounded-lg border-[0.5px] border-[#E5E5E5] bg-white px-3 text-[12.5px] font-semibold text-[#6B6168] transition-[border-color,color] duration-100 hover:border-[#8B1A2F] hover:text-[#8B1A2F] sm:ml-auto"
         >
           Today
         </button>
       </div>
 
-      {/* Calendar + Panel */}
-      <div style={{ display: 'flex', gap: '20px', flex: 1, minHeight: 0 }}>
+      {/* Calendar + Panel — stacked on mobile, row on lg; panel scrolls on desktop */}
+      <div className="flex min-h-0 flex-1 flex-col gap-4 lg:min-h-0 lg:flex-row lg:gap-5">
         <CalendarGrid
           month={currentMonth}
           events={allEvents}
           selectedDate={selectedDate}
           onSelectDate={setSelectedDate}
         />
-        <EventPanel date={selectedDate} events={allEvents} />
+        <EventPanel
+          date={selectedDate}
+          events={allEvents}
+          className="shrink-0 lg:h-full lg:min-h-0 lg:w-[260px] lg:max-h-none lg:shrink-0"
+        />
       </div>
 
       <ScheduleModal open={scheduleOpen} onClose={() => setScheduleOpen(false)} />

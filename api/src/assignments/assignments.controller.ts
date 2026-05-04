@@ -74,7 +74,7 @@ export class AssignmentsController {
   }
 
   @Get(':id/submissions')
-  @Roles('admin')
+  @Roles('admin', 'tutor')
   async getSubmissions(@Req() req: Request, @Param('id') id: string) {
     const user = req.user as JwtPayload;
     const data = await this.service.getSubmissions(id, user.sub, user.role);
@@ -95,7 +95,7 @@ export class AssignmentsController {
   }
 
   @Get(':id/submissions/:submissionId/view-url')
-  @Roles('admin')
+  @Roles('admin', 'tutor')
   async getSubmissionViewUrl(
     @Req() req: Request,
     @Param('id') id: string,
@@ -107,7 +107,7 @@ export class AssignmentsController {
   }
 
   @Patch(':id/submissions/:submissionId')
-  @Roles('admin')
+  @Roles('admin', 'tutor')
   async gradeSubmission(
     @Req() req: Request,
     @Param('id') id: string,

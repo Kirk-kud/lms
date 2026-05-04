@@ -56,7 +56,7 @@ export class CourseModulesController {
   }
 
   @Post()
-  @Roles('admin')
+  @Roles('admin', 'tutor')
   async create(@Req() req: Request, @Body() dto: CreateModuleDto) {
     const user = req.user as JwtPayload;
     const data = await this.service.create(user.sub, user.role, dto);
@@ -65,7 +65,7 @@ export class CourseModulesController {
 
   // PATCH /modules/items/:itemId — literal 'items' segment declared before :id
   @Patch('items/:itemId')
-  @Roles('admin')
+  @Roles('admin', 'tutor')
   async updateItem(
     @Req() req: Request,
     @Param('itemId') itemId: string,
@@ -83,7 +83,7 @@ export class CourseModulesController {
 
   // DELETE /modules/items/:itemId — same reason: before :id
   @Delete('items/:itemId')
-  @Roles('admin')
+  @Roles('admin', 'tutor')
   async removeItem(@Req() req: Request, @Param('itemId') itemId: string) {
     const user = req.user as JwtPayload;
     await this.service.removeItem(itemId, user.sub, user.role);
@@ -91,7 +91,7 @@ export class CourseModulesController {
   }
 
   @Patch(':id')
-  @Roles('admin')
+  @Roles('admin', 'tutor')
   async update(
     @Req() req: Request,
     @Param('id') id: string,
@@ -103,7 +103,7 @@ export class CourseModulesController {
   }
 
   @Delete(':id')
-  @Roles('admin')
+  @Roles('admin', 'tutor')
   async remove(@Req() req: Request, @Param('id') id: string) {
     const user = req.user as JwtPayload;
     await this.service.remove(id, user.sub, user.role);
@@ -111,7 +111,7 @@ export class CourseModulesController {
   }
 
   @Post(':id/items')
-  @Roles('admin')
+  @Roles('admin', 'tutor')
   @UseInterceptors(FileInterceptor('file'))
   async createItem(
     @Req() req: Request,
@@ -131,7 +131,7 @@ export class CourseModulesController {
   }
 
   @Post(':id/reorder')
-  @Roles('admin')
+  @Roles('admin', 'tutor')
   async reorderItems(
     @Req() req: Request,
     @Param('id') id: string,

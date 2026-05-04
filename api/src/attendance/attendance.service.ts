@@ -302,7 +302,7 @@ export class AttendanceService {
   // POST /attendance/sessions/:sessionId/records/manual
   // Admin manually marks a student as present for any session.
   // ----------------------------------------------------------------
-  async manualCheckIn(sessionId: string, adminId: string, role: string | null, studentId: string) {
+  async manualCheckIn(sessionId: string, actorId: string, role: string | null, studentId: string) {
     const { data: session, error: sErr } = await this.supabase.adminClient
       .from('attendance_sessions')
       .select('id, class_id')
@@ -310,10 +310,23 @@ export class AttendanceService {
       .single();
 
     if (sErr || !session) throw new NotFoundException('Session not found');
-    await this.assertTutorOwnsClass(session.class_id, adminId, role);
 
-    // Student must be enrolled in the class
-    await this.assertStudentEnrolled(session.class_id, studentId);
+    if (role === 'tutor') {
+      // Tutor must have a cohort in this class, and the student must be in that cohort
+      const cohort = await getTutorCohortForClass(this.supabase, session.class_id, actorId);
+      const { data: enrollment } = await this.supabase.adminClient
+        .from('enrollments')
+        .select('id')
+        .eq('class_id', session.class_id)
+        .eq('student_id', studentId)
+        .eq('cohort_id', cohort.id)
+        .maybeSingle();
+      if (!enrollment) throw new ForbiddenException('Student is not in your cohort');
+    } else {
+      await this.assertTutorOwnsClass(session.class_id, actorId, role);
+      // Student must be enrolled in the class
+      await this.assertStudentEnrolled(session.class_id, studentId);
+    }
 
     // Idempotent: skip if already checked in
     const { data: existing } = await this.supabase.adminClient

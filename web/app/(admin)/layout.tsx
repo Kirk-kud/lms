@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
 import { useClasses } from '@/lib/hooks/useClasses'
+import Topbar from '@/components/ui/layout/Topbar'
 
 // ── Path parser ──────────────────────────────────────────────────────────────
 
@@ -436,29 +437,40 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   ]
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+    <div className="flex flex-col h-screen overflow-hidden">
 
-      {/* Desktop sidebar */}
-      <div className="hidden md:flex">
-        <AdminSidebar
-          classId={classId}
-          activeItem={activeItem}
-          userName={fullName}
-          userInitials={initials}
-          onNavigate={handleNavigate}
-          onGoBack={() => router.push('/admin/classes')}
-          onProfile={() => router.push('/admin/profile')}
-          onSignOut={handleSignOut}
-        />
+      {/* Topbar — always visible on all screen sizes */}
+      <Topbar
+        userName={fullName}
+        userInitials={initials}
+        role="admin"
+        userId={user?.id}
+        onSignOut={handleSignOut}
+        onProfile={() => router.push('/admin/profile')}
+      />
+
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        {/* Desktop sidebar */}
+        <div className="hidden md:flex">
+          <AdminSidebar
+            classId={classId}
+            activeItem={activeItem}
+            userName={fullName}
+            userInitials={initials}
+            onNavigate={handleNavigate}
+            onGoBack={() => router.push('/admin/classes')}
+            onProfile={() => router.push('/admin/profile')}
+            onSignOut={handleSignOut}
+          />
+        </div>
+
+        {/* Main content */}
+        <main
+          className="min-h-0 flex-1 overflow-y-auto bg-white pb-[calc(56px+env(safe-area-inset-bottom))] md:pb-0"
+        >
+          {children}
+        </main>
       </div>
-
-      {/* Main content */}
-      <main
-        className="pb-16 md:pb-0"
-        style={{ flex: 1, overflowY: 'auto', backgroundColor: '#FFFFFF' }}
-      >
-        {children}
-      </main>
 
       {/* Mobile bottom nav */}
       <nav

@@ -16,6 +16,7 @@ export interface Cohort {
   name: string
   zoom_link: string | null
   invite_pin: string | null
+  can_edit_modules: boolean
   created_at: string
   ta: CohortTa | null
 }
@@ -73,7 +74,7 @@ export function useCreateCohort() {
 export function useUpdateCohort(classId: string) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, ...body }: { id: string; name?: string; ta_id?: string; zoom_link?: string; invite_pin?: string }) =>
+    mutationFn: ({ id, ...body }: { id: string; name?: string; ta_id?: string; zoom_link?: string; invite_pin?: string; can_edit_modules?: boolean }) =>
       apiClient.patch<Cohort>(`/cohorts/${id}`, body),
     onSuccess: async (_data, vars) => {
       await Promise.all([

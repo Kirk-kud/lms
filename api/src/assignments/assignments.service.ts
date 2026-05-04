@@ -62,7 +62,11 @@ export class AssignmentsService {
       .single();
 
     if (error || !data) throw new NotFoundException('Assignment not found');
-    await this.assertTutorOwnsClass(data.class_id, tutorId, role);
+    if (role === 'tutor') {
+      await getTutorCohortForClass(this.supabase, data.class_id, tutorId);
+    } else {
+      await this.assertTutorOwnsClass(data.class_id, tutorId, role);
+    }
     return data;
   }
 
@@ -422,13 +426,26 @@ export class AssignmentsService {
 
     if (aErr || !assignment)
       throw new NotFoundException('Assignment not found');
-    await this.assertTutorOwnsClass(assignment.class_id, tutorId, role);
 
-    // All enrolled students
-    const { data: enrollments } = await this.supabase.adminClient
+    let cohortId: string | undefined;
+    if (role === 'tutor') {
+      const cohort = await getTutorCohortForClass(this.supabase, assignment.class_id, tutorId);
+      cohortId = cohort.id;
+    } else {
+      await this.assertTutorOwnsClass(assignment.class_id, tutorId, role);
+    }
+
+    // All enrolled students (scoped to cohort for tutors)
+    let enrollmentsQuery = this.supabase.adminClient
       .from('enrollments')
       .select('student:profiles!student_id(*)')
       .eq('class_id', assignment.class_id);
+
+    if (cohortId) {
+      enrollmentsQuery = enrollmentsQuery.eq('cohort_id', cohortId);
+    }
+
+    const { data: enrollments } = await enrollmentsQuery;
 
     // All submissions for this assignment
     const { data: submissions } = await this.supabase.adminClient

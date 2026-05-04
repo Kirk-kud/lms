@@ -63,7 +63,7 @@ export class ClassesController {
   }
 
   @Get(':id/students/searchable')
-  @Roles('admin')
+  @Roles('admin', 'tutor')
   async searchStudents(
     @Req() req: Request,
     @Param('id') id: string,

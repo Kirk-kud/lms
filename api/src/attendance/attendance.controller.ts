@@ -50,7 +50,7 @@ export class AttendanceController {
   }
 
   @Post('sessions/:sessionId/records/manual')
-  @Roles('admin')
+  @Roles('admin', 'tutor')
   async manualCheckIn(
     @Req() req: Request,
     @Param('sessionId') sessionId: string,
