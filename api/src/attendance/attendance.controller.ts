@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   Req,
@@ -81,5 +82,16 @@ export class AttendanceController {
     const user = req.user as JwtPayload;
     const data = await this.service.getMyAttendance(user.sub, classId);
     return createResponse(data, 'Attendance fetched');
+  }
+
+  @Patch('sessions/:sessionId')
+  @Roles('admin', 'tutor')
+  async endSession(
+    @Req() req: Request,
+    @Param('sessionId') sessionId: string,
+  ) {
+    const user = req.user as JwtPayload;
+    const data = await this.service.endSession(sessionId, user);
+    return createResponse(data, 'Session ended');
   }
 }

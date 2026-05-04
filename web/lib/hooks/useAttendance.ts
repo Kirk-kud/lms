@@ -54,15 +54,13 @@ export function useStartSession() {
   })
 }
 
-// No PATCH endpoint exists; session expires naturally after 10 min.
-// useEndSession clears local UI state only — call the returned function.
 export function useEndSession() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ classId }: { classId: string }) => {
-      qc.invalidateQueries({ queryKey: ['attendance-sessions', classId] })
-      return Promise.resolve()
-    },
+    mutationFn: async ({ sessionId, classId }: { sessionId: string; classId: string }) =>
+      apiClient.patch<AttendanceSession>(`/attendance/sessions/${sessionId}`),
+    onSuccess: (_data, { classId }) =>
+      qc.invalidateQueries({ queryKey: ['attendance-sessions', classId] }),
   })
 }
 
