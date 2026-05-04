@@ -47,20 +47,6 @@ const IconChevronLeft = () => (
   </svg>
 )
 
-const IconCalendar = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="1.5" y="2" width="13" height="13" rx="1.5" />
-    <path d="M5 1v2M11 1v2M1.5 6h13" />
-  </svg>
-)
-
-const IconTodo = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="3 8 6 11 13 4" />
-    <rect x="1" y="1" width="14" height="14" rx="2" />
-  </svg>
-)
-
 const IconBell = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
     <path d="M13 9.5V7a5 5 0 0 0-10 0v2.5L1.5 12h13L13 9.5z" />
@@ -229,23 +215,22 @@ export default function StudentSidebar({
             </div>
 
             <div style={sectionLabel}>TOOLS</div>
-            {(
-              [
-                { label: 'Calendar',      icon: <IconCalendar /> },
-                { label: 'To-do',         icon: <IconTodo /> },
-                { label: 'Notifications', icon: <IconBell /> },
-                { label: 'Announcements', icon: <IconInbox /> },
-              ] as const
-            ).map(({ label, icon }) => (
-              <div key={label} style={{ margin: '2px 12px' }}>
-                <NavButton
-                  label={label}
-                  icon={icon}
-                  isActive={activeItem === label}
-                  onClick={() => onNavigate(label)}
-                />
-              </div>
-            ))}
+            <div style={{ margin: '2px 12px' }}>
+              <NavButton
+                label="Notifications"
+                icon={<IconBell />}
+                isActive={activeItem === 'Notifications'}
+                onClick={() => onNavigate('Notifications')}
+              />
+            </div>
+            <div style={{ margin: '2px 12px' }}>
+              <NavButton
+                label="Announcements"
+                icon={<IconInbox />}
+                isActive={activeItem === 'Announcements'}
+                onClick={() => onNavigate('Announcements')}
+              />
+            </div>
           </div>
         ) : (
           <div>

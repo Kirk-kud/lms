@@ -1,40 +1,19 @@
 'use client'
 
-import { use, useEffect, useMemo, useRef, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { use, useEffect, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import axios from 'axios'
 import { toast } from 'sonner'
-import { useAssignments, Assignment } from '@/lib/hooks/useAssignments'
+import { format } from 'date-fns'
+import { useAssignments } from '@/lib/hooks/useAssignments'
 import { useClass } from '@/lib/hooks/useClasses'
-import { useUser } from '@/lib/hooks/useUser'
-import { createClient } from '@/lib/supabase/client'
-import AssignmentUpload from '@/components/ui/student/AssignmentUpload'
 import { SkeletonCard } from '@/components/ui/shared/SkeletonCard'
 import { EmptyState } from '@/components/ui/shared/EmptyState'
 import { InlineError } from '@/components/ui/shared/InlineError'
 import { ApiError } from '@/lib/api'
 
-function toSubmissionData(assignment: Assignment) {
-  if (!assignment.submission) return null
-  return {
-    file_name: assignment.submission.file_name,
-    submitted_at: new Date(assignment.submission.submitted_at),
-    signed_url: assignment.submission.file_url,
-  }
-}
-
-async function getAccessToken() {
-  const supabase = createClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  return session?.access_token ?? null
-}
-
 export default function StudentAssignmentsPageClient({ params }: { params: Promise<{ id: string }> }) {
   const { id: classId } = use(params)
   const router = useRouter()
-  const qc = useQueryClient()
-  const { user } = useUser()
   const {
     data: classData,
     isLoading: isClassLoading,
@@ -49,15 +28,9 @@ export default function StudentAssignmentsPageClient({ params }: { params: Promi
     error: assignmentsError,
     refetch: refetchAssignments,
   } = useAssignments(classId)
-  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({})
 
   const loadingToastRef = useRef<string | number | null>(null)
   const didSuccessRef = useRef(false)
-
-  useEffect(() => {
-    router.prefetch(`/student/classes/${classId}/attendance`)
-    router.prefetch(`/student/classes/${classId}/modules`)
-  }, [classId, router])
 
   useEffect(() => {
     const isLoading = isClassLoading || isAssignmentsLoading
@@ -78,58 +51,6 @@ export default function StudentAssignmentsPageClient({ params }: { params: Promi
   const now = useMemo(() => new Date(), [])
   const upcoming = assignments.filter((a) => new Date(a.due_date) >= now)
   const past = assignments.filter((a) => new Date(a.due_date) < now)
-
-  const handleSubmit = (assignmentId: string) => async (file: File) => {
-    const token = await getAccessToken()
-    const formData = new FormData()
-    formData.append('file', file)
-
-    qc.setQueryData<Assignment[]>(['assignments', classId], (prev) =>
-      prev?.map((a) =>
-        a.id === assignmentId
-          ? {
-              ...a,
-              submission: {
-                id: `optimistic-${assignmentId}`,
-                assignment_id: assignmentId,
-                student_id: user?.id ?? '',
-                file_url: '',
-                file_name: file.name,
-                status: 'submitted',
-                submitted_at: new Date().toISOString(),
-              },
-            }
-          : a
-      )
-    )
-
-    try {
-      setUploadProgress((prev) => ({ ...prev, [assignmentId]: 0 }))
-      await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/assignments/${assignmentId}/submit`,
-        formData,
-        {
-          headers: {
-            Authorization: token ? `Bearer ${token}` : undefined,
-          },
-          onUploadProgress: (event) => {
-            const total = event.total ?? 0
-            if (total > 0) {
-              const pct = Math.round((event.loaded / total) * 100)
-              setUploadProgress((prev) => ({ ...prev, [assignmentId]: pct }))
-            }
-          },
-        }
-      )
-      await qc.invalidateQueries({ queryKey: ['assignments', classId] })
-      toast.success('Assignment submitted')
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Unable to submit assignment')
-      await qc.invalidateQueries({ queryKey: ['assignments', classId] })
-    } finally {
-      setUploadProgress((prev) => ({ ...prev, [assignmentId]: 0 }))
-    }
-  }
 
   return (
     <div className="p-4 sm:p-8">
@@ -157,9 +78,7 @@ export default function StudentAssignmentsPageClient({ params }: { params: Promi
         <span className="text-[#111]">Assignments</span>
       </nav>
 
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-[20px] font-medium text-[#111]">Assignments</h1>
-      </div>
+      <h1 className="text-[20px] font-medium text-[#111] mb-6">Assignments</h1>
 
       {(isClassError || isAssignmentsError) && (
         <InlineError
@@ -168,16 +87,13 @@ export default function StudentAssignmentsPageClient({ params }: { params: Promi
               ? (classError || assignmentsError as ApiError).message
               : 'Unable to load assignments'
           }
-          onRetry={() => {
-            refetchClass()
-            refetchAssignments()
-          }}
+          onRetry={() => { refetchClass(); refetchAssignments() }}
         />
       )}
 
       {(isClassLoading || isAssignmentsLoading) && (
-        <div className="space-y-4">
-          {Array.from({ length: 2 }).map((_, i) => <SkeletonCard key={i} lines={3} />)}
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} lines={2} />)}
         </div>
       )}
 
@@ -196,42 +112,115 @@ export default function StudentAssignmentsPageClient({ params }: { params: Promi
 
       {!(isClassLoading || isAssignmentsLoading) && assignments.length > 0 && (
         <div className="space-y-6">
-          {upcoming.map((assignment) => (
-            <AssignmentUpload
-              key={assignment.id}
-              title={assignment.title}
-              description={assignment.description ?? undefined}
-              dueDate={new Date(assignment.due_date)}
-              isOverdue={new Date(assignment.due_date) < new Date()}
-              submission={toSubmissionData(assignment)}
-              onSubmit={handleSubmit(assignment.id)}
-              uploadProgress={uploadProgress[assignment.id] ?? 0}
-            />
-          ))}
-
-          {past.length > 0 && (
-            <div className="pt-6 border-t border-[#E5E5E5]">
-              <h2 className="text-[12px] font-medium text-[#9CA3AF] uppercase tracking-wider mb-4">
-                Earlier
-              </h2>
-              <div className="space-y-6">
-                {past.map((assignment) => (
-                  <AssignmentUpload
-                    key={assignment.id}
-                    title={assignment.title}
-                    description={assignment.description ?? undefined}
-                    dueDate={new Date(assignment.due_date)}
-                    isOverdue={new Date(assignment.due_date) < new Date()}
-                    submission={toSubmissionData(assignment)}
-                    onSubmit={handleSubmit(assignment.id)}
-                    uploadProgress={uploadProgress[assignment.id] ?? 0}
+          {upcoming.length > 0 && (
+            <section>
+              <div className="space-y-2">
+                {upcoming.map((a) => (
+                  <AssignmentCard
+                    key={a.id}
+                    title={a.title}
+                    description={a.description ?? undefined}
+                    dueDate={new Date(a.due_date)}
+                    isOverdue={false}
+                    submitted={!!a.submission}
+                    late={a.submission?.status === 'late'}
+                    onClick={() => router.push(`/student/classes/${classId}/assignments/${a.id}`)}
+                    onMouseEnter={() => router.prefetch(`/student/classes/${classId}/assignments/${a.id}`)}
                   />
                 ))}
               </div>
-            </div>
+            </section>
+          )}
+
+          {past.length > 0 && (
+            <section>
+              <h2 className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-wider mb-2">
+                Earlier
+              </h2>
+              <div className="space-y-2">
+                {past.map((a) => (
+                  <AssignmentCard
+                    key={a.id}
+                    title={a.title}
+                    description={a.description ?? undefined}
+                    dueDate={new Date(a.due_date)}
+                    isOverdue={!a.submission}
+                    submitted={!!a.submission}
+                    late={a.submission?.status === 'late'}
+                    onClick={() => router.push(`/student/classes/${classId}/assignments/${a.id}`)}
+                    onMouseEnter={() => router.prefetch(`/student/classes/${classId}/assignments/${a.id}`)}
+                  />
+                ))}
+              </div>
+            </section>
           )}
         </div>
       )}
     </div>
+  )
+}
+
+function AssignmentCard({
+  title,
+  description,
+  dueDate,
+  isOverdue,
+  submitted,
+  late,
+  onClick,
+  onMouseEnter,
+}: {
+  title: string
+  description?: string
+  dueDate: Date
+  isOverdue: boolean
+  submitted: boolean
+  late: boolean
+  onClick: () => void
+  onMouseEnter: () => void
+}) {
+  const statusLabel = submitted ? (late ? 'Late' : 'Submitted') : isOverdue ? 'Overdue' : `Due ${format(dueDate, 'MMM d')}`
+  const statusColor = submitted
+    ? (late ? '#B6791D' : '#1F8B4C')
+    : isOverdue
+    ? '#B0182E'
+    : '#6B7280'
+  const statusBg = submitted
+    ? (late ? 'rgba(182,121,29,0.08)' : 'rgba(31,139,76,0.08)')
+    : isOverdue
+    ? 'rgba(176,24,46,0.08)'
+    : 'rgba(107,114,128,0.08)'
+
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={onMouseEnter}
+      style={{ width: '100%', textAlign: 'left' }}
+      className="group flex items-center justify-between gap-4 border border-[#E5E5E5] rounded-xl px-5 py-4 hover:border-[#C5A0A8] hover:bg-[#FDFAFA] transition-all"
+    >
+      <div className="min-w-0 flex-1">
+        <p className="text-[14px] font-medium text-[#111] truncate group-hover:text-[#8B1A2F] transition-colors">
+          {title}
+        </p>
+        {description && (
+          <p className="text-[12px] text-[#6B7280] mt-0.5 line-clamp-1">{description}</p>
+        )}
+      </div>
+
+      <div className="flex items-center gap-3 shrink-0">
+        <span
+          style={{ color: statusColor, backgroundColor: statusBg }}
+          className="text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap"
+        >
+          {statusLabel}
+        </span>
+        <svg
+          width="14" height="14" viewBox="0 0 14 14" fill="none"
+          className="text-[#9CA3AF] group-hover:text-[#8B1A2F] transition-colors"
+        >
+          <path d="M5 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </div>
+    </button>
   )
 }

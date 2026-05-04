@@ -24,7 +24,6 @@ export class NotificationsController {
     return createResponse(data, 'Notifications fetched');
   }
 
-  // Declare literal route before parameterized route to avoid conflicts
   @Patch('read-all')
   async markAllRead(@Req() req: Request) {
     const user = req.user as JwtPayload;

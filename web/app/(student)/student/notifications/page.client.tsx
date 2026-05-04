@@ -47,7 +47,6 @@ export default function NotificationsPageClient() {
 
   return (
     <div className="p-4 sm:p-8">
-      {/* Page header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '28px', gap: '16px', flexWrap: 'wrap' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
@@ -101,7 +100,7 @@ export default function NotificationsPageClient() {
               <path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-9.1 4a2 2 0 0 1-1.8 0"/>
             </svg>
           </div>
-          <p style={{ fontSize: '15px', fontWeight: 600, color: '#0A0A0B', margin: '0 0 6px' }}>You're all caught up</p>
+          <p style={{ fontSize: '15px', fontWeight: 600, color: '#0A0A0B', margin: '0 0 6px' }}>You&apos;re all caught up</p>
           <p style={{ fontSize: '13.5px', color: '#9C949A', margin: 0 }}>No notifications yet.</p>
         </div>
       )}
