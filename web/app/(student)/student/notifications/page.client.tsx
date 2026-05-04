@@ -50,7 +50,7 @@ export default function NotificationsPageClient() {
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '28px', gap: '16px', flexWrap: 'wrap' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-            <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#0A0A0B', letterSpacing: '-0.02em', lineHeight: 1.2, margin: 0 }}>
+            <h1 className="text-[22px] sm:text-[28px]" style={{ fontWeight: 700, color: '#0A0A0B', letterSpacing: '-0.02em', lineHeight: 1.2, margin: 0 }}>
               Notifications
             </h1>
             {unreadCount > 0 && (

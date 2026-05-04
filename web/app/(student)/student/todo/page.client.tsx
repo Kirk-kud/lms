@@ -131,10 +131,10 @@ export default function TodoPageClient() {
   const overdueCount = grouped.overdue.length
 
   return (
-    <div style={{ padding: '28px 32px' }}>
+    <div className="p-4 sm:p-8">
       {/* Header */}
       <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#0A0A0B', letterSpacing: '-0.02em', margin: 0 }}>
+        <h1 className="text-[22px] sm:text-[28px]" style={{ fontWeight: 700, color: '#0A0A0B', letterSpacing: '-0.02em', margin: 0 }}>
           To-do
         </h1>
         {!isLoading && (

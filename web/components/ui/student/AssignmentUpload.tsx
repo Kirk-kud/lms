@@ -77,45 +77,59 @@ export default function AssignmentUpload({
   if (submission && !resubmitting) {
     return (
       <>
-      <div className="border border-[#E5E5E5] rounded-xl p-5">
-        <div className="flex items-start justify-between gap-3 mb-3">
-          <div className="min-w-0">
-            <h3 className="text-[14px] font-medium text-[#111]">{title}</h3>
-            {description && (
-              <p className="text-[13px] text-[#6B7280] mt-1">{description}</p>
-            )}
+      <div className="border border-[#E5E5E5] rounded-xl overflow-hidden">
+        {/* Main content */}
+        <div className="p-5">
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <div className="min-w-0">
+              <h3 className="text-[14px] font-semibold text-[#111]">{title}</h3>
+              {description && (
+                <p className="text-[13px] text-[#6B7280] mt-1 leading-relaxed">{description}</p>
+              )}
+            </div>
+            <StatusBadge variant="success" label="Submitted" />
           </div>
-          <StatusBadge variant="success" label="Submitted" />
+
+          <p className="text-[12px] text-[#9CA3AF]">
+            Submitted {format(new Date(submission.submitted_at), 'MMM d, yyyy')} at {format(new Date(submission.submitted_at), 'h:mm a')}
+            {isOverdue && <span className="ml-2 text-[#9CA3AF]">· Late</span>}
+          </p>
+
+          {uploadProgress > 0 && uploadProgress < 100 && (
+            <div className="mt-3 w-full h-[3px] bg-[#F3F4F6] rounded-full overflow-hidden">
+              <div className="h-full bg-[#8B1A2F] transition-all" style={{ width: `${uploadProgress}%` }} />
+            </div>
+          )}
         </div>
 
-        <p className="text-[11px] text-[#9CA3AF]">
-          Submitted {format(new Date(submission.submitted_at), 'MMM d, yyyy')} at {format(new Date(submission.submitted_at), 'h:mm a')}
-        </p>
-
-        {isOverdue && submission && (
-          <p style={{ fontSize: 11, color: '#9CA3AF', marginTop: 4 }}>
-            Submitted after the deadline
-          </p>
-        )}
-
-        {uploadProgress > 0 && uploadProgress < 100 && (
-          <div className="mt-3 w-full h-[3px] bg-[#F3F4F6] rounded-full overflow-hidden">
-            <div className="h-full bg-[#8B1A2F] transition-all" style={{ width: `${uploadProgress}%` }} />
-          </div>
-        )}
-
-        <div className="mt-3 flex items-center gap-4">
-          {submission.signed_url && (
+        {/* Footer row */}
+        <div className="border-t border-[#F3F4F6] bg-[#FAFAFA] px-5 py-3 flex items-center justify-between gap-3">
+          {/* File chip */}
+          {submission.signed_url ? (
             <button
               onClick={() => setPreviewItem({ title: submission.file_name, type: 'pdf', content_url: submission.signed_url, content_text: null })}
-              className="text-[12px] text-[#6B7280] hover:text-[#111] underline transition-colors truncate max-w-[200px] text-left"
+              className="flex items-center gap-2 text-[12px] text-[#6B7280] hover:text-[#111] transition-colors group min-w-0"
             >
-              {submission.file_name}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+              </svg>
+              <span className="truncate max-w-[220px] underline underline-offset-2">{submission.file_name}</span>
             </button>
+          ) : (
+            <div className="flex items-center gap-2 text-[12px] text-[#9CA3AF] min-w-0">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+              </svg>
+              <span className="truncate max-w-[220px]">{submission.file_name}</span>
+            </div>
           )}
+
+          {/* Resubmit */}
           <button
             onClick={() => setResubmitting(true)}
-            className="text-[12px] text-[#9CA3AF] hover:text-[#111] transition-colors shrink-0"
+            className="shrink-0 h-8 px-4 text-[12px] font-semibold bg-[#8B1A2F] hover:bg-[#A52038] text-white rounded-lg transition-colors"
           >
             Resubmit
           </button>

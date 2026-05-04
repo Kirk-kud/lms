@@ -238,11 +238,11 @@ export default function ClassesPageClient() {
   const [joinOpen, setJoinOpen] = useState(false)
 
   return (
-    <div style={{ padding: '28px 32px' }}>
+    <div className="p-4 sm:p-8">
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
         <div>
-          <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#0A0A0B', letterSpacing: '-0.02em', margin: 0 }}>
+          <h1 className="text-[22px] sm:text-[28px]" style={{ fontWeight: 700, color: '#0A0A0B', letterSpacing: '-0.02em', margin: 0 }}>
             My Classes
           </h1>
           {!isLoading && (

@@ -44,11 +44,11 @@ export default function CalendarPageClient() {
   const selectedAssignments = selectedKey ? (assignmentsByDay.get(selectedKey) ?? []) : []
 
   return (
-    <div style={{ padding: '28px 32px' }}>
+    <div className="p-4 sm:p-8">
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
         <div>
-          <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#0A0A0B', letterSpacing: '-0.02em', margin: 0 }}>
+          <h1 className="text-[22px] sm:text-[28px]" style={{ fontWeight: 700, color: '#0A0A0B', letterSpacing: '-0.02em', margin: 0 }}>
             Calendar
           </h1>
           <p style={{ fontSize: '13px', color: '#9C949A', margin: '4px 0 0' }}>
@@ -140,9 +140,9 @@ export default function CalendarPageClient() {
                       setSelectedDay(isSelected ? null : day)
                     }
                   }}
+                  className="min-h-[56px] sm:min-h-[80px]"
                   style={{
-                    minHeight: '80px',
-                    padding: '8px',
+                    padding: '6px',
                     borderRight: (i + 1) % 7 !== 0 ? '1px solid #ECE6E0' : 'none',
                     borderBottom: !isLastRow ? '1px solid #ECE6E0' : 'none',
                     background: isSelected ? 'rgba(139,26,47,0.04)' : 'transparent',
@@ -178,8 +178,8 @@ export default function CalendarPageClient() {
                     {format(day, 'd')}
                   </div>
 
-                  {/* Assignment chips */}
-                  {dayAssignments.slice(0, 3).map((a) => {
+                  {/* Assignment chips — show fewer on mobile */}
+                  {dayAssignments.slice(0, 2).map((a) => {
                     const now = new Date()
                     const overdue = new Date(a.due_date) < now && !a.submission
                     const submitted = !!a.submission
@@ -205,9 +205,9 @@ export default function CalendarPageClient() {
                       </div>
                     )
                   })}
-                  {dayAssignments.length > 3 && (
+                  {dayAssignments.length > 2 && (
                     <div style={{ fontSize: '10px', color: '#9C949A', paddingLeft: '2px' }}>
-                      +{dayAssignments.length - 3} more
+                      +{dayAssignments.length - 2} more
                     </div>
                   )}
                 </button>

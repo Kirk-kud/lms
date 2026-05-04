@@ -1,6 +1,6 @@
 'use client'
 
-import { getHours, format, startOfWeek, endOfWeek } from 'date-fns'
+import { getHours, format, endOfWeek } from 'date-fns'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@/lib/hooks/useUser'
 import { useClasses } from '@/lib/hooks/useClasses'
@@ -109,12 +109,12 @@ export default function StudentDashboardPageClient() {
   const nextAssignment = pendingAssignments[0] ?? null
 
   return (
-    <div style={{ padding: '28px 32px' }}>
+    <div className="p-4 sm:p-8">
       {/* Page header */}
       <div style={{ marginBottom: '24px' }}>
         <h1
+          className="text-[24px] sm:text-[32px]"
           style={{
-            fontSize: '32px',
             fontWeight: 700,
             color: '#0A0A0B',
             letterSpacing: '-0.02em',
@@ -159,7 +159,7 @@ export default function StudentDashboardPageClient() {
       )}
 
       {!isLoading && primaryClass && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '20px', alignItems: 'start' }}>
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-5 items-start">
 
           {/* Left: Due soon */}
           <div
@@ -191,13 +191,8 @@ export default function StudentDashboardPageClient() {
             </div>
 
             <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 130px 120px 60px',
-                padding: '8px 20px',
-                borderBottom: '1px solid #ECE6E0',
-                backgroundColor: '#FAF7F4',
-              }}
+              className="hidden sm:grid px-5 py-2 border-b border-[#ECE6E0] bg-[#FAF7F4]"
+              style={{ gridTemplateColumns: '1fr 130px 120px 60px' }}
             >
               {['Assignment', 'Week', 'Due', ''].map((col) => (
                 <span key={col} style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9C949A' }}>
@@ -356,35 +351,40 @@ function DueRow({
       onMouseLeave={() => setHovered(false)}
       style={{
         width: '100%',
-        display: 'grid',
-        gridTemplateColumns: '1fr 130px 120px 60px',
-        padding: '12px 20px',
+        display: 'block',
+        border: 'none',
         borderBottom: '1px solid #ECE6E0',
-        alignItems: 'center',
         boxShadow: isOverdue ? 'inset 3px 0 0 #8B1A2F' : 'none',
         backgroundColor: hovered ? '#FAF7F4' : 'transparent',
-        border: 'none',
         cursor: 'pointer',
         textAlign: 'left',
         transition: 'background-color 100ms ease',
       }}
     >
-      <span style={{ fontSize: '13.5px', color: '#0A0A0B', fontWeight: 500 }}>{title}</span>
-      <span style={{ fontSize: '12.5px', color: '#6B6168' }}>Wk {week}</span>
-      <span style={{ fontSize: '12.5px', color: '#6B6168' }}>
-        {format(new Date(dueDate), 'EEE, d MMM')}
-      </span>
-      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span
-          style={{
-            width: '8px',
-            height: '8px',
-            borderRadius: '50%',
-            backgroundColor: statusColor,
-            display: 'inline-block',
-          }}
-        />
-      </span>
+      {/* Mobile: title + date + dot */}
+      <div className="flex items-center justify-between gap-3 px-5 py-3 sm:hidden">
+        <span style={{ fontSize: '13px', fontWeight: 500, color: '#0A0A0B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+          {title}
+        </span>
+        <div className="flex items-center gap-2 shrink-0">
+          <span style={{ fontSize: '11.5px', color: '#6B6168', whiteSpace: 'nowrap' }}>
+            {format(new Date(dueDate), 'd MMM')}
+          </span>
+          <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: statusColor, display: 'inline-block', flexShrink: 0 }} />
+        </div>
+      </div>
+      {/* Desktop: 4-column grid */}
+      <div
+        className="hidden sm:grid sm:items-center px-5 py-3"
+        style={{ gridTemplateColumns: '1fr 130px 120px 60px' }}
+      >
+        <span style={{ fontSize: '13.5px', color: '#0A0A0B', fontWeight: 500 }}>{title}</span>
+        <span style={{ fontSize: '12.5px', color: '#6B6168' }}>Wk {week}</span>
+        <span style={{ fontSize: '12.5px', color: '#6B6168' }}>{format(new Date(dueDate), 'EEE, d MMM')}</span>
+        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: statusColor, display: 'inline-block' }} />
+        </span>
+      </div>
     </button>
   )
 }
