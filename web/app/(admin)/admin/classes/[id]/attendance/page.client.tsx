@@ -169,13 +169,14 @@ export default function AttendancePageClient({ params }: { params: Promise<{ id:
     }
   }
 
-  const handleEndSession = async () => {
-    try {
-      await endSession.mutateAsync({ classId })
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Unable to end session')
+    const handleEndSession = async () => {
+      if (!activeSession) return
+      try {
+        await endSession.mutateAsync({ sessionId: activeSession.id, classId })
+      } catch (err) {
+        toast.error(err instanceof ApiError ? err.message : 'Unable to end session')
+      }
     }
-  }
 
   if (activeSession) {
     return (
