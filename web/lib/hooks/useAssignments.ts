@@ -56,6 +56,10 @@ export function useAssignmentsBatch(classIds: string[]) {
         `/assignments/batch?class_ids=${uniqueIds.join(',')}`,
       ),
     enabled: uniqueIds.length > 0,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   })
 }
 
@@ -72,6 +76,8 @@ export function useCreateAssignment() {
     onSuccess: async (_data, vars) => {
       await Promise.all([
         qc.invalidateQueries({ queryKey: ['assignments', vars.class_id] }),
+        qc.invalidateQueries({ queryKey: ['assignments-batch'] }),
+        qc.invalidateQueries({ queryKey: ['classes'] }),
         qc.invalidateQueries({ queryKey: ['classes', vars.class_id] }),
       ])
     },
@@ -86,7 +92,9 @@ export function useDeleteAssignment() {
     onSuccess: async (_data, vars) => {
       await Promise.all([
         qc.invalidateQueries({ queryKey: ['assignments', vars.classId] }),
+        qc.invalidateQueries({ queryKey: ['assignments-batch'] }),
         qc.invalidateQueries({ queryKey: ['submissions'] }),
+        qc.invalidateQueries({ queryKey: ['classes'] }),
         qc.invalidateQueries({ queryKey: ['classes', vars.classId] }),
       ])
     },

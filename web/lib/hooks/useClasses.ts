@@ -32,6 +32,10 @@ export function useClasses() {
   return useQuery({
     queryKey: ['classes'],
     queryFn: () => apiClient.get<ClassRecord[]>('/classes'),
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   })
 }
 
@@ -40,6 +44,10 @@ export function useClass(id: string) {
     queryKey: ['classes', id],
     queryFn: () => apiClient.get<ClassRecord>(`/classes/${id}`),
     enabled: !!id,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   })
 }
 

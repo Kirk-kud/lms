@@ -7,6 +7,11 @@
 .claude/
 skills-lock.json
 
+# Cursor local files, except shared project skills
+.cursor/*
+!.cursor/skills/
+!.cursor/skills/**
+
 # Firebase CLI
 .firebase/
 firebase-debug.log
