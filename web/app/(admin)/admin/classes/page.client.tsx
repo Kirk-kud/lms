@@ -188,7 +188,7 @@ export default function ClassesPageClient() {
     isError,
     error,
     refetch,
-  } = useClasses(user?.id)
+  } = useClasses()
   const [showCreate, setShowCreate] = useState(false)
 
   return (

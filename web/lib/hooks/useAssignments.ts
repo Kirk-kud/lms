@@ -45,7 +45,7 @@ export interface AssignmentWithClass extends Assignment {
 }
 
 export function useMyAllAssignments(userId: string) {
-  const { data: classes = [] } = useClasses(userId)
+  const { data: classes = [] } = useClasses()
 
   const results = useQueries({
     queries: classes.map((c) => ({

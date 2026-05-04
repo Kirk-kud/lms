@@ -445,26 +445,30 @@ export function NotificationsPanel({ onClose }: { onClose: () => void }) {
 
 // ─── Inbox (Announcements) panel ──────────────────────────────────────────────
 
-export function AnnouncementsPanel({ role, userId, onClose }: { role: string; userId: string; onClose: () => void }) {
+export function AnnouncementsPanel({ role, onClose }: { role: string; userId: string; onClose: () => void }) {
   const { data: announcements = [], isLoading } = useAnnouncements()
-  const { data: classes = [] } = useClasses(role !== 'student' ? userId : '')
+  const { data: classes = [] } = useClasses()
   const createAnnouncement = useCreateAnnouncement()
   const [showForm, setShowForm] = useState(false)
-  const [formData, setFormData] = useState({ class_id: '', title: '', body: '' })
+  const [formData, setFormData] = useState({ class_id: '', message: '', target_type: 'whole_class' as const })
   const [formError, setFormError] = useState('')
 
   const isTutor = role !== 'student'
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    if (!formData.class_id || !formData.title.trim() || !formData.body.trim()) {
-      setFormError('All fields are required')
+    if (!formData.message.trim()) {
+      setFormError('Message is required')
       return
     }
     try {
-      await createAnnouncement.mutateAsync(formData)
+      await createAnnouncement.mutateAsync({
+        message: formData.message,
+        target_type: formData.target_type,
+        class_id: formData.class_id || undefined,
+      })
       setShowForm(false)
-      setFormData({ class_id: '', title: '', body: '' })
+      setFormData({ class_id: '', message: '', target_type: 'whole_class' })
       setFormError('')
     } catch {
       setFormError('Failed to post. Try again.')
@@ -499,26 +503,17 @@ export function AnnouncementsPanel({ role, userId, onClose }: { role: string; us
           <select
             value={formData.class_id}
             onChange={(e) => setFormData((p) => ({ ...p, class_id: e.target.value }))}
-            required
             style={inputStyle}
           >
-            <option value="">Select class…</option>
+            <option value="">All classes (optional)</option>
             {classes.map((c) => (
               <option key={c.id} value={c.id}>{c.title}</option>
             ))}
           </select>
-          <input
-            type="text"
-            placeholder="Title"
-            value={formData.title}
-            onChange={(e) => setFormData((p) => ({ ...p, title: e.target.value }))}
-            required
-            style={{ ...inputStyle, marginTop: '8px' }}
-          />
           <textarea
             placeholder="Write your announcement…"
-            value={formData.body}
-            onChange={(e) => setFormData((p) => ({ ...p, body: e.target.value }))}
+            value={formData.message}
+            onChange={(e) => setFormData((p) => ({ ...p, message: e.target.value }))}
             required
             rows={4}
             style={{ ...inputStyle, marginTop: '8px', resize: 'vertical', height: 'auto', padding: '10px 12px' }}
@@ -574,31 +569,23 @@ export function AnnouncementsPanel({ role, userId, onClose }: { role: string; us
           style={{ padding: '16px 20px', borderBottom: '1px solid #F3F4F6' }}
         >
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px', marginBottom: '6px' }}>
-            <div style={{ minWidth: 0 }}>
-              {a.class?.title && (
-                <span style={{
-                  display: 'inline-block', fontSize: '10px', fontWeight: 600,
-                  textTransform: 'uppercase', letterSpacing: '0.06em', color: '#8B1A2F',
-                  background: 'rgba(139,26,47,0.07)', padding: '2px 7px',
-                  borderRadius: '4px', marginBottom: '5px',
-                }}>
-                  {a.class.title}
-                </span>
-              )}
-              <p style={{ fontSize: '13.5px', fontWeight: 600, color: '#0A0A0B', margin: 0, lineHeight: 1.3 }}>
-                {a.title}
-              </p>
-            </div>
+            <span style={{
+              display: 'inline-block', fontSize: '10px', fontWeight: 600,
+              textTransform: 'uppercase', letterSpacing: '0.06em', color: '#8B1A2F',
+              background: 'rgba(139,26,47,0.07)', padding: '2px 7px', borderRadius: '4px',
+            }}>
+              {a.target_type === 'all_tutors' ? 'All Tutors' : a.target_type === 'whole_class' ? 'Whole Class' : 'Cohort'}
+            </span>
             <p style={{ fontSize: '11px', color: '#9C949A', margin: 0, flexShrink: 0, whiteSpace: 'nowrap' }}>
               {formatDistanceToNow(new Date(a.created_at), { addSuffix: true })}
             </p>
           </div>
           <p style={{ fontSize: '13px', color: '#6B6168', margin: 0, lineHeight: 1.5 }}>
-            {a.body}
+            {a.message}
           </p>
-          {a.author?.full_name && (
+          {a.creator?.full_name && (
             <p style={{ fontSize: '11px', color: '#9C949A', margin: '6px 0 0' }}>
-              — {a.author.full_name}
+              — {a.creator.full_name}
             </p>
           )}
         </div>
