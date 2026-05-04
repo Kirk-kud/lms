@@ -8,7 +8,10 @@ import {
   useCreateAssignment,
   useDeleteAssignment,
   useAssignmentSubmissions,
+  useSubmissionViewUrl,
+  useGradeSubmission,
   Assignment,
+  type SubmissionRow,
 } from '@/lib/hooks/useAssignments'
 import { useClass } from '@/lib/hooks/useClasses'
 import { SkeletonCard } from '@/components/ui/shared/SkeletonCard'
@@ -174,6 +177,186 @@ function SubmissionIndicator({
   )
 }
 
+function GradeModal({
+  row,
+  assignmentId,
+  open,
+  onClose,
+}: {
+  row: SubmissionRow
+  assignmentId: string
+  open: boolean
+  onClose: () => void
+}) {
+  const submissionId = row.submission?.id ?? ''
+  const { data: urlData, isLoading: urlLoading } = useSubmissionViewUrl(assignmentId, submissionId, open && !!submissionId)
+  const gradeSubmission = useGradeSubmission()
+  const [grade, setGrade] = useState<string>(row.submission?.grade !== null && row.submission?.grade !== undefined ? String(row.submission.grade) : '')
+  const [feedback, setFeedback] = useState(row.submission?.feedback ?? '')
+
+  const handleSave = async () => {
+    const g = Number(grade)
+    if (isNaN(g) || g < 0 || g > 100) {
+      toast.error('Grade must be 0–100')
+      return
+    }
+    try {
+      await gradeSubmission.mutateAsync({ assignmentId, submissionId, grade: g, feedback: feedback.trim() || undefined })
+      toast.success('Grade saved')
+      onClose()
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Unable to save grade')
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-4xl w-full" style={{ maxHeight: '90vh', display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
+        <DialogHeader style={{ padding: '16px 20px 12px', borderBottom: '0.5px solid #E5E5E5', flexShrink: 0 }}>
+          <DialogTitle style={{ fontSize: '14px', fontWeight: 500 }}>
+            {row.student.full_name}
+            {row.submission?.submitted_at && (
+              <span style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 400, marginLeft: '8px' }}>
+                Submitted {format(new Date(row.submission.submitted_at), 'MMM d, h:mm a')}
+                {row.submission.status === 'late' && (
+                  <span style={{ marginLeft: '6px', color: '#991B1B' }}>· Late</span>
+                )}
+              </span>
+            )}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
+          {/* PDF viewer */}
+          <div style={{ flex: 1, background: '#F8F8F8', position: 'relative', overflow: 'hidden' }}>
+            {!submissionId ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#9CA3AF', fontSize: '13px' }}>
+                No submission
+              </div>
+            ) : urlLoading ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '8px', color: '#9CA3AF', fontSize: '13px' }}>
+                <LoadingSpinner />
+                Loading file…
+              </div>
+            ) : urlData?.signed_url ? (
+              <iframe
+                src={urlData.signed_url}
+                style={{ width: '100%', height: '100%', border: 'none' }}
+                title={`Submission by ${row.student.full_name}`}
+              />
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#9CA3AF', fontSize: '13px' }}>
+                Unable to load file
+              </div>
+            )}
+          </div>
+
+          {/* Grade panel */}
+          <div style={{ width: '240px', flexShrink: 0, borderLeft: '0.5px solid #E5E5E5', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px', overflowY: 'auto' }}>
+            <div>
+              <label style={{ fontSize: '11px', fontWeight: 500, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '6px' }}>Grade (0–100)</label>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={grade}
+                onChange={(e) => setGrade(e.target.value)}
+                placeholder="e.g. 85"
+                style={{ width: '100%', height: '36px', border: '0.5px solid #E5E5E5', borderRadius: '8px', fontSize: '20px', fontWeight: 600, padding: '0 10px', outline: 'none', boxSizing: 'border-box', color: '#111', textAlign: 'center' }}
+                onFocus={(e) => (e.currentTarget.style.borderColor = '#8B1A2F')}
+                onBlur={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: '11px', fontWeight: 500, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '6px' }}>Feedback</label>
+              <textarea
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
+                rows={6}
+                placeholder="Leave feedback for the student…"
+                style={{ width: '100%', border: '0.5px solid #E5E5E5', borderRadius: '8px', fontSize: '12px', padding: '8px 10px', outline: 'none', boxSizing: 'border-box', resize: 'none', fontFamily: 'Inter, sans-serif', lineHeight: 1.5 }}
+                onFocus={(e) => (e.currentTarget.style.borderColor = '#8B1A2F')}
+                onBlur={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')}
+              />
+            </div>
+            <button
+              onClick={handleSave}
+              disabled={gradeSubmission.isPending || !grade}
+              style={{ height: '36px', background: '#111111', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 500, cursor: 'pointer', opacity: (gradeSubmission.isPending || !grade) ? 0.5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+            >
+              {gradeSubmission.isPending && <LoadingSpinner className="text-white" />}
+              {gradeSubmission.isPending ? 'Saving…' : 'Save grade'}
+            </button>
+            {row.submission?.graded_at && (
+              <p style={{ fontSize: '11px', color: '#9CA3AF', textAlign: 'center' }}>
+                Last graded {format(new Date(row.submission.graded_at), 'MMM d, h:mm a')}
+              </p>
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function SubmissionRow({ row, assignmentId }: { row: SubmissionRow; assignmentId: string }) {
+  const [reviewOpen, setReviewOpen] = useState(false)
+  const hasSubmission = !!row.submission?.file_url
+  const graded = row.submission?.grade !== null && row.submission?.grade !== undefined
+
+  return (
+    <>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '10px 0',
+          borderTop: '1px solid #F3F4F6',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#F5E6EA', color: '#8B1A2F', fontSize: '11px', fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {row.student.avatar_initials}
+          </div>
+          <div>
+            <p style={{ fontSize: '13px', color: '#111' }}>{row.student.full_name}</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <p style={{ fontSize: '11px', color: '#9CA3AF' }}>
+                {row.submission?.submitted_at
+                  ? `Submitted ${format(new Date(row.submission.submitted_at), 'MMM d, h:mm a')}`
+                  : 'Not submitted'}
+              </p>
+              {row.submission?.status === 'late' && (
+                <span style={{ fontSize: '10px', color: '#991B1B', fontWeight: 500 }}>Late</span>
+              )}
+            </div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+          {graded && (
+            <span style={{ fontSize: '13px', fontWeight: 600, color: '#111' }}>
+              {row.submission!.grade}
+              <span style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 400 }}>/100</span>
+            </span>
+          )}
+          {hasSubmission && (
+            <button
+              onClick={() => setReviewOpen(true)}
+              style={{ height: '28px', padding: '0 12px', background: graded ? '#F8F8F8' : '#8B1A2F', color: graded ? '#111' : '#fff', border: graded ? '0.5px solid #E5E5E5' : 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 500, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
+            >
+              {graded ? 'Edit grade' : 'Review'}
+            </button>
+          )}
+        </div>
+      </div>
+      {reviewOpen && (
+        <GradeModal row={row} assignmentId={assignmentId} open={reviewOpen} onClose={() => setReviewOpen(false)} />
+      )}
+    </>
+  )
+}
+
 function SubmissionsList({ assignmentId }: { assignmentId: string }) {
   const { data: rows = [], isLoading } = useAssignmentSubmissions(assignmentId)
 
@@ -190,59 +373,7 @@ function SubmissionsList({ assignmentId }: { assignmentId: string }) {
   return (
     <div style={{ marginTop: '12px', borderTop: '1px solid #F3F4F6', paddingTop: '12px' }}>
       {rows.map((row) => (
-        <div
-          key={row.student.id}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '10px 0',
-            borderTop: '1px solid #F3F4F6',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div
-              style={{
-                width: '28px',
-                height: '28px',
-                borderRadius: '50%',
-                background: '#F5E6EA',
-                color: '#8B1A2F',
-                fontSize: '11px',
-                fontWeight: 500,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              {row.student.avatar_initials}
-            </div>
-            <div>
-              <p style={{ fontSize: '13px', color: '#111' }}>{row.student.full_name}</p>
-              <p style={{ fontSize: '11px', color: '#9CA3AF' }}>
-                {row.submission?.submitted_at
-                  ? `Submitted ${format(new Date(row.submission.submitted_at), 'MMM d, h:mm a')}`
-                  : 'Not submitted'}
-              </p>
-            </div>
-          </div>
-          {row.submission?.file_url && (
-            <a
-              href={row.submission.file_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                fontSize: '12px',
-                color: '#8B1A2F',
-                textDecoration: 'underline',
-                fontFamily: 'Inter, sans-serif',
-                cursor: 'pointer',
-              }}
-            >
-              Download
-            </a>
-          )}
-        </div>
+        <SubmissionRow key={row.student.id} row={row} assignmentId={assignmentId} />
       ))}
     </div>
   )

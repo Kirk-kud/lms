@@ -487,4 +487,62 @@ export class AssignmentsService {
 
     return { submission, signed_url: signedUrlData.signedUrl };
   }
+
+  // ----------------------------------------------------------------
+  // GET /assignments/:id/submissions/:submissionId/view-url
+  // ----------------------------------------------------------------
+  async getSubmissionViewUrl(
+    assignmentId: string,
+    submissionId: string,
+    userId: string,
+    role: string | null,
+  ) {
+    const { data: submission, error } = await this.supabase.adminClient
+      .from('submissions')
+      .select('id, assignment_id, file_url')
+      .eq('id', submissionId)
+      .eq('assignment_id', assignmentId)
+      .single();
+
+    if (error || !submission) throw new NotFoundException('Submission not found');
+    await this.assertTutorOwnsAssignment(assignmentId, userId, role);
+
+    const { data: signedUrlData, error: signError } =
+      await this.supabase.adminClient.storage
+        .from('submissions')
+        .createSignedUrl(submission.file_url, 3600);
+
+    if (signError) throw new BadRequestException(signError.message);
+    return { signed_url: signedUrlData.signedUrl };
+  }
+
+  // ----------------------------------------------------------------
+  // PATCH /assignments/:id/submissions/:submissionId
+  // ----------------------------------------------------------------
+  async gradeSubmission(
+    assignmentId: string,
+    submissionId: string,
+    userId: string,
+    role: string | null,
+    dto: import('./assignments.dto').GradeSubmissionDto,
+  ) {
+    await this.assertTutorOwnsAssignment(assignmentId, userId, role);
+
+    const { data, error } = await this.supabase.adminClient
+      .from('submissions')
+      .update({
+        grade: dto.grade,
+        feedback: dto.feedback ?? null,
+        graded_at: new Date().toISOString(),
+        graded_by: userId,
+      })
+      .eq('id', submissionId)
+      .eq('assignment_id', assignmentId)
+      .select()
+      .single();
+
+    if (error) throw new BadRequestException(error.message);
+    if (!data) throw new NotFoundException('Submission not found');
+    return data;
+  }
 }

@@ -12,6 +12,10 @@ export interface Submission {
   file_name: string
   status: 'submitted' | 'late'
   submitted_at: string
+  grade: number | null
+  feedback: string | null
+  graded_at: string | null
+  graded_by: string | null
 }
 
 export interface Assignment {
@@ -132,5 +136,36 @@ export function useAssignmentSubmissions(assignmentId: string) {
     queryFn: () =>
       apiClient.get<SubmissionRow[]>(`/assignments/${assignmentId}/submissions`),
     enabled: !!assignmentId,
+  })
+}
+
+export function useSubmissionViewUrl(assignmentId: string, submissionId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ['submission-view-url', assignmentId, submissionId],
+    queryFn: () =>
+      apiClient.get<{ signed_url: string }>(`/assignments/${assignmentId}/submissions/${submissionId}/view-url`),
+    enabled: enabled && !!assignmentId && !!submissionId,
+    staleTime: 50 * 60 * 1000, // 50 min (signed URLs last 1 hour)
+  })
+}
+
+export function useGradeSubmission() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      assignmentId,
+      submissionId,
+      grade,
+      feedback,
+    }: {
+      assignmentId: string
+      submissionId: string
+      grade: number
+      feedback?: string
+    }) =>
+      apiClient.patch(`/assignments/${assignmentId}/submissions/${submissionId}`, { grade, feedback }),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['submissions', vars.assignmentId] })
+    },
   })
 }

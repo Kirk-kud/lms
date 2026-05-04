@@ -17,7 +17,7 @@ import type { Request } from 'express';
 import { createResponse } from '../common/response.helper';
 import { Roles, RolesGuard } from '../auth/role.guard';
 import type { JwtPayload } from '../auth/jwt.strategy';
-import { CreateAssignmentDto, UpdateAssignmentDto } from './assignments.dto';
+import { CreateAssignmentDto, GradeSubmissionDto, UpdateAssignmentDto } from './assignments.dto';
 import { AssignmentsService } from './assignments.service';
 
 @Controller('assignments')
@@ -92,6 +92,31 @@ export class AssignmentsController {
     const user = req.user as JwtPayload;
     const data = await this.service.submit(id, user.sub, file);
     return createResponse(data, 'Assignment submitted', 201);
+  }
+
+  @Get(':id/submissions/:submissionId/view-url')
+  @Roles('admin')
+  async getSubmissionViewUrl(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @Param('submissionId') submissionId: string,
+  ) {
+    const user = req.user as JwtPayload;
+    const data = await this.service.getSubmissionViewUrl(id, submissionId, user.sub, user.role);
+    return createResponse(data, 'View URL generated');
+  }
+
+  @Patch(':id/submissions/:submissionId')
+  @Roles('admin')
+  async gradeSubmission(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @Param('submissionId') submissionId: string,
+    @Body() dto: GradeSubmissionDto,
+  ) {
+    const user = req.user as JwtPayload;
+    const data = await this.service.gradeSubmission(id, submissionId, user.sub, user.role, dto);
+    return createResponse(data, 'Submission graded');
   }
 
   @Patch(':id')

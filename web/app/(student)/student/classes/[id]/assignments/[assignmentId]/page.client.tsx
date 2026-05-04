@@ -86,8 +86,12 @@ export default function AssignmentDetailPageClient({
                 student_id: user?.id ?? '',
                 file_url: '',
                 file_name: file.name,
-                status: 'submitted',
+                status: 'submitted' as const,
                 submitted_at: new Date().toISOString(),
+                grade: null,
+                feedback: null,
+                graded_at: null,
+                graded_by: null,
               },
             }
           : a

@@ -47,6 +47,7 @@ function CreateModuleModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim()) return
+    if (!classId) { toast.error('Class not loaded — please refresh'); return }
     try {
       await createModule.mutateAsync({ class_id: classId, title: title.trim(), order_index: nextIndex })
       setTitle('')

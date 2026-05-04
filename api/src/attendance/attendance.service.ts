@@ -349,7 +349,7 @@ export class AttendanceService {
 
       // Only tutors who own the class can end the session
       if (user.role === 'admin') {
-        await this.assertTutorOwnsClass(session.class_id, user.sub);
+        await this.assertTutorOwnsClass(session.class_id, user.sub, user.role);
       } else if (user.role === 'tutor') {
         // Validate tutor has a cohort in this class
         await getTutorCohortForClass(this.supabase, session.class_id, user.sub);

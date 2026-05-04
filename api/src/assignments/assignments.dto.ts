@@ -32,6 +32,17 @@ export class CreateAssignmentDto {
   cohort_id?: string;
 }
 
+export class GradeSubmissionDto {
+  @IsInt()
+  @Min(0)
+  @Type(() => Number)
+  grade: number;
+
+  @IsOptional()
+  @IsString()
+  feedback?: string;
+}
+
 export class UpdateAssignmentDto {
   @IsOptional()
   @IsString()
