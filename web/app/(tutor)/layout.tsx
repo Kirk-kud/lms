@@ -102,20 +102,25 @@ export default function TutorLayout({ children }: { children: React.ReactNode })
       </div>
 
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t-[0.5px] border-[#E5E5E5] h-[calc(56px+env(safe-area-inset-bottom))] px-6 pb-[env(safe-area-inset-bottom)] flex items-center justify-between">
-        <button onClick={() => handleNavigate('Dashboard')} aria-label="Dashboard">
+        <button onClick={() => handleNavigate('Dashboard')} aria-label="Dashboard" className="flex flex-col items-center justify-center gap-1 py-2">
           <IconDashboard active={activeItem === 'Dashboard'} />
+          <span className={`text-[10px] ${activeItem === 'Dashboard' ? 'text-[#8B1A2F] font-medium' : 'text-[#6B6168]'}`}>Dashboard</span>
         </button>
-        <button onClick={() => handleNavigate('My Cohort')} aria-label="My Cohort">
+        <button onClick={() => handleNavigate('My Cohort')} aria-label="My Cohort" className="flex flex-col items-center justify-center gap-1 py-2">
           <IconCohort active={activeItem === 'My Cohort'} />
+          <span className={`text-[10px] ${activeItem === 'My Cohort' ? 'text-[#8B1A2F] font-medium' : 'text-[#6B6168]'}`}>Cohort</span>
         </button>
-        <button onClick={() => handleNavigate('Modules')} aria-label="Modules">
+        <button onClick={() => handleNavigate('Modules')} aria-label="Modules" className="flex flex-col items-center justify-center gap-1 py-2">
           <IconModules active={activeItem === 'Modules'} />
+          <span className={`text-[10px] ${activeItem === 'Modules' ? 'text-[#8B1A2F] font-medium' : 'text-[#6B6168]'}`}>Modules</span>
         </button>
-        <button onClick={() => handleNavigate('Assignments')} aria-label="Assignments">
+        <button onClick={() => handleNavigate('Assignments')} aria-label="Assignments" className="flex flex-col items-center justify-center gap-1 py-2">
           <IconAssignments active={activeItem === 'Assignments'} />
+          <span className={`text-[10px] ${activeItem === 'Assignments' ? 'text-[#8B1A2F] font-medium' : 'text-[#6B6168]'}`}>Assignments</span>
         </button>
-        <button onClick={() => handleNavigate('Attendance')} aria-label="Attendance">
+        <button onClick={() => handleNavigate('Attendance')} aria-label="Attendance" className="flex flex-col items-center justify-center gap-1 py-2">
           <IconAttendance active={activeItem === 'Attendance'} />
+          <span className={`text-[10px] ${activeItem === 'Attendance' ? 'text-[#8B1A2F] font-medium' : 'text-[#6B6168]'}`}>Attendance</span>
         </button>
       </nav>
     </div>
