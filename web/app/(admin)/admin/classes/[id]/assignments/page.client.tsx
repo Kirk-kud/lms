@@ -211,7 +211,7 @@ function GradeModal({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-4xl w-full" style={{ maxHeight: '90vh', display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
+      <DialogContent style={{ width: '95vw', maxWidth: '95vw', height: '92vh', maxHeight: '92vh', display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
         <DialogHeader style={{ padding: '16px 20px 12px', borderBottom: '0.5px solid #E5E5E5', flexShrink: 0 }}>
           <DialogTitle style={{ fontSize: '14px', fontWeight: 500 }}>
             {row.student.full_name}
@@ -252,7 +252,7 @@ function GradeModal({
           </div>
 
           {/* Grade panel */}
-          <div style={{ width: '240px', flexShrink: 0, borderLeft: '0.5px solid #E5E5E5', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px', overflowY: 'auto' }}>
+          <div style={{ width: '300px', flexShrink: 0, borderLeft: '0.5px solid #E5E5E5', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto' }}>
             <div>
               <label style={{ fontSize: '11px', fontWeight: 500, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '6px' }}>Grade (0–100)</label>
               <input
