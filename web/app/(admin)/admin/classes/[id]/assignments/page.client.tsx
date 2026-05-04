@@ -250,10 +250,12 @@ function SubmissionsList({ assignmentId }: { assignmentId: string }) {
 
 function AssignmentCard({
   assignment,
+  classId,
   totalStudents,
   onDelete,
 }: {
   assignment: Assignment
+  classId: string
   totalStudents: number
   onDelete: () => void
 }) {
@@ -395,7 +397,7 @@ export default function AssignmentsPageClient({ params }: { params: Promise<{ id
     : 0
 
   return (
-    <div className="w-full p-6 md:p-8">
+    <div className="p-4 sm:p-8">
       <nav className="flex items-center gap-2 text-[12px] text-[#9CA3AF] mb-6">
         <button
           onClick={() => router.push('/admin/classes')}
@@ -530,6 +532,7 @@ export default function AssignmentsPageClient({ params }: { params: Promise<{ id
                   <AssignmentCard
                     key={a.id}
                     assignment={a}
+                    classId={classId}
                     totalStudents={totalStudents}
                     onDelete={async () => {
                       try {

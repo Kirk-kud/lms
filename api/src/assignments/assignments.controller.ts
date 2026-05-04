@@ -50,7 +50,14 @@ export class AssignmentsController {
     return createResponse(data, 'Assignments fetched');
   }
 
-  // Literal segment 'class' declared before param routes
+  // Literal segments declared before param routes to avoid conflicts
+  @Get('mine')
+  async findMine(@Req() req: Request) {
+    const user = req.user as JwtPayload;
+    const data = await this.service.findAllForUser(user.sub, user.role ?? 'student');
+    return createResponse(data, 'Assignments fetched');
+  }
+
   @Get('class/:classId')
   async findByClass(@Req() req: Request, @Param('classId') classId: string) {
     const user = req.user as JwtPayload;

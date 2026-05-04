@@ -246,7 +246,7 @@ export default function RegisterPageClient() {
               Create your account
             </h2>
             <p style={{ fontSize: '13.5px', color: '#9C949A', margin: '0 0 24px 0' }}>
-              Join the Vine community.
+              Join the Love Inc Discipleship Academy.
             </p>
 
             <form onSubmit={handleSubmit} noValidate>

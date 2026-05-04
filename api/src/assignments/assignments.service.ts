@@ -251,6 +251,53 @@ export class AssignmentsService {
   }
 
   // ----------------------------------------------------------------
+  // GET /assignments/mine  (all assignments for the current user)
+  // ----------------------------------------------------------------
+  async findAllForUser(userId: string, role: string) {
+    let classIds: string[] = [];
+
+    if (role === 'student') {
+      const { data } = await this.supabase.adminClient
+        .from('enrollments')
+        .select('class_id')
+        .eq('student_id', userId);
+      classIds = (data ?? []).map((e) => e.class_id);
+    } else {
+      const { data } = await this.supabase.adminClient
+        .from('classes')
+        .select('id')
+        .eq('tutor_id', userId);
+      classIds = (data ?? []).map((c) => c.id);
+    }
+
+    if (classIds.length === 0) return [];
+
+    const { data: assignments, error } = await this.supabase.adminClient
+      .from('assignments')
+      .select('*, class:classes!class_id(id, title)')
+      .in('class_id', classIds)
+      .order('due_date', { ascending: true });
+
+    if (error) throw new BadRequestException(error.message);
+    const list = assignments ?? [];
+    if (list.length === 0) return [];
+
+    if (role === 'student') {
+      const ids = list.map((a) => a.id);
+      const { data: subs } = await this.supabase.adminClient
+        .from('submissions')
+        .select('assignment_id, file_url, file_name, status, submitted_at')
+        .eq('student_id', userId)
+        .in('assignment_id', ids);
+
+      const subMap = new Map((subs ?? []).map((s) => [s.assignment_id, s]));
+      return list.map((a) => ({ ...a, submission: subMap.get(a.id) ?? null }));
+    }
+
+    return list;
+  }
+
+  // ----------------------------------------------------------------
   // POST /assignments
   // ----------------------------------------------------------------
   async create(tutorId: string, role: string | null, dto: CreateAssignmentDto) {

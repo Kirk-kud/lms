@@ -331,4 +331,42 @@ export class AttendanceService {
       return { session: s, present: checked_in_at !== null, checked_in_at };
     });
   }
+
+    // ----------------------------------------------------------------
+    // PATCH /attendance/sessions/:sessionId
+    // ----------------------------------------------------------------
+    async endSession(sessionId: string, user: JwtPayload) {
+      // Fetch the session to validate ownership
+      const { data: session, error: sessionError } = await this.supabase.adminClient
+        .from('attendance_sessions')
+        .select('id, class_id')
+        .eq('id', sessionId)
+        .single();
+
+      if (sessionError || !session) {
+        throw new NotFoundException('Session not found');
+      }
+
+      // Only tutors who own the class can end the session
+      if (user.role === 'admin') {
+        await this.assertTutorOwnsClass(session.class_id, user.sub);
+      } else if (user.role === 'tutor') {
+        // Validate tutor has a cohort in this class
+        await getTutorCohortForClass(this.supabase, session.class_id, user.sub);
+      } else {
+        throw new ForbiddenException();
+      }
+
+      // Mark session as inactive
+      const { data: updated, error: updateError } = await this.supabase.adminClient
+        .from('attendance_sessions')
+        .update({ is_active: false })
+        .eq('id', sessionId)
+        .select()
+        .single();
+
+      if (updateError) throw new BadRequestException(updateError.message);
+
+      return updated;
+    }
 }

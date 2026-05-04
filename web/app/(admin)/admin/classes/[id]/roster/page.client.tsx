@@ -108,7 +108,7 @@ export default function RosterPageClient({ params }: { params: Promise<{ id: str
   ]
 
   return (
-    <div className="w-full p-6 md:p-8">
+    <div className="p-4 sm:p-8">
       <nav className="flex items-center gap-2 text-[12px] text-[#9CA3AF] mb-6">
         <button
           onClick={() => router.push('/admin/classes')}
@@ -154,7 +154,7 @@ export default function RosterPageClient({ params }: { params: Promise<{ id: str
       )}
 
       {/* Summary stat cards */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         {summaryStats.map((stat, i) => (
           <div
             key={i}
@@ -209,16 +209,16 @@ export default function RosterPageClient({ params }: { params: Promise<{ id: str
 
       {!(isClassLoading || isRosterLoading) && roster.length > 0 && (
         <div className="border border-[#E5E5E5] rounded-xl overflow-hidden">
-          <div className="grid grid-cols-[1fr_80px_80px] gap-4 px-5 py-3 bg-[#F8F8F8] border-b border-[#E5E5E5]">
+          <div className="grid grid-cols-[1fr] sm:grid-cols-[1fr_80px_80px] gap-4 px-5 py-3 bg-[#F8F8F8] border-b border-[#E5E5E5]">
             <span className="text-[11px] font-medium text-[#9CA3AF] uppercase tracking-wider">Member</span>
-            <span className="text-[11px] font-medium text-[#9CA3AF] uppercase tracking-wider text-right">Attendance</span>
-            <span className="text-[11px] font-medium text-[#9CA3AF] uppercase tracking-wider text-right">Submitted</span>
+            <span className="hidden sm:block text-[11px] font-medium text-[#9CA3AF] uppercase tracking-wider text-right">Attendance</span>
+            <span className="hidden sm:block text-[11px] font-medium text-[#9CA3AF] uppercase tracking-wider text-right">Submitted</span>
           </div>
 
           {roster.map((entry, i) => (
             <div
               key={entry.student.id}
-              className={`grid grid-cols-[1fr_80px_80px] gap-4 px-5 py-3.5 items-center ${
+              className={`grid grid-cols-[1fr] sm:grid-cols-[1fr_80px_80px] gap-4 px-5 py-3.5 items-center ${
                 i < roster.length - 1 ? 'border-b border-[#F3F4F6]' : ''
               } hover:bg-[#FAFAFA] transition-colors`}
             >
@@ -234,7 +234,7 @@ export default function RosterPageClient({ params }: { params: Promise<{ id: str
               </div>
 
               {/* Attendance percentage */}
-              <div className="text-right">
+              <div className="hidden sm:block text-right">
                 <span
                   style={{
                     fontSize: '13px',
@@ -247,7 +247,7 @@ export default function RosterPageClient({ params }: { params: Promise<{ id: str
               </div>
 
               {/* Submission count */}
-              <div className="text-right">
+              <div className="hidden sm:block text-right">
                 <span className="text-[13px] text-[#111]">
                   {entry.submission_count}
                 </span>

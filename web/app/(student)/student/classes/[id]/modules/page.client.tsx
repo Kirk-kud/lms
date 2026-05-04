@@ -207,7 +207,7 @@ export default function StudentModulesPageClient({ params }: { params: Promise<{
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-[12px] text-[#9CA3AF] mb-6">
         <button
