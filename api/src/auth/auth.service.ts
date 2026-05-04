@@ -15,12 +15,13 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
-    const { data, error } = await this.supabase.adminClient.auth.admin.createUser({
-      email: dto.email,
-      password: dto.password,
-      email_confirm: true,
-      user_metadata: { full_name: dto.full_name, role: dto.role },
-    });
+    const { data, error } =
+      await this.supabase.adminClient.auth.admin.createUser({
+        email: dto.email,
+        password: dto.password,
+        email_confirm: true,
+        user_metadata: { full_name: dto.full_name, role: dto.role },
+      });
 
     if (error) {
       throw new BadRequestException(error.message);

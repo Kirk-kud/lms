@@ -8,6 +8,91 @@ import {
 import { SupabaseService } from '../supabase/supabase.service';
 import { CreateClassDto, JoinClassDto } from './classes.dto';
 
+interface QueryError {
+  message: string;
+}
+
+interface QueryResult<T> {
+  data: T[] | null;
+  error: QueryError | null;
+  count?: number | null;
+}
+
+interface SingleQueryResult<T> {
+  data: T | null;
+  error: QueryError | null;
+  count?: number | null;
+}
+
+export interface ClassRecord {
+  id: string;
+  tutor_id: string;
+  title: string;
+  description: string | null;
+  invite_code: string;
+  zoom_link?: string | null;
+  created_at: string;
+  tutor?: unknown;
+}
+
+interface ClassIdRow {
+  class_id: string | null;
+}
+
+interface CohortClassRow {
+  class: ClassRecord | ClassRecord[] | null;
+  cohort_id: string | null;
+  cohort_name: string | null;
+}
+
+interface StudentEnrollmentClassRow {
+  enrolled_at: string;
+  cohort_id: string | null;
+  class: ClassRecord | ClassRecord[] | null;
+}
+
+interface IdRow {
+  id: string;
+}
+
+export interface JoinClassRecord {
+  id: string;
+  tutor_id: string;
+  invite_code: string;
+  [key: string]: unknown;
+}
+
+interface CohortRecord {
+  id: string;
+  class_id: string;
+}
+
+interface RosterEnrollmentRow {
+  enrolled_at: string;
+  student: StudentProfile | StudentProfile[] | null;
+}
+
+export interface StudentProfile {
+  id: string;
+  [key: string]: unknown;
+}
+
+interface AttendanceRecordRow {
+  student_id: string;
+}
+
+function asQueryResult<T>(value: unknown): QueryResult<T> {
+  return value as QueryResult<T>;
+}
+
+function asSingleQueryResult<T>(value: unknown): SingleQueryResult<T> {
+  return value as SingleQueryResult<T>;
+}
+
+function unwrapRelation<T>(value: T | T[] | null): T | null {
+  return Array.isArray(value) ? (value[0] ?? null) : value;
+}
+
 @Injectable()
 export class ClassesService {
   private readonly logger = new Logger(ClassesService.name);
@@ -17,16 +102,26 @@ export class ClassesService {
   // ----------------------------------------------------------------
   // POST /classes
   // ----------------------------------------------------------------
-  async create(tutorId: string, dto: CreateClassDto) {
+  async create(adminId: string, dto: CreateClassDto) {
     const invite_code = this.generateInviteCode();
 
-    const { data, error } = await this.supabase.adminClient
-      .from('classes')
-      .insert({ tutor_id: tutorId, title: dto.title, description: dto.description ?? null, invite_code })
-      .select()
-      .single();
+    const result = asSingleQueryResult<ClassRecord>(
+      await this.supabase.adminClient
+        .from('classes')
+        .insert({
+          tutor_id: adminId,
+          title: dto.title,
+          description: dto.description ?? null,
+          zoom_link: dto.zoom_link ?? null,
+          invite_code,
+        })
+        .select()
+        .single(),
+    );
+    const { data, error } = result;
 
     if (error) throw new BadRequestException(error.message);
+    if (!data) throw new BadRequestException('Class was not created');
     return data;
   }
 
@@ -42,32 +137,145 @@ export class ClassesService {
   // ----------------------------------------------------------------
   // GET /classes
   // ----------------------------------------------------------------
-  async findAll(userId: string, role: string) {
+  async findAll(userId: string, role: string | null) {
+    if (role === 'admin') {
+      const [rawClassResult, rawEnrollResult, rawCohortResult] =
+        await Promise.all([
+          this.supabase.adminClient
+            .from('classes')
+            .select(
+              'id, tutor_id, title, description, invite_code, zoom_link, created_at, tutor:profiles!tutor_id(full_name, email)',
+            )
+            .order('created_at', { ascending: false }),
+          this.supabase.adminClient.from('enrollments').select('class_id'),
+          this.supabase.adminClient.from('cohorts').select('class_id'),
+        ]);
+
+      const classResult = asQueryResult<ClassRecord>(rawClassResult);
+      const enrollResult = asQueryResult<ClassIdRow>(rawEnrollResult);
+      const cohortResult = asQueryResult<ClassIdRow>(rawCohortResult);
+
+      if (classResult.error)
+        throw new BadRequestException(classResult.error.message);
+      if (enrollResult.error)
+        throw new BadRequestException(enrollResult.error.message);
+      if (cohortResult.error)
+        throw new BadRequestException(cohortResult.error.message);
+
+      const enrollCountByClass = new Map<string, number>();
+      for (const row of enrollResult.data ?? []) {
+        if (!row.class_id) continue;
+        enrollCountByClass.set(
+          row.class_id,
+          (enrollCountByClass.get(row.class_id) ?? 0) + 1,
+        );
+      }
+      const cohortCountByClass = new Map<string, number>();
+      for (const row of cohortResult.data ?? []) {
+        if (!row.class_id) continue;
+        cohortCountByClass.set(
+          row.class_id,
+          (cohortCountByClass.get(row.class_id) ?? 0) + 1,
+        );
+      }
+
+      return (classResult.data ?? []).map((cls) => ({
+        ...cls,
+        enrolled_count: enrollCountByClass.get(cls.id) ?? 0,
+        cohort_count: cohortCountByClass.get(cls.id) ?? 0,
+      }));
+    }
+
     if (role === 'tutor') {
-      const { data, error } = await this.supabase.adminClient
-        .from('classes')
-        .select('*, enrollments(count)')
-        .eq('tutor_id', userId)
-        .order('created_at', { ascending: false });
+      const { data, error } = asQueryResult<CohortClassRow>(
+        await this.supabase.adminClient
+          .from('cohorts')
+          .select(
+            'class:classes(id, tutor_id, title, description, invite_code, zoom_link, created_at), cohort_id:id, cohort_name:name',
+          )
+          .eq('ta_id', userId)
+          .order('created_at', { ascending: false }),
+      );
 
       if (error) throw new BadRequestException(error.message);
-      return this.flattenCount(data ?? []);
+
+      const classIds = (data ?? [])
+        .map((row) => unwrapRelation(row.class)?.id)
+        .filter((id): id is string => Boolean(id));
+
+      const enrollResult = asQueryResult<ClassIdRow>(
+        await this.supabase.adminClient
+          .from('enrollments')
+          .select('class_id')
+          .in('class_id', classIds),
+      );
+      if (enrollResult.error)
+        throw new BadRequestException(enrollResult.error.message);
+
+      const enrollCountByClass = new Map<string, number>();
+      for (const row of enrollResult.data ?? []) {
+        if (!row.class_id) continue;
+        enrollCountByClass.set(
+          row.class_id,
+          (enrollCountByClass.get(row.class_id) ?? 0) + 1,
+        );
+      }
+
+      return (data ?? []).map((row) => {
+        const cls = unwrapRelation(row.class);
+        return {
+          ...cls,
+          enrolled_count: cls ? (enrollCountByClass.get(cls.id) ?? 0) : 0,
+          cohort_count: 0,
+          cohort_id: row.cohort_id,
+          cohort_name: row.cohort_name,
+        };
+      });
     }
 
     // student
-    const { data, error } = await this.supabase.adminClient
-      .from('enrollments')
-      .select('enrolled_at, class:classes(*, enrollments(count))')
-      .eq('student_id', userId)
-      .order('enrolled_at', { ascending: false });
+    const { data, error } = asQueryResult<StudentEnrollmentClassRow>(
+      await this.supabase.adminClient
+        .from('enrollments')
+        .select(
+          'enrolled_at, cohort_id, class:classes(id, tutor_id, title, description, invite_code, zoom_link, created_at)',
+        )
+        .eq('student_id', userId)
+        .order('enrolled_at', { ascending: false }),
+    );
 
     if (error) throw new BadRequestException(error.message);
 
+    const classIds = (data ?? [])
+      .map((row) => unwrapRelation(row.class)?.id)
+      .filter((id): id is string => Boolean(id));
+
+    const enrollResult = asQueryResult<ClassIdRow>(
+      await this.supabase.adminClient
+        .from('enrollments')
+        .select('class_id')
+        .in('class_id', classIds),
+    );
+    if (enrollResult.error)
+      throw new BadRequestException(enrollResult.error.message);
+
+    const enrollCountByClass = new Map<string, number>();
+    for (const row of enrollResult.data ?? []) {
+      if (!row.class_id) continue;
+      enrollCountByClass.set(
+        row.class_id,
+        (enrollCountByClass.get(row.class_id) ?? 0) + 1,
+      );
+    }
+
     return (data ?? []).map((row) => {
-      const cls = row.class as Record<string, any>;
+      const cls = unwrapRelation(row.class);
       return {
-        ...this.flattenCountSingle(cls),
+        ...cls,
+        enrolled_count: cls ? (enrollCountByClass.get(cls.id) ?? 0) : 0,
+        cohort_count: 0,
         enrolled_at: row.enrolled_at,
+        cohort_id: row.cohort_id,
       };
     });
   }
@@ -75,17 +283,41 @@ export class ClassesService {
   // ----------------------------------------------------------------
   // GET /classes/:id
   // ----------------------------------------------------------------
-  async findOne(classId: string, userId: string, role: string) {
-    const { data: cls, error } = await this.supabase.adminClient
-      .from('classes')
-      .select('*, tutor:profiles!tutor_id(*), enrollments(count)')
-      .eq('id', classId)
-      .single();
+  async findOne(classId: string, userId: string, role: string | null) {
+    const [rawClsResult, rawEnrollResult] = await Promise.all([
+      this.supabase.adminClient
+        .from('classes')
+        .select(
+          'id, tutor_id, title, description, invite_code, zoom_link, created_at, tutor:profiles!tutor_id(id, full_name, email, role, avatar_initials, created_at)',
+        )
+        .eq('id', classId)
+        .single(),
+      this.supabase.adminClient
+        .from('enrollments')
+        .select('id', { count: 'exact', head: true })
+        .eq('class_id', classId),
+    ]);
+    const clsResult = asSingleQueryResult<ClassRecord>(rawClsResult);
+    const enrollResult = asQueryResult<IdRow>(rawEnrollResult);
 
-    if (error || !cls) throw new NotFoundException('Class not found');
+    if (clsResult.error || !clsResult.data)
+      throw new NotFoundException('Class not found');
+    if (enrollResult.error)
+      throw new BadRequestException(enrollResult.error.message);
+    const cls = clsResult.data;
 
-    if (role === 'tutor') {
-      if (cls.tutor_id !== userId) throw new ForbiddenException();
+    if (role === 'admin') {
+      // Admin can access any class
+    } else if (role === 'tutor') {
+      const { data: cohort } = await this.supabase.adminClient
+        .from('cohorts')
+        .select('id')
+        .eq('class_id', classId)
+        .eq('ta_id', userId)
+        .maybeSingle();
+
+      if (!cohort)
+        throw new ForbiddenException('No cohort assigned for this class');
     } else {
       const { data: enrollment } = await this.supabase.adminClient
         .from('enrollments')
@@ -94,96 +326,144 @@ export class ClassesService {
         .eq('student_id', userId)
         .maybeSingle();
 
-      if (!enrollment) throw new ForbiddenException('Not enrolled in this class');
+      if (!enrollment)
+        throw new ForbiddenException('Not enrolled in this class');
     }
 
-    return this.flattenCountSingle(cls);
+    return {
+      ...cls,
+      enrolled_count: enrollResult.count ?? 0,
+    };
   }
 
   // ----------------------------------------------------------------
   // POST /classes/join
   // ----------------------------------------------------------------
   async join(studentId: string, dto: JoinClassDto) {
-    this.logger.log(`join() called — studentId=${studentId} invite_code="${dto.invite_code}"`);
+    this.logger.log(
+      `join() called — studentId=${studentId} invite_code="${dto.invite_code}"`,
+    );
 
-    const { data: cls, error: clsError } = await this.supabase.adminClient
-      .from('classes')
-      .select('*')
-      .eq('invite_code', dto.invite_code)
-      .maybeSingle();
+    const { data: cls, error: clsError } = asSingleQueryResult<JoinClassRecord>(
+      await this.supabase.adminClient
+        .from('classes')
+        .select('*')
+        .eq('invite_code', dto.invite_code)
+        .maybeSingle(),
+    );
 
-    this.logger.log(`classes query — data=${JSON.stringify(cls)} error=${JSON.stringify(clsError)}`);
+    this.logger.log(
+      `classes query — data=${JSON.stringify(cls)} error=${JSON.stringify(clsError)}`,
+    );
 
     if (clsError) throw new BadRequestException(clsError.message);
     if (!cls) throw new NotFoundException('Invalid invite code');
 
-    const { data: existing, error: existingError } = await this.supabase.adminClient
-      .from('enrollments')
-      .select('id')
-      .eq('class_id', cls.id)
-      .eq('student_id', studentId)
-      .maybeSingle();
+    const { data: existing, error: existingError } = asSingleQueryResult<IdRow>(
+      await this.supabase.adminClient
+        .from('enrollments')
+        .select('id')
+        .eq('class_id', cls.id)
+        .eq('student_id', studentId)
+        .maybeSingle(),
+    );
 
-    this.logger.log(`enrollment check — existing=${JSON.stringify(existing)} error=${JSON.stringify(existingError)}`);
+    this.logger.log(
+      `enrollment check — existing=${JSON.stringify(existing)} error=${JSON.stringify(existingError)}`,
+    );
 
-    if (existing) throw new BadRequestException('Already enrolled in this class');
+    if (existing)
+      throw new BadRequestException('Already enrolled in this class');
+
+    if (dto.cohort_id) {
+      const { data: cohort, error: cohortError } =
+        asSingleQueryResult<CohortRecord>(
+          await this.supabase.adminClient
+            .from('cohorts')
+            .select('id, class_id')
+            .eq('id', dto.cohort_id)
+            .single(),
+        );
+
+      if (cohortError || !cohort)
+        throw new NotFoundException('Cohort not found');
+      if (cohort.class_id !== cls.id) {
+        throw new BadRequestException('Cohort does not belong to this class');
+      }
+    }
 
     const { error: enrollError } = await this.supabase.adminClient
       .from('enrollments')
-      .insert({ class_id: cls.id, student_id: studentId });
+      .insert({
+        class_id: cls.id,
+        student_id: studentId,
+        cohort_id: dto.cohort_id ?? null,
+      });
 
     if (enrollError) {
-      this.logger.error(`enrollment insert failed — ${JSON.stringify(enrollError)}`);
+      this.logger.error(
+        `enrollment insert failed — ${JSON.stringify(enrollError)}`,
+      );
       throw new BadRequestException(enrollError.message);
     }
 
-    this.logger.log(`student ${studentId} successfully enrolled in class ${cls.id}`);
+    this.logger.log(
+      `student ${studentId} successfully enrolled in class ${cls.id}`,
+    );
     return cls;
   }
 
   // ----------------------------------------------------------------
   // GET /classes/:id/roster
   // ----------------------------------------------------------------
-  async getRoster(classId: string, tutorId: string) {
-    // Verify ownership
-    const { data: cls, error: clsError } = await this.supabase.adminClient
-      .from('classes')
-      .select('id, tutor_id')
-      .eq('id', classId)
-      .single();
+  async getRoster(classId: string, userId: string, role: string | null) {
+    const { data: cls, error: clsError } = asSingleQueryResult<
+      Pick<ClassRecord, 'id' | 'tutor_id'>
+    >(
+      await this.supabase.adminClient
+        .from('classes')
+        .select('id, tutor_id')
+        .eq('id', classId)
+        .single(),
+    );
 
     if (clsError || !cls) throw new NotFoundException('Class not found');
-    if (cls.tutor_id !== tutorId) throw new ForbiddenException();
+    if (role !== 'admin' && cls.tutor_id !== userId)
+      throw new ForbiddenException();
 
-    // Enrollments + student profiles
-    const { data: enrollments, error: enrError } = await this.supabase.adminClient
-      .from('enrollments')
-      .select('enrolled_at, student:profiles!student_id(*)')
-      .eq('class_id', classId)
-      .order('enrolled_at', { ascending: true });
+    const { data: enrollments, error: enrError } =
+      asQueryResult<RosterEnrollmentRow>(
+        await this.supabase.adminClient
+          .from('enrollments')
+          .select('enrolled_at, student:profiles!student_id(*)')
+          .eq('class_id', classId)
+          .order('enrolled_at', { ascending: true }),
+      );
 
     if (enrError) throw new BadRequestException(enrError.message);
 
-    // Total session count for this class
     const { count: totalSessions } = await this.supabase.adminClient
       .from('attendance_sessions')
       .select('*', { count: 'exact', head: true })
       .eq('class_id', classId);
 
-    // Attendance records for all sessions of this class
-    const { data: sessions } = await this.supabase.adminClient
-      .from('attendance_sessions')
-      .select('id')
-      .eq('class_id', classId);
+    const { data: sessions } = asQueryResult<IdRow>(
+      await this.supabase.adminClient
+        .from('attendance_sessions')
+        .select('id')
+        .eq('class_id', classId),
+    );
 
     const sessionIds = (sessions ?? []).map((s) => s.id);
 
     const attendanceByStudent = new Map<string, number>();
     if (sessionIds.length > 0) {
-      const { data: records } = await this.supabase.adminClient
-        .from('attendance_records')
-        .select('student_id')
-        .in('session_id', sessionIds);
+      const { data: records } = asQueryResult<AttendanceRecordRow>(
+        await this.supabase.adminClient
+          .from('attendance_records')
+          .select('student_id')
+          .in('session_id', sessionIds),
+      );
 
       for (const rec of records ?? []) {
         attendanceByStudent.set(
@@ -193,20 +473,23 @@ export class ClassesService {
       }
     }
 
-    // Submission counts per student for this class's assignments
-    const { data: assignments } = await this.supabase.adminClient
-      .from('assignments')
-      .select('id')
-      .eq('class_id', classId);
+    const { data: assignments } = asQueryResult<IdRow>(
+      await this.supabase.adminClient
+        .from('assignments')
+        .select('id')
+        .eq('class_id', classId),
+    );
 
     const assignmentIds = (assignments ?? []).map((a) => a.id);
 
     const submissionsByStudent = new Map<string, number>();
     if (assignmentIds.length > 0) {
-      const { data: submissions } = await this.supabase.adminClient
-        .from('submissions')
-        .select('student_id')
-        .in('assignment_id', assignmentIds);
+      const { data: submissions } = asQueryResult<AttendanceRecordRow>(
+        await this.supabase.adminClient
+          .from('submissions')
+          .select('student_id')
+          .in('assignment_id', assignmentIds),
+      );
 
       for (const sub of submissions ?? []) {
         submissionsByStudent.set(
@@ -217,7 +500,10 @@ export class ClassesService {
     }
 
     return (enrollments ?? []).map((row) => {
-      const student = row.student as Record<string, any>;
+      const student = unwrapRelation(row.student);
+      if (!student) {
+        throw new BadRequestException('Roster entry is missing a student');
+      }
       const attended = attendanceByStudent.get(student.id) ?? 0;
       const attendance_pct =
         totalSessions && totalSessions > 0
@@ -236,15 +522,20 @@ export class ClassesService {
   // ----------------------------------------------------------------
   // DELETE /classes/:id
   // ----------------------------------------------------------------
-  async remove(classId: string, tutorId: string) {
-    const { data: cls, error } = await this.supabase.adminClient
-      .from('classes')
-      .select('id, tutor_id')
-      .eq('id', classId)
-      .single();
+  async remove(classId: string, userId: string, role: string | null) {
+    const { data: cls, error } = asSingleQueryResult<
+      Pick<ClassRecord, 'id' | 'tutor_id'>
+    >(
+      await this.supabase.adminClient
+        .from('classes')
+        .select('id, tutor_id')
+        .eq('id', classId)
+        .single(),
+    );
 
     if (error || !cls) throw new NotFoundException('Class not found');
-    if (cls.tutor_id !== tutorId) throw new ForbiddenException();
+    if (role !== 'admin' && cls.tutor_id !== userId)
+      throw new ForbiddenException();
 
     const { error: deleteError } = await this.supabase.adminClient
       .from('classes')
@@ -252,20 +543,5 @@ export class ClassesService {
       .eq('id', classId);
 
     if (deleteError) throw new BadRequestException(deleteError.message);
-  }
-
-  // ----------------------------------------------------------------
-  // Helpers
-  // ----------------------------------------------------------------
-  private flattenCount(rows: any[]): any[] {
-    return rows.map((r) => this.flattenCountSingle(r));
-  }
-
-  private flattenCountSingle(row: any): any {
-    const { enrollments, ...rest } = row;
-    const enrolled_count: number = Array.isArray(enrollments)
-      ? ((enrollments[0] as any)?.count ?? 0)
-      : 0;
-    return { ...rest, enrolled_count };
   }
 }

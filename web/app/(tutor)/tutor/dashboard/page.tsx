@@ -1,10 +1,10 @@
 import type { Metadata } from 'next'
-import DashboardPageClient from './page.client'
+import TutorDashboardClient from './page.client'
 
 export const metadata: Metadata = {
-  title: 'Dashboard · Love\u00A0Inc',
+  title: 'Dashboard · Love Inc',
 }
 
-export default function DashboardPage() {
-  return <DashboardPageClient />
+export default function TutorDashboardPage() {
+  return <TutorDashboardClient />
 }

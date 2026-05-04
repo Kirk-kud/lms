@@ -1,4 +1,4 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class CreateClassDto {
   @IsString()
@@ -7,9 +7,17 @@ export class CreateClassDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @IsOptional()
+  @IsString()
+  zoom_link?: string;
 }
 
 export class JoinClassDto {
   @IsString()
   invite_code: string;
+
+  @IsOptional()
+  @IsUUID()
+  cohort_id?: string;
 }

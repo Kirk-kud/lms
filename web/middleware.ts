@@ -25,13 +25,19 @@ export async function middleware(request: NextRequest) {
     }
 
     // Cross-role redirects
-    if (role === 'tutor' && pathname.startsWith('/student')) {
+    if (role === 'admin' && (pathname.startsWith('/student') || pathname.startsWith('/tutor'))) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/admin/dashboard'
+      return NextResponse.redirect(url)
+    }
+
+    if (role === 'tutor' && (pathname.startsWith('/student') || pathname.startsWith('/admin'))) {
       const url = request.nextUrl.clone()
       url.pathname = '/tutor/dashboard'
       return NextResponse.redirect(url)
     }
 
-    if (role === 'student' && pathname.startsWith('/tutor')) {
+    if (role === 'student' && (pathname.startsWith('/admin') || pathname.startsWith('/tutor'))) {
       const url = request.nextUrl.clone()
       url.pathname = '/student/dashboard'
       return NextResponse.redirect(url)

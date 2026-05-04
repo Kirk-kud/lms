@@ -17,7 +17,7 @@ interface Item {
 interface ModuleCardProps {
   title: string
   items: Item[]
-  mode: 'tutor' | 'student'
+  mode: 'admin' | 'student'
   completedItems?: string[]
   onAddItem?: () => void
   onDeleteItem?: (id: string) => void
@@ -91,7 +91,7 @@ export default function ModuleCard({
           </span>
         </div>
 
-        {mode === 'tutor' && (
+        {mode === 'admin' && (
           <div className="flex items-center gap-1.5">
             <button
               onClick={onAddItem}
@@ -138,10 +138,13 @@ export default function ModuleCard({
           {items.map((item) => {
             const isCompleted = completedItems.includes(item.id)
             return (
-              <button
+              <div
                 key={item.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => onItemClick(item)}
-                className="w-full flex items-center gap-3 py-2.5 text-left hover:bg-[#FAFAFA] -mx-5 px-5 transition-colors group first:mt-2"
+                onKeyDown={(e) => e.key === 'Enter' && onItemClick(item)}
+                className="w-full flex items-center gap-3 py-2.5 text-left hover:bg-[#FAFAFA] -mx-5 px-5 transition-colors group first:mt-2 cursor-pointer"
               >
                 <FileChip type={item.type} />
                 <div className="flex-1 min-w-0">
@@ -166,7 +169,7 @@ export default function ModuleCard({
                       <DownloadIcon />
                     </span>
                   )}
-                  {mode === 'tutor' && (
+                  {mode === 'admin' && (
                     <button
                       onClick={(e) => { e.stopPropagation(); onDeleteItem?.(item.id) }}
                       className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center text-[#9CA3AF] hover:text-[#991B1B] transition-all"
@@ -179,7 +182,7 @@ export default function ModuleCard({
                     </button>
                   )}
                 </div>
-              </button>
+              </div>
             )
           })}
         </div>

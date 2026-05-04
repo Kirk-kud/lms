@@ -7,7 +7,7 @@ import { CourseModulesController } from './course-modules.controller';
   imports: [
     MulterModule.register({
       limits: {
-        fileSize: 10 * 1024 * 1024, // 10MB limit
+        fileSize: 25 * 1024 * 1024,
       },
     }),
   ],

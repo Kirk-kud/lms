@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Love\u00A0Inc LMS',
+  title: 'Vine',
   description: 'Discipleship learning management system',
 }
 
@@ -33,7 +33,7 @@ export default function RootLayout({
         'font-sans',
       )}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <QueryProvider>
           {children}
           <Toaster position="bottom-right" />

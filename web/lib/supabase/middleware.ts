@@ -25,16 +25,16 @@ export async function updateSession(request: NextRequest) {
     },
   )
 
-  // getUser() triggers a token refresh when the access token is expired.
-  // If the refresh fetch fails (network error, paused Supabase project, etc.),
-  // it throws instead of returning null — so we catch and treat as unauthenticated.
+  // getSession() reads the session from the cookie without a network round-trip.
+  // This is intentionally used here for performance — the middleware only makes
+  // routing decisions (redirect to /login), not data-access decisions.
+  // Real auth enforcement (JWT validation) happens in the NestJS API layer.
   let user = null
   try {
-    const { data } = await supabase.auth.getUser()
-    user = data.user
+    const { data } = await supabase.auth.getSession()
+    user = data.session?.user ?? null
   } catch {
-    // Refresh failed — middleware continues with user = null, triggering the
-    // login redirect for protected routes instead of a 500 error.
+    // Session read failed — treat as unauthenticated.
   }
 
   return { supabaseResponse, user }

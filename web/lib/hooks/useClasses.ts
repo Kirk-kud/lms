@@ -10,6 +10,8 @@ export interface ClassRecord {
   description: string | null
   invite_code: string
   enrolled_count: number
+  cohort_count?: number
+  tutor?: { full_name: string; email: string }
   created_at: string
 }
 
@@ -26,11 +28,14 @@ export interface RosterEntry {
   enrolled_at: string
 }
 
-export function useClasses(userId?: string) {
+export function useClasses() {
   return useQuery({
-    queryKey: ['classes', userId ?? null],
+    queryKey: ['classes'],
     queryFn: () => apiClient.get<ClassRecord[]>('/classes'),
-    enabled: !!userId,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   })
 }
 
@@ -39,8 +44,10 @@ export function useClass(id: string) {
     queryKey: ['classes', id],
     queryFn: () => apiClient.get<ClassRecord>(`/classes/${id}`),
     enabled: !!id,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   })
 }
 
@@ -49,7 +56,9 @@ export function useCreateClass() {
   return useMutation({
     mutationFn: (body: { title: string; description?: string }) =>
       apiClient.post<ClassRecord>('/classes', body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['classes'] }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['classes'] })
+    },
   })
 }
 
@@ -58,7 +67,9 @@ export function useJoinClass() {
   return useMutation({
     mutationFn: (body: { invite_code: string }) =>
       apiClient.post<ClassRecord>('/classes/join', body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['classes'] }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['classes'] })
+    },
   })
 }
 
@@ -66,7 +77,12 @@ export function useDeleteClass() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (classId: string) => apiClient.delete(`/classes/${classId}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['classes'] }),
+    onSuccess: async (_data, classId) => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['classes'] }),
+        qc.invalidateQueries({ queryKey: ['classes', classId] }),
+      ])
+    },
   })
 }
 

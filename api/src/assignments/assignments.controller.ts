@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UploadedFile,
   UseGuards,
@@ -24,6 +25,31 @@ import { AssignmentsService } from './assignments.service';
 export class AssignmentsController {
   constructor(private readonly service: AssignmentsService) {}
 
+  @Get()
+  async findByQuery(
+    @Req() req: Request,
+    @Query('class_id') classId: string,
+    @Query('cohort_id') cohortId?: string,
+  ) {
+    const user = req.user as JwtPayload;
+    const data = await this.service.findByClass(
+      classId,
+      user.sub,
+      user.role,
+      cohortId,
+    );
+    return createResponse(data, 'Assignments fetched');
+  }
+
+  @Get('batch')
+  @Roles('admin')
+  async findBatch(@Query('class_ids') classIds: string) {
+    const data = await this.service.findBatchForAdmin(
+      classIds?.split(',') ?? [],
+    );
+    return createResponse(data, 'Assignments fetched');
+  }
+
   // Literal segment 'class' declared before param routes
   @Get('class/:classId')
   async findByClass(@Req() req: Request, @Param('classId') classId: string) {
@@ -33,18 +59,18 @@ export class AssignmentsController {
   }
 
   @Post()
-  @Roles('tutor')
+  @Roles('admin')
   async create(@Req() req: Request, @Body() dto: CreateAssignmentDto) {
     const user = req.user as JwtPayload;
-    const data = await this.service.create(user.sub, dto);
+    const data = await this.service.create(user.sub, user.role, dto);
     return createResponse(data, 'Assignment created', 201);
   }
 
   @Get(':id/submissions')
-  @Roles('tutor')
+  @Roles('admin')
   async getSubmissions(@Req() req: Request, @Param('id') id: string) {
     const user = req.user as JwtPayload;
-    const data = await this.service.getSubmissions(id, user.sub);
+    const data = await this.service.getSubmissions(id, user.sub, user.role);
     return createResponse(data, 'Submissions fetched');
   }
 
@@ -62,22 +88,22 @@ export class AssignmentsController {
   }
 
   @Patch(':id')
-  @Roles('tutor')
+  @Roles('admin')
   async update(
     @Req() req: Request,
     @Param('id') id: string,
     @Body() dto: UpdateAssignmentDto,
   ) {
     const user = req.user as JwtPayload;
-    const data = await this.service.update(id, user.sub, dto);
+    const data = await this.service.update(id, user.sub, user.role, dto);
     return createResponse(data, 'Assignment updated');
   }
 
   @Delete(':id')
-  @Roles('tutor')
+  @Roles('admin')
   async remove(@Req() req: Request, @Param('id') id: string) {
     const user = req.user as JwtPayload;
-    await this.service.remove(id, user.sub);
+    await this.service.remove(id, user.sub, user.role);
     return createResponse(null, 'Assignment deleted');
   }
 }

@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -20,33 +21,46 @@ export class AttendanceController {
   constructor(private readonly service: AttendanceService) {}
 
   @Post('sessions')
-  @Roles('tutor')
+  @Roles('admin')
   async createSession(@Req() req: Request, @Body() dto: CreateSessionDto) {
     const user = req.user as JwtPayload;
-    const data = await this.service.createSession(user.sub, dto);
+    const data = await this.service.createSession(user.sub, user.role, dto);
     return createResponse(data, 'Session started', 201);
+  }
+
+  @Get('sessions')
+  @Roles('admin', 'tutor')
+  async getSessions(@Req() req: Request, @Query('class_id') classId: string) {
+    const user = req.user as JwtPayload;
+    const data = await this.service.getSessionsByClass(classId, user);
+    return createResponse(data, 'Sessions fetched');
   }
 
   // Literal 'class' segment declared before ':sessionId' param route
   @Get('sessions/class/:classId')
-  @Roles('tutor')
+  @Roles('admin', 'tutor')
   async getSessionsByClass(
     @Req() req: Request,
     @Param('classId') classId: string,
   ) {
     const user = req.user as JwtPayload;
-    const data = await this.service.getSessionsByClass(classId, user.sub);
+    const data = await this.service.getSessionsByClass(classId, user);
     return createResponse(data, 'Sessions fetched');
   }
 
   @Get('sessions/:sessionId/records')
-  @Roles('tutor')
+  @Roles('admin', 'tutor')
   async getSessionRecords(
     @Req() req: Request,
     @Param('sessionId') sessionId: string,
+    @Query('cohort_id') cohortId?: string,
   ) {
     const user = req.user as JwtPayload;
-    const data = await this.service.getSessionRecords(sessionId, user.sub);
+    const data = await this.service.getSessionRecords(
+      sessionId,
+      user,
+      cohortId,
+    );
     return createResponse(data, 'Records fetched');
   }
 

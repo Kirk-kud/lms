@@ -64,11 +64,10 @@ export default function StudentAttendancePageClient({ params }: { params: Promis
   const checkedInAt = activeRow?.checked_in_at ? new Date(activeRow.checked_in_at) : undefined
 
   useEffect(() => {
-    if (activeRow?.session?.is_active) {
-      setSessionActive(true)
-    } else if (!activeRow) {
-      setSessionActive(false)
-    }
+    const timeoutId = window.setTimeout(() => {
+      setSessionActive(Boolean(activeRow?.session?.is_active))
+    }, 0)
+    return () => window.clearTimeout(timeoutId)
   }, [activeRow?.session?.id, activeRow?.session?.is_active])
 
   useEffect(() => {
@@ -135,7 +134,7 @@ export default function StudentAttendancePageClient({ params }: { params: Promis
   }
 
   return (
-    <div className="p-8 max-w-3xl">
+    <div className="p-8">
       <nav className="flex items-center gap-2 text-[12px] text-[#9CA3AF] mb-6">
         <button
           onClick={() => router.push('/student/dashboard')}

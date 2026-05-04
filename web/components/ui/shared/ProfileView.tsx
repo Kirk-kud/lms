@@ -6,13 +6,13 @@ import { useUser } from '@/lib/hooks/useUser'
 import { StatusBadge } from './Badge'
 import { SkeletonCard } from './SkeletonCard'
 
-export default function ProfileView() {
+export default function ProfileView({ fullWidth = false }: { fullWidth?: boolean }) {
   const { user, isLoading } = useUser()
   const router = useRouter()
 
   const fullName = (user?.user_metadata?.full_name as string) ?? ''
   const email = user?.email ?? ''
-  const role = (user?.user_metadata?.role as 'student' | 'tutor' | null) ?? null
+  const role = (user?.user_metadata?.role as 'student' | 'admin' | 'tutor' | null) ?? null
   const initials = fullName
     .split(' ')
     .map((w) => w[0] ?? '')
@@ -29,7 +29,7 @@ export default function ProfileView() {
 
   if (isLoading) {
     return (
-      <div className="p-8" style={{ maxWidth: '560px' }}>
+      <div className="p-6 md:p-8" style={{ maxWidth: fullWidth ? 'none' : '560px' }}>
         <div style={{ marginBottom: '32px', height: '28px', width: '80px', backgroundColor: '#F0F0F0', borderRadius: '6px' }} />
         <SkeletonCard lines={3} />
       </div>
@@ -37,7 +37,7 @@ export default function ProfileView() {
   }
 
   return (
-    <div className="p-8" style={{ maxWidth: '560px' }}>
+    <div className="p-6 md:p-8" style={{ maxWidth: fullWidth ? 'none' : '560px' }}>
       {/* Page heading */}
       <div style={{ marginBottom: '32px' }}>
         <h1 style={{ fontSize: '22px', fontWeight: 500, color: '#111111', margin: 0 }}>Profile</h1>
@@ -69,7 +69,7 @@ export default function ProfileView() {
           </p>
           {role && (
             <div style={{ marginTop: '6px' }}>
-              <StatusBadge variant="wine" label={role === 'tutor' ? 'Tutor' : 'Student'} />
+              <StatusBadge variant="wine" label={role === 'admin' ? 'Admin' : role === 'tutor' ? 'Tutor' : 'Student'} />
             </div>
           )}
         </div>
@@ -144,7 +144,7 @@ export default function ProfileView() {
             Role
           </span>
           {role ? (
-            <StatusBadge variant="wine" label={role === 'tutor' ? 'Tutor' : 'Student'} />
+            <StatusBadge variant="wine" label={role === 'admin' ? 'Admin' : role === 'tutor' ? 'Tutor' : 'Student'} />
           ) : (
             <span style={{ fontSize: '13px', color: '#9CA3AF' }}>—</span>
           )}

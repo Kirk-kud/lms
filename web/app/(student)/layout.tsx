@@ -61,7 +61,7 @@ export default function StudentLayout({
   const pathname = usePathname()
   const qc = useQueryClient()
   const { user } = useUser()
-  const { data: classes = [] } = useClasses(user?.id)
+  const { data: classes = [] } = useClasses()
   const [pickerOpen, setPickerOpen] = useState(false)
   const [pendingLabel, setPendingLabel] = useState('')
 
@@ -124,6 +124,8 @@ export default function StudentLayout({
             activeItem={activeItem}
             onNavigate={handleNavigate}
             onSignOut={handleSignOut}
+            userName={fullName}
+            userInitials={initials}
           />
         </div>
         <main className="flex-1 overflow-y-auto bg-white pb-20 md:pb-0">{children}</main>

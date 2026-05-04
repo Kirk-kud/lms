@@ -5,23 +5,43 @@ interface StatusBadgeProps {
   label: string;
 }
 
-const variantStyles: Record<string, { bg: string; text: string }> = {
-  success: { bg: 'bg-[#DCFCE7]', text: 'text-[#166534]' },
-  warning: { bg: 'bg-[#FEF9C3]', text: 'text-[#854D0E]' },
-  danger: { bg: 'bg-[#FEE2E2]', text: 'text-[#991B1B]' },
-  info: { bg: 'bg-[#DBEAFE]', text: 'text-[#1E40AF]' },
-  gray: { bg: 'bg-[#F3F4F6]', text: 'text-[#4B5563]' },
-  wine: { bg: 'bg-[#F5E6EA]', text: 'text-[#6B1222]' },
+const variantStyles: Record<string, { bg: string; text: string; dot: string }> = {
+  success: { bg: '#E7F4ED', text: '#1F8B4C', dot: '#1F8B4C' },
+  warning: { bg: '#FAF1E1', text: '#B6791D', dot: '#B6791D' },
+  danger:  { bg: '#FBEAEC', text: '#B0182E', dot: '#B0182E' },
+  info:    { bg: '#EBF4FF', text: '#1E40AF', dot: '#3B82F6' },
+  gray:    { bg: '#F4EEE8', text: '#6B6168', dot: '#9C949A' },
+  wine:    { bg: '#FBEDF0', text: '#6B1222', dot: '#8B1A2F' },
 };
 
 export function StatusBadge({ variant, label }: StatusBadgeProps) {
-  const styles = variantStyles[variant];
+  const s = variantStyles[variant];
   return (
     <span
-      className={`${styles.bg} ${styles.text} inline-block rounded-full px-[10px] py-[2px] text-[11px] font-medium`}
+      style={{
+        backgroundColor: s.bg,
+        color: s.text,
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '6px',
+        borderRadius: '999px',
+        padding: '3px 9px',
+        fontSize: '11.5px',
+        fontWeight: 600,
+        whiteSpace: 'nowrap',
+      }}
     >
+      <span
+        style={{
+          width: '6px',
+          height: '6px',
+          borderRadius: '50%',
+          backgroundColor: s.dot,
+          display: 'inline-block',
+          flexShrink: 0,
+        }}
+      />
       {label}
     </span>
   );
 }
-

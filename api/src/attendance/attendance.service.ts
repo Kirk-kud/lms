@@ -5,6 +5,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
+import type { JwtPayload } from '../auth/jwt.strategy';
+import {
+  assertTutorOwnsCohort,
+  getTutorCohortForClass,
+} from '../common/access.helper';
 import { CheckInDto, CreateSessionDto } from './attendance.dto';
 
 @Injectable()
@@ -15,7 +20,11 @@ export class AttendanceService {
   // Access helpers
   // ----------------------------------------------------------------
 
-  private async assertTutorOwnsClass(classId: string, tutorId: string) {
+  private async assertTutorOwnsClass(
+    classId: string,
+    tutorId: string,
+    role?: string | null,
+  ) {
     const { data, error } = await this.supabase.adminClient
       .from('classes')
       .select('id, tutor_id')
@@ -23,7 +32,8 @@ export class AttendanceService {
       .single();
 
     if (error || !data) throw new NotFoundException('Class not found');
-    if (data.tutor_id !== tutorId) throw new ForbiddenException();
+    if (role !== 'admin' && data.tutor_id !== tutorId)
+      throw new ForbiddenException();
     return data;
   }
 
@@ -41,8 +51,12 @@ export class AttendanceService {
   // ----------------------------------------------------------------
   // POST /attendance/sessions
   // ----------------------------------------------------------------
-  async createSession(tutorId: string, dto: CreateSessionDto) {
-    await this.assertTutorOwnsClass(dto.class_id, tutorId);
+  async createSession(
+    tutorId: string,
+    role: string | null,
+    dto: CreateSessionDto,
+  ) {
+    await this.assertTutorOwnsClass(dto.class_id, tutorId, role);
 
     // Deactivate any existing active sessions for this class
     await this.supabase.adminClient
@@ -90,8 +104,15 @@ export class AttendanceService {
   // ----------------------------------------------------------------
   // GET /attendance/sessions/class/:classId
   // ----------------------------------------------------------------
-  async getSessionsByClass(classId: string, tutorId: string) {
-    await this.assertTutorOwnsClass(classId, tutorId);
+  async getSessionsByClass(classId: string, user: JwtPayload) {
+    if (user.role === 'admin') {
+      await this.assertTutorOwnsClass(classId, user.sub, user.role);
+    } else if (user.role === 'tutor') {
+      // Validates the tutor has a cohort in this class — throws 403 if not
+      await getTutorCohortForClass(this.supabase, classId, user.sub);
+    } else {
+      throw new ForbiddenException();
+    }
 
     const { data: sessions, error } = await this.supabase.adminClient
       .from('attendance_sessions')
@@ -135,7 +156,11 @@ export class AttendanceService {
   // ----------------------------------------------------------------
   // GET /attendance/sessions/:sessionId/records
   // ----------------------------------------------------------------
-  async getSessionRecords(sessionId: string, tutorId: string) {
+  async getSessionRecords(
+    sessionId: string,
+    user: JwtPayload,
+    cohortId?: string,
+  ) {
     const { data: session, error: sErr } = await this.supabase.adminClient
       .from('attendance_sessions')
       .select('id, class_id')
@@ -143,23 +168,67 @@ export class AttendanceService {
       .single();
 
     if (sErr || !session) throw new NotFoundException('Session not found');
-    await this.assertTutorOwnsClass(session.class_id, tutorId);
+
+    if (user.role === 'admin') {
+      await this.assertTutorOwnsClass(session.class_id, user.sub, user.role);
+      if (cohortId) {
+        await this.assertCohortInSessionClass(cohortId, session.class_id);
+      }
+    } else if (user.role === 'tutor') {
+      if (!cohortId) {
+        throw new ForbiddenException('cohort_id is required for tutors');
+      }
+      const cohort = await assertTutorOwnsCohort(
+        this.supabase,
+        cohortId,
+        user.sub,
+      );
+      if (cohort.class_id !== session.class_id) {
+        throw new ForbiddenException(
+          'Cohort does not belong to this session class',
+        );
+      }
+    } else {
+      throw new ForbiddenException();
+    }
 
     // Present: students with a record for this session
-    const { data: records } = await this.supabase.adminClient
+    let recordsQuery = this.supabase.adminClient
       .from('attendance_records')
       .select('*, student:profiles!student_id(*)')
       .eq('session_id', sessionId);
 
+    if (cohortId) {
+      const { data: cohortEnrollments, error: cohortError } =
+        await this.supabase.adminClient
+          .from('enrollments')
+          .select('student_id')
+          .eq('class_id', session.class_id)
+          .eq('cohort_id', cohortId);
+
+      if (cohortError) throw new BadRequestException(cohortError.message);
+      const studentIds = (cohortEnrollments ?? []).map((e) => e.student_id);
+      if (studentIds.length === 0) return { present: [], absent: [] };
+      recordsQuery = recordsQuery.in('student_id', studentIds);
+    }
+
+    const { data: records } = await recordsQuery;
+
     const presentStudentIds = new Set(
-      (records ?? []).map((r) => (r.student as any).id as string),
+      (records ?? []).map((r) => r.student.id as string),
     );
 
     // All enrolled students
-    const { data: enrollments } = await this.supabase.adminClient
+    let enrollmentsQuery = this.supabase.adminClient
       .from('enrollments')
       .select('student:profiles!student_id(*)')
       .eq('class_id', session.class_id);
+
+    if (cohortId) {
+      enrollmentsQuery = enrollmentsQuery.eq('cohort_id', cohortId);
+    }
+
+    const { data: enrollments } = await enrollmentsQuery;
 
     const absent = (enrollments ?? [])
       .map((e) => e.student as Record<string, any>)
@@ -172,6 +241,21 @@ export class AttendanceService {
       })),
       absent,
     };
+  }
+
+  private async assertCohortInSessionClass(cohortId: string, classId: string) {
+    const { data, error } = await this.supabase.adminClient
+      .from('cohorts')
+      .select('id, class_id')
+      .eq('id', cohortId)
+      .single();
+
+    if (error || !data) throw new NotFoundException('Cohort not found');
+    if (data.class_id !== classId) {
+      throw new ForbiddenException(
+        'Cohort does not belong to this session class',
+      );
+    }
   }
 
   // ----------------------------------------------------------------
