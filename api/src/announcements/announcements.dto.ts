@@ -1,24 +1,14 @@
-import {
-  IsEnum,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  IsUUID,
-} from 'class-validator';
+import { IsNotEmpty, IsString, IsUUID } from 'class-validator';
 
 export class CreateAnnouncementDto {
+  @IsUUID()
+  class_id: string;
+
   @IsString()
   @IsNotEmpty()
-  message: string;
+  title: string;
 
-  @IsEnum(['all_tutors', 'whole_class', 'specific_cohort'])
-  target_type: 'all_tutors' | 'whole_class' | 'specific_cohort';
-
-  @IsOptional()
-  @IsUUID()
-  class_id?: string;
-
-  @IsOptional()
-  @IsUUID()
-  cohort_id?: string;
+  @IsString()
+  @IsNotEmpty()
+  body: string;
 }

@@ -4,6 +4,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { createClient } from '@supabase/supabase-js';
 import { SupabaseService } from '../supabase/supabase.service';
 import { LoginDto, RegisterDto } from './auth.dto';
 
@@ -55,11 +56,17 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    const { data, error } =
-      await this.supabase.adminClient.auth.signInWithPassword({
-        email: dto.email,
-        password: dto.password,
-      });
+    // Create a temporary client for auth operations to avoid polluting adminClient.auth state
+    const tempAuthClient = createClient(
+      this.supabase.supabaseUrl,
+      this.supabase.anonKey,
+      { auth: { autoRefreshToken: false, persistSession: false } },
+    );
+
+    const { data, error } = await tempAuthClient.auth.signInWithPassword({
+      email: dto.email,
+      password: dto.password,
+    });
 
     if (error || !data.user) {
       throw new UnauthorizedException('Invalid credentials');

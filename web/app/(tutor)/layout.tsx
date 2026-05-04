@@ -86,7 +86,7 @@ export default function TutorLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      <Topbar userName={fullName} userInitials={initials} role="tutor" onSignOut={handleSignOut} onProfile={handleProfile} />
+      <Topbar userName={fullName} userInitials={initials} role="tutor" userId={user?.id} onSignOut={handleSignOut} onProfile={handleProfile} />
       <div className="flex flex-1 overflow-hidden">
         <div className="hidden md:block">
           <Sidebar

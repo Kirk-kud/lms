@@ -5,9 +5,8 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 @Injectable()
 export class SupabaseService {
   readonly adminClient: SupabaseClient;
-
-  private readonly supabaseUrl: string;
-  private readonly anonKey: string;
+  readonly supabaseUrl: string;
+  readonly anonKey: string;
 
   constructor(private readonly configService: ConfigService) {
     this.supabaseUrl = this.configService.getOrThrow<string>('SUPABASE_URL');

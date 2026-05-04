@@ -5,7 +5,6 @@ import { format } from 'date-fns'
 import { toast } from 'sonner'
 import { ApiError } from '@/lib/api'
 import { useClasses } from '@/lib/hooks/useClasses'
-import { useCohorts } from '@/lib/hooks/useCohorts'
 import {
   useAnnouncements,
   useCreateAnnouncement,
@@ -36,37 +35,6 @@ function blurInput(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | 
   e.currentTarget.style.borderColor = '#E5E5E5'
 }
 
-// ── Target badge ─────────────────────────────────────────────────────────────
-
-const TARGET_LABELS: Record<Announcement['target_type'], string> = {
-  all_tutors: 'All Tutors',
-  whole_class: 'Whole Class',
-  specific_cohort: 'Specific Cohort',
-}
-
-const TARGET_COLORS: Record<Announcement['target_type'], { bg: string; text: string }> = {
-  all_tutors:      { bg: '#FEF3C7', text: '#92400E' },
-  whole_class:     { bg: '#EDE9FE', text: '#5B21B6' },
-  specific_cohort: { bg: '#DCFCE7', text: '#166534' },
-}
-
-function TargetBadge({ type }: { type: Announcement['target_type'] }) {
-  const c = TARGET_COLORS[type]
-  return (
-    <span style={{
-      display: 'inline-block',
-      padding: '2px 8px',
-      borderRadius: '999px',
-      fontSize: '11px',
-      fontWeight: 600,
-      backgroundColor: c.bg,
-      color: c.text,
-    }}>
-      {TARGET_LABELS[type]}
-    </span>
-  )
-}
-
 // ── Trash icon ───────────────────────────────────────────────────────────────
 
 function TrashIcon() {
@@ -79,48 +47,28 @@ function TrashIcon() {
 
 // ── Compose form ─────────────────────────────────────────────────────────────
 
-type TargetType = 'all_tutors' | 'whole_class' | 'specific_cohort'
-
 function ComposeForm() {
-  const [message, setMessage]         = useState('')
-  const [targetType, setTargetType]   = useState<TargetType>('all_tutors')
+  const [title, setTitle]             = useState('')
+  const [body, setBody]               = useState('')
   const [selectedClass, setSelectedClass] = useState('')
-  const [selectedCohort, setSelectedCohort] = useState('')
 
   const { data: classes = [] } = useClasses()
-  const { data: cohorts = [] } = useCohorts(selectedClass)
   const create = useCreateAnnouncement()
 
-  const handleClassChange = (classId: string) => {
-    setSelectedClass(classId)
-    setSelectedCohort('')
-  }
-
-  const handleTargetChange = (t: TargetType) => {
-    setTargetType(t)
-    setSelectedClass('')
-    setSelectedCohort('')
-  }
-
-  const isValid = message.trim().length > 0 &&
-    (targetType === 'all_tutors' ||
-     (targetType === 'whole_class' && selectedClass) ||
-     (targetType === 'specific_cohort' && selectedClass && selectedCohort))
+  const isValid = title.trim().length > 0 && body.trim().length > 0 && selectedClass.length > 0
 
   const handleSend = async () => {
     if (!isValid) return
     try {
       await create.mutateAsync({
-        message: message.trim(),
-        target_type: targetType,
-        class_id: targetType !== 'all_tutors' ? selectedClass : undefined,
-        cohort_id: targetType === 'specific_cohort' ? selectedCohort : undefined,
+        class_id: selectedClass,
+        title: title.trim(),
+        body: body.trim(),
       })
       toast.success('Announcement sent')
-      setMessage('')
-      setTargetType('all_tutors')
+      setTitle('')
+      setBody('')
       setSelectedClass('')
-      setSelectedCohort('')
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Failed to send')
     }
@@ -137,14 +85,49 @@ function ComposeForm() {
         New Announcement
       </p>
 
-      {/* Message */}
+      {/* Class selector */}
+      <div style={{ marginBottom: '14px' }}>
+        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#6B6168', marginBottom: '6px' }}>
+          Class
+        </label>
+        <select
+          value={selectedClass}
+          onChange={(e) => setSelectedClass(e.target.value)}
+          onFocus={focusInput}
+          onBlur={blurInput}
+          style={{ ...inputStyle, height: '36px' }}
+        >
+          <option value="">Select a class</option>
+          {classes.map((c) => (
+            <option key={c.id} value={c.id}>{c.title}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Title */}
+      <div style={{ marginBottom: '14px' }}>
+        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#6B6168', marginBottom: '6px' }}>
+          Title
+        </label>
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onFocus={focusInput}
+          onBlur={blurInput}
+          placeholder="Announcement title"
+          style={{ ...inputStyle, height: '36px' }}
+        />
+      </div>
+
+      {/* Body */}
       <div style={{ marginBottom: '14px' }}>
         <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#6B6168', marginBottom: '6px' }}>
           Message
         </label>
         <textarea
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
           onFocus={focusInput}
           onBlur={blurInput}
           rows={4}
@@ -152,77 +135,6 @@ function ComposeForm() {
           style={{ ...inputStyle, resize: 'vertical', minHeight: '90px' }}
         />
       </div>
-
-      {/* Target type */}
-      <div style={{ marginBottom: '14px' }}>
-        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#6B6168', marginBottom: '8px' }}>
-          Send to
-        </label>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          {(['all_tutors', 'whole_class', 'specific_cohort'] as TargetType[]).map((t) => (
-            <button
-              key={t}
-              onClick={() => handleTargetChange(t)}
-              style={{
-                padding: '6px 12px',
-                borderRadius: '8px',
-                fontSize: '12.5px',
-                fontWeight: 500,
-                border: '0.5px solid',
-                borderColor: targetType === t ? '#8B1A2F' : '#E5E5E5',
-                backgroundColor: targetType === t ? '#8B1A2F' : '#FFFFFF',
-                color: targetType === t ? '#FFFFFF' : '#6B6168',
-                cursor: 'pointer',
-                transition: 'all 120ms ease',
-              }}
-            >
-              {TARGET_LABELS[t]}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Class selector */}
-      {(targetType === 'whole_class' || targetType === 'specific_cohort') && (
-        <div style={{ marginBottom: '14px' }}>
-          <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#6B6168', marginBottom: '6px' }}>
-            Class
-          </label>
-          <select
-            value={selectedClass}
-            onChange={(e) => handleClassChange(e.target.value)}
-            onFocus={focusInput}
-            onBlur={blurInput}
-            style={{ ...inputStyle, height: '36px' }}
-          >
-            <option value="">Select a class</option>
-            {classes.map((c) => (
-              <option key={c.id} value={c.id}>{c.title}</option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {/* Cohort selector */}
-      {targetType === 'specific_cohort' && selectedClass && (
-        <div style={{ marginBottom: '14px' }}>
-          <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#6B6168', marginBottom: '6px' }}>
-            Cohort
-          </label>
-          <select
-            value={selectedCohort}
-            onChange={(e) => setSelectedCohort(e.target.value)}
-            onFocus={focusInput}
-            onBlur={blurInput}
-            style={{ ...inputStyle, height: '36px' }}
-          >
-            <option value="">Select a cohort</option>
-            {cohorts.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-        </div>
-      )}
 
       <button
         onClick={handleSend}
@@ -281,7 +193,18 @@ function AnnouncementCard({ item }: { item: Announcement }) {
       backgroundColor: '#FFFFFF',
     }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px' }}>
-        <TargetBadge type={item.target_type} />
+        <div>
+          <p style={{ fontSize: '13.5px', fontWeight: 600, color: '#111111', margin: 0 }}>{item.title}</p>
+          {item.class?.title && (
+            <span style={{
+              display: 'inline-block', marginTop: '4px',
+              padding: '2px 8px', borderRadius: '999px', fontSize: '11px', fontWeight: 600,
+              backgroundColor: '#EDE9FE', color: '#5B21B6',
+            }}>
+              {item.class.title}
+            </span>
+          )}
+        </div>
         <button
           onClick={handleDelete}
           disabled={remove.isPending}
@@ -317,10 +240,10 @@ function AnnouncementCard({ item }: { item: Announcement }) {
         WebkitBoxOrient: 'vertical',
         overflow: expanded ? 'visible' : 'hidden',
       }}>
-        {item.message}
+        {item.body}
       </p>
 
-      {item.message.length > 160 && (
+      {item.body.length > 160 && (
         <button
           onClick={() => setExpanded(!expanded)}
           style={{
@@ -334,7 +257,7 @@ function AnnouncementCard({ item }: { item: Announcement }) {
 
       <p style={{ fontSize: '11.5px', color: '#9C949A', margin: '8px 0 0' }}>
         {format(new Date(item.created_at), 'MMM d, yyyy · h:mm a')}
-        {item.creator?.full_name && ` · ${item.creator.full_name}`}
+        {item.author?.full_name && ` · ${item.author.full_name}`}
       </p>
     </div>
   )
@@ -353,7 +276,7 @@ export default function AnnouncementsPageClient() {
           Announcements
         </h1>
         <p style={{ fontSize: '13px', color: '#6B6168', margin: '4px 0 0' }}>
-          Broadcast messages to tutors, classes, or specific cohorts
+          Broadcast messages to your class students
         </p>
       </div>
 

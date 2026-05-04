@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface StatCardProps {
   label: string;
   value: string | number;
@@ -74,7 +72,7 @@ export function StatCardGrid({ cards }: StatCardGridProps) {
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
         gap: '10px',
       }}
     >

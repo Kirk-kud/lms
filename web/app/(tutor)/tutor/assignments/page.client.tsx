@@ -21,7 +21,7 @@ export default function TutorAssignmentsClient() {
 
   if (classesLoading || isLoading) {
     return (
-      <div className="p-6 max-w-3xl">
+      <div className="p-6">
         <SkeletonCard lines={4} />
       </div>
     )
@@ -60,7 +60,7 @@ export default function TutorAssignmentsClient() {
   }
 
   return (
-    <div className="p-6 max-w-3xl">
+    <div className="p-6">
       <div className="mb-6">
         <p className="text-[11px] font-medium uppercase tracking-widest text-[#9CA3AF] mb-1">{cohortName}</p>
         <h1 className="text-[28px] font-semibold text-[#111111]">Assignments</h1>
