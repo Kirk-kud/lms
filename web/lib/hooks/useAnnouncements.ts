@@ -22,7 +22,7 @@ export interface CreateAnnouncementPayload {
 }
 
 export function useAnnouncements() {
-  return useQuery({
+  return useQuery<Announcement[]>({
     queryKey: ['announcements'],
     queryFn: () => apiClient.get<Announcement[]>('/announcements'),
   })

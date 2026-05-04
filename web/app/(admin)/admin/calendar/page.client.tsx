@@ -20,7 +20,7 @@ import { toast } from 'sonner'
 import { ApiError } from '@/lib/api'
 import { useClasses } from '@/lib/hooks/useClasses'
 import { useAttendanceSessions } from '@/lib/hooks/useAttendance'
-import { useAnnouncements } from '@/lib/hooks/useAnnouncements'
+import { useAnnouncements, type Announcement } from '@/lib/hooks/useAnnouncements'
 import { useMeetingSchedule, useSetMeetingSchedule } from '@/lib/hooks/useMeetingSchedule'
 import { useAssignments } from '@/lib/hooks/useAssignments'
 import {
@@ -499,7 +499,7 @@ export default function CalendarPageClient() {
 
   const { data: classes = [] }       = useClasses()
   const { data: schedule }           = useMeetingSchedule()
-  const { data: announcements = [] } = useAnnouncements()
+  const { data: announcements = [] as Announcement[] } = useAnnouncements()
 
   // Load events for the first class (in production there's one class)
   const firstClassId = classes[0]?.id ?? ''
