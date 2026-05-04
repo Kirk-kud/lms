@@ -20,6 +20,15 @@ import {
 export class CohortsService {
   constructor(private readonly supabase: SupabaseService) {}
 
+  private generateInviteCode(): string {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 8; i++) {
+      code += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return code;
+  }
+
   async findAll(classId: string, user: JwtPayload) {
     if (!classId) throw new BadRequestException('class_id is required');
 
@@ -46,6 +55,8 @@ export class CohortsService {
     await assertAdminOwnsClass(this.supabase, dto.class_id, adminId, role);
     await this.assertTutorRole(dto.ta_id);
 
+    const invite_pin = dto.invite_pin?.trim() || this.generateInviteCode();
+
     const { data, error } = await this.supabase.adminClient
       .from('cohorts')
       .insert({
@@ -53,7 +64,7 @@ export class CohortsService {
         name: dto.name,
         ta_id: dto.ta_id ?? null,
         zoom_link: dto.zoom_link ?? null,
-        invite_pin: dto.invite_pin ?? null,
+        invite_pin,
       })
       .select()
       .single();
@@ -167,6 +178,22 @@ export class CohortsService {
       .eq('student_id', studentId);
 
     if (error) throw new BadRequestException(error.message);
+  }
+
+  async regenerateInviteCode(id: string, adminId: string, role: string | null) {
+    const cohort = await this.getCohort(id);
+    await assertAdminOwnsClass(this.supabase, cohort.class_id, adminId, role);
+
+    const invite_pin = this.generateInviteCode();
+    const { data, error } = await this.supabase.adminClient
+      .from('cohorts')
+      .update({ invite_pin })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw new BadRequestException(error.message);
+    return data;
   }
 
   private async assertCanManageCohortStudents(id: string, user: JwtPayload) {

@@ -9,6 +9,7 @@ import {
   useStartSession,
   useEndSession,
   useSessionRecords,
+  useManualCheckIn,
   AttendanceSession,
 } from '@/lib/hooks/useAttendance'
 import { useClass } from '@/lib/hooks/useClasses'
@@ -23,7 +24,22 @@ import { ApiError } from '@/lib/api'
 
 function SessionHistoryRow({ session }: { session: AttendanceSession }) {
   const [expanded, setExpanded] = useState(false)
-  const { data: records } = useSessionRecords(expanded ? session.id : '')
+  const { data: records, refetch: refetchRecords } = useSessionRecords(expanded ? session.id : '')
+  const manualCheckIn = useManualCheckIn(session.id)
+  const [markingStudentId, setMarkingStudentId] = useState<string | null>(null)
+
+  const handleMarkPresent = async (studentId: string, studentName: string) => {
+    setMarkingStudentId(studentId)
+    try {
+      await manualCheckIn.mutateAsync(studentId)
+      await refetchRecords()
+      toast.success(`${studentName} marked present`)
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Unable to mark student present')
+    } finally {
+      setMarkingStudentId(null)
+    }
+  }
 
   return (
     <div className="border border-[#E5E5E5] rounded-xl overflow-hidden">
@@ -74,13 +90,26 @@ function SessionHistoryRow({ session }: { session: AttendanceSession }) {
                 Absent ({records.absent.length})
               </p>
               {records.absent.map((s) => (
-                <div key={s.id} className="flex items-center gap-2 py-1">
-                  <div className="w-6 h-6 rounded-full bg-[#FEE2E2] flex items-center justify-center text-[9px] font-medium text-[#991B1B] shrink-0">
-                    {s.avatar_initials}
+                <div key={s.id} className="flex items-center justify-between gap-2 py-1">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-6 h-6 rounded-full bg-[#FEE2E2] flex items-center justify-center text-[9px] font-medium text-[#991B1B] shrink-0">
+                      {s.avatar_initials}
+                    </div>
+                    <span className="text-[12px] text-[#111] truncate">{s.full_name}</span>
                   </div>
-                  <span className="text-[12px] text-[#111]">{s.full_name}</span>
+                  <button
+                    onClick={() => handleMarkPresent(s.id, s.full_name)}
+                    disabled={markingStudentId === s.id}
+                    className="text-[11px] text-[#6B7280] hover:text-[#166534] border border-[#E5E5E5] rounded-md px-2 py-0.5 transition-colors shrink-0 flex items-center gap-1"
+                  >
+                    {markingStudentId === s.id ? <LoadingSpinner /> : null}
+                    Mark present
+                  </button>
                 </div>
               ))}
+              {records.absent.length === 0 && (
+                <p className="text-[12px] text-[#9CA3AF]">Everyone was present</p>
+              )}
             </div>
           </div>
         </div>
@@ -169,14 +198,14 @@ export default function AttendancePageClient({ params }: { params: Promise<{ id:
     }
   }
 
-    const handleEndSession = async () => {
-      if (!activeSession) return
-      try {
-        await endSession.mutateAsync({ sessionId: activeSession.id, classId })
-      } catch (err) {
-        toast.error(err instanceof ApiError ? err.message : 'Unable to end session')
-      }
+  const handleEndSession = async () => {
+    if (!activeSession) return
+    try {
+      await endSession.mutateAsync({ sessionId: activeSession.id, classId })
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Unable to end session')
     }
+  }
 
   if (activeSession) {
     return (

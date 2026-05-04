@@ -338,66 +338,49 @@ export class ClassesService {
 
   // ----------------------------------------------------------------
   // POST /classes/join
+  // Students join via a cohort invite code (cohorts.invite_pin).
   // ----------------------------------------------------------------
   async join(studentId: string, dto: JoinClassDto) {
     this.logger.log(
       `join() called — studentId=${studentId} invite_code="${dto.invite_code}"`,
     );
 
-    const { data: cls, error: clsError } = asSingleQueryResult<JoinClassRecord>(
-      await this.supabase.adminClient
-        .from('classes')
-        .select('*')
-        .eq('invite_code', dto.invite_code)
-        .maybeSingle(),
-    );
+    // Look up the cohort by its invite code
+    const { data: cohort, error: cohortError } =
+      asSingleQueryResult<CohortRecord>(
+        await this.supabase.adminClient
+          .from('cohorts')
+          .select('id, class_id')
+          .eq('invite_pin', dto.invite_code.trim().toUpperCase())
+          .maybeSingle(),
+      );
 
     this.logger.log(
-      `classes query — data=${JSON.stringify(cls)} error=${JSON.stringify(clsError)}`,
+      `cohort lookup — data=${JSON.stringify(cohort)} error=${JSON.stringify(cohortError)}`,
     );
 
-    if (clsError) throw new BadRequestException(clsError.message);
-    if (!cls) throw new NotFoundException('Invalid invite code');
+    if (cohortError) throw new BadRequestException(cohortError.message);
+    if (!cohort) throw new NotFoundException('Invalid invite code');
 
-    const { data: existing, error: existingError } = asSingleQueryResult<IdRow>(
+    // Block if the student is already enrolled in this class (any cohort)
+    const { data: existing } = asSingleQueryResult<IdRow>(
       await this.supabase.adminClient
         .from('enrollments')
         .select('id')
-        .eq('class_id', cls.id)
+        .eq('class_id', cohort.class_id)
         .eq('student_id', studentId)
         .maybeSingle(),
-    );
-
-    this.logger.log(
-      `enrollment check — existing=${JSON.stringify(existing)} error=${JSON.stringify(existingError)}`,
     );
 
     if (existing)
       throw new BadRequestException('Already enrolled in this class');
 
-    if (dto.cohort_id) {
-      const { data: cohort, error: cohortError } =
-        asSingleQueryResult<CohortRecord>(
-          await this.supabase.adminClient
-            .from('cohorts')
-            .select('id, class_id')
-            .eq('id', dto.cohort_id)
-            .single(),
-        );
-
-      if (cohortError || !cohort)
-        throw new NotFoundException('Cohort not found');
-      if (cohort.class_id !== cls.id) {
-        throw new BadRequestException('Cohort does not belong to this class');
-      }
-    }
-
     const { error: enrollError } = await this.supabase.adminClient
       .from('enrollments')
       .insert({
-        class_id: cls.id,
+        class_id: cohort.class_id,
         student_id: studentId,
-        cohort_id: dto.cohort_id ?? null,
+        cohort_id: cohort.id,
       });
 
     if (enrollError) {
@@ -407,8 +390,19 @@ export class ClassesService {
       throw new BadRequestException(enrollError.message);
     }
 
+    // Return the class record so the frontend can redirect
+    const { data: cls, error: clsError } = asSingleQueryResult<JoinClassRecord>(
+      await this.supabase.adminClient
+        .from('classes')
+        .select('*')
+        .eq('id', cohort.class_id)
+        .single(),
+    );
+
+    if (clsError || !cls) throw new BadRequestException('Could not fetch class after joining');
+
     this.logger.log(
-      `student ${studentId} successfully enrolled in class ${cls.id}`,
+      `student ${studentId} joined class ${cls.id} via cohort ${cohort.id}`,
     );
     return cls;
   }
@@ -517,6 +511,58 @@ export class ClassesService {
         enrolled_at: row.enrolled_at,
       };
     });
+  }
+
+  // ----------------------------------------------------------------
+  // GET /classes/:id/students/searchable
+  // Returns students (role='student') NOT yet enrolled in this class.
+  // ----------------------------------------------------------------
+  async searchNonEnrolledStudents(
+    classId: string,
+    adminId: string,
+    role: string | null,
+    query: string,
+  ) {
+    const { data: cls, error: clsErr } = asSingleQueryResult<Pick<ClassRecord, 'id' | 'tutor_id'>>(
+      await this.supabase.adminClient
+        .from('classes')
+        .select('id, tutor_id')
+        .eq('id', classId)
+        .single(),
+    );
+    if (clsErr || !cls) throw new NotFoundException('Class not found');
+    if (role !== 'admin' && cls.tutor_id !== adminId) throw new ForbiddenException();
+
+    // Get all already-enrolled student IDs for this class
+    const { data: enrolled } = asQueryResult<{ student_id: string }>(
+      await this.supabase.adminClient
+        .from('enrollments')
+        .select('student_id')
+        .eq('class_id', classId),
+    );
+    const enrolledIds = (enrolled ?? []).map((e) => e.student_id);
+
+    // Search all students by name/email
+    let studentQuery = this.supabase.adminClient
+      .from('profiles')
+      .select('id, full_name, email, avatar_initials')
+      .eq('role', 'student')
+      .order('full_name', { ascending: true })
+      .limit(20);
+
+    if (query.trim()) {
+      studentQuery = studentQuery.or(
+        `full_name.ilike.%${query.trim()}%,email.ilike.%${query.trim()}%`,
+      );
+    }
+
+    if (enrolledIds.length > 0) {
+      studentQuery = studentQuery.not('id', 'in', `(${enrolledIds.join(',')})`);
+    }
+
+    const { data, error } = await studentQuery;
+    if (error) throw new BadRequestException(error.message);
+    return data ?? [];
   }
 
   // ----------------------------------------------------------------

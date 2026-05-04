@@ -81,3 +81,15 @@ export function useMyAttendance(classId: string) {
     enabled: !!classId,
   })
 }
+
+export function useManualCheckIn(sessionId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (student_id: string) =>
+      apiClient.post(`/attendance/sessions/${sessionId}/records/manual`, { student_id }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['session-records', sessionId] })
+      qc.invalidateQueries({ queryKey: ['attendance-sessions'] })
+    },
+  })
+}

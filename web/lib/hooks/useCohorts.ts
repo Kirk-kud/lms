@@ -128,3 +128,14 @@ export function useRemoveCohortStudent(cohortId: string) {
     },
   })
 }
+
+export function useRegenerateInviteCode(classId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (cohortId: string) =>
+      apiClient.post<Cohort>(`/cohorts/${cohortId}/regenerate-code`, {}),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['cohorts', classId] })
+    },
+  })
+}

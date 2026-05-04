@@ -299,6 +299,43 @@ export class AttendanceService {
   }
 
   // ----------------------------------------------------------------
+  // POST /attendance/sessions/:sessionId/records/manual
+  // Admin manually marks a student as present for any session.
+  // ----------------------------------------------------------------
+  async manualCheckIn(sessionId: string, adminId: string, role: string | null, studentId: string) {
+    const { data: session, error: sErr } = await this.supabase.adminClient
+      .from('attendance_sessions')
+      .select('id, class_id')
+      .eq('id', sessionId)
+      .single();
+
+    if (sErr || !session) throw new NotFoundException('Session not found');
+    await this.assertTutorOwnsClass(session.class_id, adminId, role);
+
+    // Student must be enrolled in the class
+    await this.assertStudentEnrolled(session.class_id, studentId);
+
+    // Idempotent: skip if already checked in
+    const { data: existing } = await this.supabase.adminClient
+      .from('attendance_records')
+      .select('id')
+      .eq('session_id', sessionId)
+      .eq('student_id', studentId)
+      .maybeSingle();
+
+    if (existing) throw new BadRequestException('Student is already marked present');
+
+    const checked_in_at = new Date().toISOString();
+    const { error } = await this.supabase.adminClient
+      .from('attendance_records')
+      .insert({ session_id: sessionId, student_id: studentId, checked_in_at });
+
+    if (error) throw new BadRequestException(error.message);
+
+    return { success: true, checked_in_at, session_id: sessionId, student_id: studentId };
+  }
+
+  // ----------------------------------------------------------------
   // GET /attendance/my/:classId
   // ----------------------------------------------------------------
   async getMyAttendance(studentId: string, classId: string) {

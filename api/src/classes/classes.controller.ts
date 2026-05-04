@@ -6,6 +6,7 @@ import {
   HttpCode,
   Param,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -59,6 +60,18 @@ export class ClassesController {
     const user = req.user as JwtPayload;
     const data = await this.classesService.getRoster(id, user.sub, user.role);
     return createResponse(data, 'Roster fetched');
+  }
+
+  @Get(':id/students/searchable')
+  @Roles('admin')
+  async searchStudents(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @Query('q') q: string,
+  ) {
+    const user = req.user as JwtPayload;
+    const data = await this.classesService.searchNonEnrolledStudents(id, user.sub, user.role, q ?? '');
+    return createResponse(data, 'Students fetched');
   }
 
   @Delete(':id')

@@ -16,8 +16,4 @@ export class CreateClassDto {
 export class JoinClassDto {
   @IsString()
   invite_code: string;
-
-  @IsOptional()
-  @IsUUID()
-  cohort_id?: string;
 }

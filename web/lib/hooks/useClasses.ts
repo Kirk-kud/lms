@@ -93,3 +93,22 @@ export function useRoster(classId: string) {
     enabled: !!classId,
   })
 }
+
+export interface SearchableStudent {
+  id: string
+  full_name: string
+  email: string
+  avatar_initials: string
+}
+
+export function useSearchableStudents(classId: string, query: string) {
+  return useQuery({
+    queryKey: ['searchable-students', classId, query],
+    queryFn: () =>
+      apiClient.get<SearchableStudent[]>(
+        `/classes/${classId}/students/searchable?q=${encodeURIComponent(query)}`,
+      ),
+    enabled: !!classId && query.trim().length >= 2,
+    staleTime: 30_000,
+  })
+}

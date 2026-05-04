@@ -12,3 +12,8 @@ export class CheckInDto {
   @IsUUID()
   class_id: string;
 }
+
+export class ManualCheckInDto {
+  @IsUUID()
+  student_id: string;
+}

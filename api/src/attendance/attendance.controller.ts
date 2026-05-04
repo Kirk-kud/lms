@@ -13,7 +13,7 @@ import type { Request } from 'express';
 import { createResponse } from '../common/response.helper';
 import { Roles, RolesGuard } from '../auth/role.guard';
 import type { JwtPayload } from '../auth/jwt.strategy';
-import { CheckInDto, CreateSessionDto } from './attendance.dto';
+import { CheckInDto, CreateSessionDto, ManualCheckInDto } from './attendance.dto';
 import { AttendanceService } from './attendance.service';
 
 @Controller('attendance')
@@ -47,6 +47,18 @@ export class AttendanceController {
     const user = req.user as JwtPayload;
     const data = await this.service.getSessionsByClass(classId, user);
     return createResponse(data, 'Sessions fetched');
+  }
+
+  @Post('sessions/:sessionId/records/manual')
+  @Roles('admin')
+  async manualCheckIn(
+    @Req() req: Request,
+    @Param('sessionId') sessionId: string,
+    @Body() dto: ManualCheckInDto,
+  ) {
+    const user = req.user as JwtPayload;
+    const data = await this.service.manualCheckIn(sessionId, user.sub, user.role, dto.student_id);
+    return createResponse(data, 'Student marked present', 201);
   }
 
   @Get('sessions/:sessionId/records')

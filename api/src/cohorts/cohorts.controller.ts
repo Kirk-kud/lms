@@ -70,6 +70,14 @@ export class CohortsController {
     return createResponse(null, 'Cohort deleted');
   }
 
+  @Post(':id/regenerate-code')
+  @Roles('admin')
+  async regenerateCode(@Req() req: Request, @Param('id') id: string) {
+    const user = req.user as JwtPayload;
+    const data = await this.service.regenerateInviteCode(id, user.sub, user.role);
+    return createResponse(data, 'Invite code regenerated');
+  }
+
   @Get(':id/students')
   @Roles('admin', 'tutor')
   async getStudents(@Req() req: Request, @Param('id') id: string) {

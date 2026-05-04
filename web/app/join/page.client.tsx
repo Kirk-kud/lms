@@ -140,10 +140,10 @@ export default function JoinClassPageClient() {
       
       if (err instanceof ApiError) {
         const msg = err.message.toLowerCase()
-        if (msg.includes('not found') || msg.includes("doesn't match")) {
-          errorMessage = "That code doesn't match any class. Double-check with your tutor."
+        if (msg.includes('not found') || msg.includes("doesn't match") || msg.includes('invalid invite')) {
+          errorMessage = "That code doesn't match any cohort. Double-check with your tutor."
         } else if (msg.includes('already enrolled') || msg.includes('already in')) {
-          errorMessage = "You're already in this class."
+          errorMessage = "You're already enrolled in this class."
         } else {
           errorMessage = err.message
         }
@@ -228,7 +228,7 @@ export default function JoinClassPageClient() {
               You're in the right place.
             </h1>
             <p style={{ fontSize: '13px', color: '#9CA3AF', marginBottom: '32px' }}>
-              Enter the invite code your tutor shared with you.
+              Enter the cohort invite code your tutor shared with you.
             </p>
 
             <form onSubmit={handleSubmit} noValidate>
