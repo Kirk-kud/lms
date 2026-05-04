@@ -12,10 +12,11 @@ export interface Submission {
   file_name: string
   status: 'submitted' | 'late'
   submitted_at: string
-  grade: number | null
-  feedback: string | null
-  graded_at: string | null
-  graded_by: string | null
+  signed_url?: string | null
+  grade?: number | null
+  feedback?: string | null
+  graded_at?: string | null
+  graded_by?: string | null
 }
 
 export interface Assignment {

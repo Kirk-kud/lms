@@ -10,7 +10,7 @@ import type { PreviewItem } from '@/components/ui/shared/ItemPreviewModal'
 interface SubmissionData {
   file_name: string
   submitted_at: Date
-  signed_url: string
+  signed_url: string | null
 }
 
 interface AssignmentUploadProps {
@@ -241,7 +241,7 @@ export default function AssignmentUpload({
         <button
           onClick={handleSubmit}
           disabled={!selectedFile || isUploading}
-          className="flex-1 h-9 text-[13px] font-medium bg-[#111111] text-white rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#8B1A2F] transition-colors flex items-center justify-center gap-2"
+          className="flex-1 h-9 text-[13px] font-medium bg-[#8B1A2F] text-white rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#A52038] transition-colors flex items-center justify-center gap-2"
         >
           {isUploading && <LoadingSpinner className="text-white" />}
           {isUploading ? 'Uploading...' : resubmitting ? 'Resubmit' : 'Submit'}

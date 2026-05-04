@@ -1,6 +1,6 @@
 'use client'
 
-import { use, useCallback, useRef, useState } from 'react'
+import { use, useCallback, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
@@ -9,25 +9,23 @@ import { toast } from 'sonner'
 import { useAssignments, Assignment } from '@/lib/hooks/useAssignments'
 import { useClass } from '@/lib/hooks/useClasses'
 import { useUser } from '@/lib/hooks/useUser'
-import { createClient } from '@/lib/supabase/client'
 import AssignmentUpload from '@/components/ui/student/AssignmentUpload'
 import { SkeletonCard } from '@/components/ui/shared/SkeletonCard'
 import { InlineError } from '@/components/ui/shared/InlineError'
-import { ApiError } from '@/lib/api'
+import { ApiError, getApiBaseUrl } from '@/lib/api'
 
 function toSubmissionData(assignment: Assignment) {
   if (!assignment.submission) return null
   return {
     file_name: assignment.submission.file_name,
     submitted_at: new Date(assignment.submission.submitted_at),
-    signed_url: assignment.submission.file_url,
+    signed_url: assignment.submission.signed_url ?? null,
   }
 }
 
-async function getAccessToken() {
-  const supabase = createClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  return session?.access_token ?? null
+function getAccessToken(): string | null {
+  if (typeof window === 'undefined') return null
+  return localStorage.getItem('access_token')
 }
 
 function fireConfetti() {
@@ -71,7 +69,7 @@ export default function AssignmentDetailPageClient({
   const isOverdue = assignment ? new Date(assignment.due_date) < new Date() : false
 
   const handleSubmit = useCallback(async (file: File) => {
-    const token = await getAccessToken()
+    const token = getAccessToken()
     const formData = new FormData()
     formData.append('file', file)
 
@@ -101,7 +99,7 @@ export default function AssignmentDetailPageClient({
     try {
       setUploadProgress(0)
       await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/assignments/${assignmentId}/submit`,
+        `${getApiBaseUrl()}/assignments/${assignmentId}/submit`,
         formData,
         {
           headers: { Authorization: token ? `Bearer ${token}` : undefined },
@@ -117,7 +115,17 @@ export default function AssignmentDetailPageClient({
       toast.success('Assignment submitted!')
       fireConfetti()
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Unable to submit assignment')
+      let errorMsg = 'Unable to submit assignment'
+      if (err instanceof ApiError) {
+        errorMsg = err.message
+      } else if (axios.isAxiosError(err)) {
+        const msg = err.response?.data?.message
+        if (typeof msg === 'string') errorMsg = msg
+        else if (err.response?.status === 401) errorMsg = 'Session expired — please sign in again'
+        else if (err.response?.status === 403) errorMsg = "You're not enrolled in this class"
+        else if (err.response?.status === 413) errorMsg = 'File is too large (max 15 MB)'
+      }
+      toast.error(errorMsg)
       await qc.invalidateQueries({ queryKey: ['assignments', classId] })
     } finally {
       setUploadProgress(0)
@@ -125,7 +133,7 @@ export default function AssignmentDetailPageClient({
   }, [assignmentId, classId, qc, user?.id])
 
   return (
-    <div className="p-4 sm:p-8 max-w-2xl">
+    <div className="p-4 sm:p-8">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-[12px] text-[#9CA3AF] mb-6">
         <button

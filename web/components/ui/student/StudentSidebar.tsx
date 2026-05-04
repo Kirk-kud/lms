@@ -61,6 +61,27 @@ const IconInbox = () => (
   </svg>
 )
 
+const IconCalendar = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="1" y="2" width="14" height="13" rx="1.5" />
+    <line x1="1" y1="6" x2="15" y2="6" />
+    <line x1="5" y1="1" x2="5" y2="4" />
+    <line x1="11" y1="1" x2="11" y2="4" />
+  </svg>
+)
+
+const IconTodo = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="3,4 5,4 5,4" />
+    <circle cx="3.5" cy="4" r="1" fill="currentColor" stroke="none" />
+    <line x1="6.5" y1="4" x2="14" y2="4" />
+    <circle cx="3.5" cy="8" r="1" fill="currentColor" stroke="none" />
+    <line x1="6.5" y1="8" x2="14" y2="8" />
+    <circle cx="3.5" cy="12" r="1" fill="currentColor" stroke="none" />
+    <line x1="6.5" y1="12" x2="14" y2="12" />
+  </svg>
+)
+
 const IconSignOut = () => (
   <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
     <path d="M5 2H3v10h2M9 4l3 3-3 3M12 7H5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
@@ -215,6 +236,22 @@ export default function StudentSidebar({
             </div>
 
             <div style={sectionLabel}>TOOLS</div>
+            <div style={{ margin: '2px 12px' }}>
+              <NavButton
+                label="Calendar"
+                icon={<IconCalendar />}
+                isActive={activeItem === 'Calendar'}
+                onClick={() => onNavigate('Calendar')}
+              />
+            </div>
+            <div style={{ margin: '2px 12px' }}>
+              <NavButton
+                label="Todo"
+                icon={<IconTodo />}
+                isActive={activeItem === 'Todo'}
+                onClick={() => onNavigate('Todo')}
+              />
+            </div>
             <div style={{ margin: '2px 12px' }}>
               <NavButton
                 label="Notifications"

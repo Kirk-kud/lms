@@ -236,12 +236,26 @@ export class AssignmentsService {
   ) {
     const { data: subs } = await this.supabase.adminClient
       .from('submissions')
-      .select('assignment_id, file_url, file_name, status, submitted_at')
+      .select('id, assignment_id, student_id, file_url, file_name, status, submitted_at')
       .eq('student_id', studentId)
       .in('assignment_id', assignmentIds);
 
+    const paths = (subs ?? []).map((s) => s.file_url).filter((p): p is string => !!p);
+    const signedUrlMap = new Map<string, string>();
+    if (paths.length > 0) {
+      const { data: signedUrls } = await this.supabase.adminClient.storage
+        .from('submissions')
+        .createSignedUrls(paths, 3600);
+      for (const item of signedUrls ?? []) {
+        if (item.signedUrl && item.path) signedUrlMap.set(item.path, item.signedUrl);
+      }
+    }
+
     const subByAssignment = new Map(
-      (subs ?? []).map((s) => [s.assignment_id, s]),
+      (subs ?? []).map((s) => [
+        s.assignment_id,
+        { ...s, signed_url: signedUrlMap.get(s.file_url) ?? null },
+      ]),
     );
 
     return assignments.map((a) => ({
@@ -286,11 +300,29 @@ export class AssignmentsService {
       const ids = list.map((a) => a.id);
       const { data: subs } = await this.supabase.adminClient
         .from('submissions')
-        .select('assignment_id, file_url, file_name, status, submitted_at')
+        .select('id, assignment_id, student_id, file_url, file_name, status, submitted_at')
         .eq('student_id', userId)
         .in('assignment_id', ids);
 
-      const subMap = new Map((subs ?? []).map((s) => [s.assignment_id, s]));
+      const subPaths = (subs ?? [])
+        .map((s) => s.file_url)
+        .filter((p): p is string => !!p);
+      const subSignedMap = new Map<string, string>();
+      if (subPaths.length > 0) {
+        const { data: signedUrls } = await this.supabase.adminClient.storage
+          .from('submissions')
+          .createSignedUrls(subPaths, 3600);
+        for (const item of signedUrls ?? []) {
+          if (item.signedUrl && item.path) subSignedMap.set(item.path, item.signedUrl);
+        }
+      }
+
+      const subMap = new Map(
+        (subs ?? []).map((s) => [
+          s.assignment_id,
+          { ...s, signed_url: subSignedMap.get(s.file_url) ?? null },
+        ]),
+      );
       return list.map((a) => ({ ...a, submission: subMap.get(a.id) ?? null }));
     }
 
@@ -428,7 +460,10 @@ export class AssignmentsService {
     file: Express.Multer.File | undefined,
   ) {
     if (!file) throw new BadRequestException('File is required');
-    if (file.mimetype !== 'application/pdf') {
+    const isPdf =
+      file.mimetype === 'application/pdf' ||
+      file.originalname.toLowerCase().endsWith('.pdf');
+    if (!isPdf) {
       throw new BadRequestException('Only PDF files are accepted');
     }
     if (file.size > MAX_FILE_SIZE) {
