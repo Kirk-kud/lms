@@ -97,7 +97,7 @@ export default function AssignmentDetailPageClient({
     )
 
     try {
-      setUploadProgress(0)
+      setUploadProgress(10)
       await axios.post(
         `${getApiBaseUrl()}/assignments/${assignmentId}/submit`,
         formData,
@@ -106,11 +106,14 @@ export default function AssignmentDetailPageClient({
           onUploadProgress: (event) => {
             const total = event.total ?? 0
             if (total > 0) {
-              setUploadProgress(Math.round((event.loaded / total) * 100))
+              const progress = Math.round((event.loaded / total) * 100)
+              setUploadProgress(Math.min(95, progress))
             }
           },
         }
       )
+      setUploadProgress(100)
+      await new Promise(resolve => setTimeout(resolve, 400))
       await qc.invalidateQueries({ queryKey: ['assignments', classId] })
       toast.success('Assignment submitted!')
       fireConfetti()
