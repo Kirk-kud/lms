@@ -88,13 +88,11 @@ export default function RegisterPageClient() {
           setIsLoading(false)
           return
         }
-        const redeemRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ta-invites/redeem`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code: taCode.trim().toUpperCase() }),
-        })
-        const redeemJson = (await redeemRes.json()) as { data?: { valid: boolean } }
-        if (!redeemRes.ok || !redeemJson.data?.valid) {
+        const redeemData = await apiClient.post<{ valid: boolean }>(
+          '/ta-invites/redeem',
+          { code: taCode.trim().toUpperCase() },
+        )
+        if (!redeemData.valid) {
           toast.error('Invalid invite code', { description: 'This code is invalid or has already been used.' })
           setIsLoading(false)
           return
@@ -108,15 +106,11 @@ export default function RegisterPageClient() {
         role,
       })
 
-      const loginRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      })
-      const loginJson = (await loginRes.json()) as { data: { access_token: string } }
-      if (loginRes.ok) {
-        localStorage.setItem('access_token', loginJson.data.access_token)
-      }
+      const loginData = await apiClient.post<{ access_token: string }>(
+        '/auth/login',
+        { email, password },
+      )
+      localStorage.setItem('access_token', loginData.access_token)
 
       const supabase = createClient()
       const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password })
