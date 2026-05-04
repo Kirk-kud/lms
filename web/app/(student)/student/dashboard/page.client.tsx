@@ -314,7 +314,7 @@ export default function StudentDashboardPageClient() {
               gap: '6px',
               height: '32px',
               padding: '0 14px',
-              backgroundColor: '#111111',
+              backgroundColor: '#8B1A2F',
               color: '#FFFFFF',
               border: 'none',
               borderRadius: '6px',
@@ -323,8 +323,8 @@ export default function StudentDashboardPageClient() {
               cursor: 'pointer',
               transition: 'background-color 150ms ease',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#8B1A2F')}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#111111')}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#A12840')}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#8B1A2F')}
           >
             <span style={{ fontSize: '16px', lineHeight: 1 }}>+</span>
             Join a Class

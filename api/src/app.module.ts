@@ -12,6 +12,8 @@ import { AttendanceModule } from './attendance/attendance.module';
 import { CohortsModule } from './cohorts/cohorts.module';
 import { EnrollmentsModule } from './enrollments/enrollments.module';
 import { TaInvitesModule } from './ta-invites/ta-invites.module';
+import { AnnouncementsModule } from './announcements/announcements.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { JwtAuthGuard } from './auth/auth.guard';
 import { RolesGuard } from './auth/role.guard';
 
@@ -27,6 +29,8 @@ import { RolesGuard } from './auth/role.guard';
     CohortsModule,
     EnrollmentsModule,
     TaInvitesModule,
+    AnnouncementsModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [

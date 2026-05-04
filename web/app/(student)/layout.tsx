@@ -14,6 +14,10 @@ function activeItemFromPath(pathname: string): string {
   if (pathname.match(/\/student\/classes\/[^/]+\/assignments/)) return 'Assignments'
   if (pathname.match(/\/student\/classes\/[^/]+\/attendance/)) return 'Attendance'
   if (pathname.match(/\/student\/classes\/[^/]+$/)) return 'Overview'
+  if (pathname === '/student/calendar') return 'Calendar'
+  if (pathname === '/student/todo') return 'To-do'
+  if (pathname === '/student/notifications') return 'Notifications'
+  if (pathname === '/student/announcements') return 'Announcements'
   return 'Dashboard'
 }
 
@@ -44,6 +48,20 @@ const IconAttendance = ({ active }: { active: boolean }) => (
 const IconBack = ({ active }: { active: boolean }) => (
   <svg width="20" height="20" viewBox="0 0 16 16" fill="none" className={active ? 'text-[#8B1A2F]' : 'text-[#9CA3AF]'}>
     <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+)
+
+const IconBell = ({ active }: { active: boolean }) => (
+  <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke={active ? '#8B1A2F' : '#9CA3AF'} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M13 9.5V7a5 5 0 0 0-10 0v2.5L1.5 12h13L13 9.5z" />
+    <path d="M6.5 12v.5a1.5 1.5 0 0 0 3 0V12" />
+  </svg>
+)
+
+const IconInbox = ({ active }: { active: boolean }) => (
+  <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke={active ? '#8B1A2F' : '#9CA3AF'} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="1" y="2" width="14" height="12" rx="1.5" />
+    <polyline points="1,5 8,9 15,5" />
   </svg>
 )
 
@@ -87,6 +105,10 @@ export default function StudentLayout({
       setClassesOpen(false)
       return
     }
+    if (label === 'Calendar') { router.push('/student/calendar'); setClassesOpen(false); return }
+    if (label === 'To-do') { router.push('/student/todo'); setClassesOpen(false); return }
+    if (label === 'Notifications') { router.push('/student/notifications'); setClassesOpen(false); return }
+    if (label === 'Announcements') { router.push('/student/announcements'); setClassesOpen(false); return }
     if (urlClassId) {
       router.push(`/student/classes/${urlClassId}/${label.toLowerCase()}`)
       setClassesOpen(false)
@@ -113,7 +135,7 @@ export default function StudentLayout({
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      <Topbar userName={fullName} userInitials={initials} role="student" onSignOut={handleSignOut} onProfile={handleProfile} />
+      <Topbar userName={fullName} userInitials={initials} role="student" userId={user?.id} onSignOut={handleSignOut} onProfile={handleProfile} />
 
       <div className="flex flex-1 overflow-hidden">
         <div className="hidden md:block">
@@ -241,9 +263,25 @@ export default function StudentLayout({
           </button>
         </nav>
       ) : (
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t-[0.5px] border-[#E5E5E5] h-[calc(56px+env(safe-area-inset-bottom))] px-6 pb-[env(safe-area-inset-bottom)] flex items-center justify-center">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t-[0.5px] border-[#E5E5E5] h-[calc(56px+env(safe-area-inset-bottom))] px-6 pb-[env(safe-area-inset-bottom)] flex items-center justify-between">
           <button onClick={() => handleNavigate('Dashboard')} aria-label="Dashboard">
             <IconHome active={activeItem === 'Dashboard'} />
+          </button>
+          <button onClick={() => handleNavigate('Calendar')} aria-label="Calendar">
+            <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke={activeItem === 'Calendar' ? '#8B1A2F' : '#9CA3AF'} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="1.5" y="2" width="13" height="13" rx="1.5" /><path d="M5 1v2M11 1v2M1.5 6h13" />
+            </svg>
+          </button>
+          <button onClick={() => handleNavigate('To-do')} aria-label="To-do">
+            <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke={activeItem === 'To-do' ? '#8B1A2F' : '#9CA3AF'} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 8 6 11 13 4" /><rect x="1" y="1" width="14" height="14" rx="2" />
+            </svg>
+          </button>
+          <button onClick={() => handleNavigate('Notifications')} aria-label="Notifications">
+            <IconBell active={activeItem === 'Notifications'} />
+          </button>
+          <button onClick={() => handleNavigate('Announcements')} aria-label="Announcements">
+            <IconInbox active={activeItem === 'Announcements'} />
           </button>
         </nav>
       )}

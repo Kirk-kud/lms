@@ -1,7 +1,8 @@
 'use client'
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, useQueries } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api'
+import { useClasses } from './useClasses'
 
 export interface Submission {
   id: string
@@ -37,6 +38,30 @@ export interface SubmissionRow {
   }
   submission: Submission | null
   status: 'submitted' | 'late' | 'missing'
+}
+
+export interface AssignmentWithClass extends Assignment {
+  class_title: string
+}
+
+export function useMyAllAssignments(userId: string) {
+  const { data: classes = [] } = useClasses(userId)
+
+  const results = useQueries({
+    queries: classes.map((c) => ({
+      queryKey: ['assignments', c.id],
+      queryFn: () => apiClient.get<Assignment[]>(`/assignments/class/${c.id}`),
+      enabled: !!userId && !!c.id,
+    })),
+  })
+
+  const data: AssignmentWithClass[] = results.flatMap((r, i) =>
+    (r.data ?? []).map((a) => ({ ...a, class_title: classes[i]?.title ?? '' })),
+  )
+
+  const isLoading = !!userId && classes.length > 0 && results.some((r) => r.isLoading)
+
+  return { data, isLoading }
 }
 
 export function useAssignments(classId: string) {
