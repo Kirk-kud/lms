@@ -14,7 +14,13 @@ import type { Request } from 'express';
 import { createResponse } from '../common/response.helper';
 import { Roles, RolesGuard } from '../auth/role.guard';
 import type { JwtPayload } from '../auth/jwt.strategy';
-import { CheckInDto, CreateSessionDto, ExtendSessionDto, ManualCheckInDto, RestartSessionDto } from './attendance.dto';
+import {
+  CheckInDto,
+  CreateSessionDto,
+  ExtendSessionDto,
+  ManualCheckInDto,
+  RestartSessionDto,
+} from './attendance.dto';
 import { AttendanceService } from './attendance.service';
 
 @Controller('attendance')
@@ -38,6 +44,19 @@ export class AttendanceController {
     return createResponse(data, 'Sessions fetched');
   }
 
+  @Get('class/:classId/student-summary')
+  @Roles('admin')
+  async getStudentSummary(
+    @Req() req: Request,
+    @Param('classId') classId: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    const user = req.user as JwtPayload;
+    const data = await this.service.getStudentSummary(classId, user, from, to);
+    return createResponse(data, 'Student summary fetched');
+  }
+
   // Literal 'class' segment declared before ':sessionId' param route
   @Get('sessions/class/:classId')
   @Roles('admin', 'tutor')
@@ -58,7 +77,12 @@ export class AttendanceController {
     @Body() dto: ManualCheckInDto,
   ) {
     const user = req.user as JwtPayload;
-    const data = await this.service.manualCheckIn(sessionId, user.sub, user.role, dto.student_id);
+    const data = await this.service.manualCheckIn(
+      sessionId,
+      user.sub,
+      user.role,
+      dto.student_id,
+    );
     return createResponse(data, 'Student marked present', 201);
   }
 
@@ -99,10 +123,7 @@ export class AttendanceController {
 
   @Patch('sessions/:sessionId')
   @Roles('admin', 'tutor')
-  async endSession(
-    @Req() req: Request,
-    @Param('sessionId') sessionId: string,
-  ) {
+  async endSession(@Req() req: Request, @Param('sessionId') sessionId: string) {
     const user = req.user as JwtPayload;
     const data = await this.service.endSession(sessionId, user);
     return createResponse(data, 'Session ended');

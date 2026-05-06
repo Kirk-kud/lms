@@ -399,7 +399,8 @@ export class ClassesService {
         .single(),
     );
 
-    if (clsError || !cls) throw new BadRequestException('Could not fetch class after joining');
+    if (clsError || !cls)
+      throw new BadRequestException('Could not fetch class after joining');
 
     this.logger.log(
       `student ${studentId} joined class ${cls.id} via cohort ${cohort.id}`,
@@ -523,7 +524,9 @@ export class ClassesService {
     role: string | null,
     query: string,
   ) {
-    const { data: cls, error: clsErr } = asSingleQueryResult<Pick<ClassRecord, 'id' | 'tutor_id'>>(
+    const { data: cls, error: clsErr } = asSingleQueryResult<
+      Pick<ClassRecord, 'id' | 'tutor_id'>
+    >(
       await this.supabase.adminClient
         .from('classes')
         .select('id, tutor_id')
@@ -539,7 +542,8 @@ export class ClassesService {
         .eq('class_id', classId)
         .eq('ta_id', adminId)
         .maybeSingle();
-      if (!cohort) throw new ForbiddenException('No cohort assigned for this class');
+      if (!cohort)
+        throw new ForbiddenException('No cohort assigned for this class');
     } else if (role !== 'admin') {
       throw new ForbiddenException();
     }
@@ -579,8 +583,15 @@ export class ClassesService {
   // ----------------------------------------------------------------
   // PATCH /classes/:id
   // ----------------------------------------------------------------
-  async update(classId: string, userId: string, role: string | null, dto: UpdateClassDto) {
-    const { data: cls, error } = asSingleQueryResult<Pick<ClassRecord, 'id' | 'tutor_id'>>(
+  async update(
+    classId: string,
+    userId: string,
+    role: string | null,
+    dto: UpdateClassDto,
+  ) {
+    const { data: cls, error } = asSingleQueryResult<
+      Pick<ClassRecord, 'id' | 'tutor_id'>
+    >(
       await this.supabase.adminClient
         .from('classes')
         .select('id, tutor_id')
@@ -592,12 +603,13 @@ export class ClassesService {
     if (role !== 'admin' && cls.tutor_id !== userId)
       throw new ForbiddenException();
 
-    const { data: updated, error: updateError } = await this.supabase.adminClient
-      .from('classes')
-      .update(dto)
-      .eq('id', classId)
-      .select()
-      .single();
+    const { data: updated, error: updateError } =
+      await this.supabase.adminClient
+        .from('classes')
+        .update(dto)
+        .eq('id', classId)
+        .select()
+        .single();
 
     if (updateError) throw new BadRequestException(updateError.message);
     return updated;

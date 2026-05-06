@@ -76,9 +76,12 @@ export class CourseModulesService {
       .maybeSingle();
 
     if (error) throw new BadRequestException(error.message);
-    if (!data) throw new ForbiddenException('No cohort assigned for this class');
+    if (!data)
+      throw new ForbiddenException('No cohort assigned for this class');
     if (!data.can_edit_modules)
-      throw new ForbiddenException('Module editing is not enabled for your cohort');
+      throw new ForbiddenException(
+        'Module editing is not enabled for your cohort',
+      );
   }
 
   /** Resolves a module to its class_id and verifies tutor owns that class (and can edit). */

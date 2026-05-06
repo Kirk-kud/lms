@@ -10,7 +10,12 @@ import {
   assertTutorOwnsCohort,
   getTutorCohortForClass,
 } from '../common/access.helper';
-import { CheckInDto, CreateSessionDto, ExtendSessionDto, RestartSessionDto } from './attendance.dto';
+import {
+  CheckInDto,
+  CreateSessionDto,
+  ExtendSessionDto,
+  RestartSessionDto,
+} from './attendance.dto';
 
 @Injectable()
 export class AttendanceService {
@@ -303,7 +308,12 @@ export class AttendanceService {
   // POST /attendance/sessions/:sessionId/records/manual
   // Admin manually marks a student as present for any session.
   // ----------------------------------------------------------------
-  async manualCheckIn(sessionId: string, actorId: string, role: string | null, studentId: string) {
+  async manualCheckIn(
+    sessionId: string,
+    actorId: string,
+    role: string | null,
+    studentId: string,
+  ) {
     const { data: session, error: sErr } = await this.supabase.adminClient
       .from('attendance_sessions')
       .select('id, class_id')
@@ -314,7 +324,11 @@ export class AttendanceService {
 
     if (role === 'tutor') {
       // Tutor must have a cohort in this class, and the student must be in that cohort
-      const cohort = await getTutorCohortForClass(this.supabase, session.class_id, actorId);
+      const cohort = await getTutorCohortForClass(
+        this.supabase,
+        session.class_id,
+        actorId,
+      );
       const { data: enrollment } = await this.supabase.adminClient
         .from('enrollments')
         .select('id')
@@ -322,7 +336,8 @@ export class AttendanceService {
         .eq('student_id', studentId)
         .eq('cohort_id', cohort.id)
         .maybeSingle();
-      if (!enrollment) throw new ForbiddenException('Student is not in your cohort');
+      if (!enrollment)
+        throw new ForbiddenException('Student is not in your cohort');
     } else {
       await this.assertTutorOwnsClass(session.class_id, actorId, role);
       // Student must be enrolled in the class
@@ -337,7 +352,8 @@ export class AttendanceService {
       .eq('student_id', studentId)
       .maybeSingle();
 
-    if (existing) throw new BadRequestException('Student is already marked present');
+    if (existing)
+      throw new BadRequestException('Student is already marked present');
 
     const checked_in_at = new Date().toISOString();
     const { error } = await this.supabase.adminClient
@@ -346,7 +362,12 @@ export class AttendanceService {
 
     if (error) throw new BadRequestException(error.message);
 
-    return { success: true, checked_in_at, session_id: sessionId, student_id: studentId };
+    return {
+      success: true,
+      checked_in_at,
+      session_id: sessionId,
+      student_id: studentId,
+    };
   }
 
   // ----------------------------------------------------------------
@@ -383,48 +404,54 @@ export class AttendanceService {
     });
   }
 
-    // ----------------------------------------------------------------
-    // PATCH /attendance/sessions/:sessionId
-    // ----------------------------------------------------------------
-    async endSession(sessionId: string, user: JwtPayload) {
-      // Fetch the session to validate ownership
-      const { data: session, error: sessionError } = await this.supabase.adminClient
+  // ----------------------------------------------------------------
+  // PATCH /attendance/sessions/:sessionId
+  // ----------------------------------------------------------------
+  async endSession(sessionId: string, user: JwtPayload) {
+    // Fetch the session to validate ownership
+    const { data: session, error: sessionError } =
+      await this.supabase.adminClient
         .from('attendance_sessions')
         .select('id, class_id')
         .eq('id', sessionId)
         .single();
 
-      if (sessionError || !session) {
-        throw new NotFoundException('Session not found');
-      }
+    if (sessionError || !session) {
+      throw new NotFoundException('Session not found');
+    }
 
-      // Only tutors who own the class can end the session
-      if (user.role === 'admin') {
-        await this.assertTutorOwnsClass(session.class_id, user.sub, user.role);
-      } else if (user.role === 'tutor') {
-        // Validate tutor has a cohort in this class
-        await getTutorCohortForClass(this.supabase, session.class_id, user.sub);
-      } else {
-        throw new ForbiddenException();
-      }
+    // Only tutors who own the class can end the session
+    if (user.role === 'admin') {
+      await this.assertTutorOwnsClass(session.class_id, user.sub, user.role);
+    } else if (user.role === 'tutor') {
+      // Validate tutor has a cohort in this class
+      await getTutorCohortForClass(this.supabase, session.class_id, user.sub);
+    } else {
+      throw new ForbiddenException();
+    }
 
-      // Mark session as inactive
-      const { data: updated, error: updateError } = await this.supabase.adminClient
+    // Mark session as inactive
+    const { data: updated, error: updateError } =
+      await this.supabase.adminClient
         .from('attendance_sessions')
         .update({ is_active: false })
         .eq('id', sessionId)
         .select()
         .single();
 
-      if (updateError) throw new BadRequestException(updateError.message);
+    if (updateError) throw new BadRequestException(updateError.message);
 
-      return updated;
-    }
+    return updated;
+  }
 
   // ----------------------------------------------------------------
   // POST /attendance/sessions/:sessionId/restart
   // ----------------------------------------------------------------
-  async restartSession(sessionId: string, user: JwtPayload, dto: RestartSessionDto) {
+  async restartSession(
+    sessionId: string,
+    user: JwtPayload,
+    dto: RestartSessionDto,
+  ) {
     const { data: session, error: sErr } = await this.supabase.adminClient
       .from('attendance_sessions')
       .select('id, class_id')
@@ -465,7 +492,11 @@ export class AttendanceService {
   // ----------------------------------------------------------------
   // POST /attendance/sessions/:sessionId/extend
   // ----------------------------------------------------------------
-  async extendSession(sessionId: string, user: JwtPayload, dto: ExtendSessionDto) {
+  async extendSession(
+    sessionId: string,
+    user: JwtPayload,
+    dto: ExtendSessionDto,
+  ) {
     const { data: session, error: sErr } = await this.supabase.adminClient
       .from('attendance_sessions')
       .select('id, class_id, expires_at, is_active')
@@ -473,7 +504,8 @@ export class AttendanceService {
       .single();
 
     if (sErr || !session) throw new NotFoundException('Session not found');
-    if (!session.is_active) throw new BadRequestException('Session is not active');
+    if (!session.is_active)
+      throw new BadRequestException('Session is not active');
 
     if (user.role === 'admin') {
       await this.assertTutorOwnsClass(session.class_id, user.sub, user.role);
@@ -496,6 +528,84 @@ export class AttendanceService {
 
     if (error) throw new BadRequestException(error.message);
     return updated;
+  }
+
+  // ----------------------------------------------------------------
+  // GET /attendance/class/:classId/student-summary
+  // ----------------------------------------------------------------
+  async getStudentSummary(
+    classId: string,
+    user: JwtPayload,
+    from?: string,
+    to?: string,
+  ) {
+    if (user.role !== 'admin') throw new ForbiddenException();
+    await this.assertTutorOwnsClass(classId, user.sub, user.role);
+
+    let sessionsQuery = this.supabase.adminClient
+      .from('attendance_sessions')
+      .select('id, started_at')
+      .eq('class_id', classId);
+
+    if (from) sessionsQuery = sessionsQuery.gte('started_at', from);
+    if (to) sessionsQuery = sessionsQuery.lte('started_at', to);
+
+    const { data: sessions, error: sErr } = await sessionsQuery;
+    if (sErr) throw new BadRequestException(sErr.message);
+
+    const sessionList = sessions ?? [];
+    const sessionIds = sessionList.map((s) => s.id);
+
+    const { data: enrollments, error: eErr } = await this.supabase.adminClient
+      .from('enrollments')
+      .select(
+        'student_id, profiles!student_id(id, full_name, email, avatar_initials)',
+      )
+      .eq('class_id', classId);
+
+    if (eErr) throw new BadRequestException(eErr.message);
+
+    if (sessionIds.length === 0) {
+      return {
+        sessions_count: 0,
+        students: (enrollments ?? []).map((e) => ({
+          student: e.profiles,
+          sessions_attended: 0,
+          sessions_total: 0,
+          rate: 0,
+        })),
+      };
+    }
+
+    const { data: records } = await this.supabase.adminClient
+      .from('attendance_records')
+      .select('session_id, student_id')
+      .in('session_id', sessionIds);
+
+    const attendedMap = new Map<string, Set<string>>();
+    for (const r of records ?? []) {
+      if (!attendedMap.has(r.student_id))
+        attendedMap.set(r.student_id, new Set());
+      attendedMap.get(r.student_id)!.add(r.session_id);
+    }
+
+    const students = (enrollments ?? [])
+      .map((e) => {
+        const student = e.profiles as Record<string, any>;
+        const attended = attendedMap.get(student.id)?.size ?? 0;
+        return {
+          student,
+          sessions_attended: attended,
+          sessions_total: sessionIds.length,
+          rate:
+            sessionIds.length > 0
+              ? Math.round((attended / sessionIds.length) * 100)
+              : 0,
+        };
+      })
+      .sort((a, b) => b.rate - a.rate);
+
+    return { sessions_count: sessionIds.length, students };
   }
 
   // ----------------------------------------------------------------

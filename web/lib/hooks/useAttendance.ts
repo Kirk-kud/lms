@@ -29,6 +29,23 @@ export interface SessionRecords {
   absent: { id: string; full_name: string; email: string; avatar_initials: string }[]
 }
 
+export interface StudentAttendanceSummary {
+  student: {
+    id: string
+    full_name: string
+    email: string
+    avatar_initials: string
+  }
+  sessions_attended: number
+  sessions_total: number
+  rate: number
+}
+
+export interface ClassAttendanceSummary {
+  sessions_count: number
+  students: StudentAttendanceSummary[]
+}
+
 export interface MyAttendanceRow {
   session: AttendanceSession
   present: boolean
@@ -111,6 +128,24 @@ export function useDeleteSession() {
       apiClient.delete(`/attendance/sessions/${sessionId}`),
     onSuccess: (_data, { classId }) =>
       qc.invalidateQueries({ queryKey: ['attendance-sessions', classId] }),
+  })
+}
+
+export function useStudentAttendanceSummary(
+  classId: string,
+  options: { from?: string; to?: string; enabled?: boolean } = {},
+) {
+  const params = new URLSearchParams()
+  if (options.from) params.set('from', options.from)
+  if (options.to) params.set('to', options.to)
+  const qs = params.toString()
+  return useQuery({
+    queryKey: ['student-summary', classId, options.from, options.to],
+    queryFn: () =>
+      apiClient.get<ClassAttendanceSummary>(
+        `/attendance/class/${classId}/student-summary${qs ? `?${qs}` : ''}`,
+      ),
+    enabled: (options.enabled ?? true) && !!classId,
   })
 }
 

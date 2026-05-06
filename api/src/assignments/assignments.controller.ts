@@ -17,7 +17,11 @@ import type { Request } from 'express';
 import { createResponse } from '../common/response.helper';
 import { Roles, RolesGuard } from '../auth/role.guard';
 import type { JwtPayload } from '../auth/jwt.strategy';
-import { CreateAssignmentDto, GradeSubmissionDto, UpdateAssignmentDto } from './assignments.dto';
+import {
+  CreateAssignmentDto,
+  GradeSubmissionDto,
+  UpdateAssignmentDto,
+} from './assignments.dto';
 import { AssignmentsService } from './assignments.service';
 
 @Controller('assignments')
@@ -54,7 +58,10 @@ export class AssignmentsController {
   @Get('mine')
   async findMine(@Req() req: Request) {
     const user = req.user as JwtPayload;
-    const data = await this.service.findAllForUser(user.sub, user.role ?? 'student');
+    const data = await this.service.findAllForUser(
+      user.sub,
+      user.role ?? 'student',
+    );
     return createResponse(data, 'Assignments fetched');
   }
 
@@ -102,7 +109,12 @@ export class AssignmentsController {
     @Param('submissionId') submissionId: string,
   ) {
     const user = req.user as JwtPayload;
-    const data = await this.service.getSubmissionViewUrl(id, submissionId, user.sub, user.role);
+    const data = await this.service.getSubmissionViewUrl(
+      id,
+      submissionId,
+      user.sub,
+      user.role,
+    );
     return createResponse(data, 'View URL generated');
   }
 
@@ -115,7 +127,13 @@ export class AssignmentsController {
     @Body() dto: GradeSubmissionDto,
   ) {
     const user = req.user as JwtPayload;
-    const data = await this.service.gradeSubmission(id, submissionId, user.sub, user.role, dto);
+    const data = await this.service.gradeSubmission(
+      id,
+      submissionId,
+      user.sub,
+      user.role,
+      dto,
+    );
     return createResponse(data, 'Submission graded');
   }
 

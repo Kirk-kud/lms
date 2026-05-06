@@ -240,18 +240,23 @@ export class AssignmentsService {
   ) {
     const { data: subs } = await this.supabase.adminClient
       .from('submissions')
-      .select('id, assignment_id, student_id, file_url, file_name, status, submitted_at')
+      .select(
+        'id, assignment_id, student_id, file_url, file_name, status, submitted_at',
+      )
       .eq('student_id', studentId)
       .in('assignment_id', assignmentIds);
 
-    const paths = (subs ?? []).map((s) => s.file_url).filter((p): p is string => !!p);
+    const paths = (subs ?? [])
+      .map((s) => s.file_url)
+      .filter((p): p is string => !!p);
     const signedUrlMap = new Map<string, string>();
     if (paths.length > 0) {
       const { data: signedUrls } = await this.supabase.adminClient.storage
         .from('submissions')
         .createSignedUrls(paths, 3600);
       for (const item of signedUrls ?? []) {
-        if (item.signedUrl && item.path) signedUrlMap.set(item.path, item.signedUrl);
+        if (item.signedUrl && item.path)
+          signedUrlMap.set(item.path, item.signedUrl);
       }
     }
 
@@ -304,7 +309,9 @@ export class AssignmentsService {
       const ids = list.map((a) => a.id);
       const { data: subs } = await this.supabase.adminClient
         .from('submissions')
-        .select('id, assignment_id, student_id, file_url, file_name, status, submitted_at')
+        .select(
+          'id, assignment_id, student_id, file_url, file_name, status, submitted_at',
+        )
         .eq('student_id', userId)
         .in('assignment_id', ids);
 
@@ -317,7 +324,8 @@ export class AssignmentsService {
           .from('submissions')
           .createSignedUrls(subPaths, 3600);
         for (const item of signedUrls ?? []) {
-          if (item.signedUrl && item.path) subSignedMap.set(item.path, item.signedUrl);
+          if (item.signedUrl && item.path)
+            subSignedMap.set(item.path, item.signedUrl);
         }
       }
 
@@ -429,7 +437,11 @@ export class AssignmentsService {
 
     let cohortId: string | undefined;
     if (role === 'tutor') {
-      const cohort = await getTutorCohortForClass(this.supabase, assignment.class_id, tutorId);
+      const cohort = await getTutorCohortForClass(
+        this.supabase,
+        assignment.class_id,
+        tutorId,
+      );
       cohortId = cohort.id;
     } else {
       await this.assertTutorOwnsClass(assignment.class_id, tutorId, role);
@@ -556,7 +568,8 @@ export class AssignmentsService {
       .eq('assignment_id', assignmentId)
       .single();
 
-    if (error || !submission) throw new NotFoundException('Submission not found');
+    if (error || !submission)
+      throw new NotFoundException('Submission not found');
     await this.assertTutorOwnsAssignment(assignmentId, userId, role);
 
     const { data: signedUrlData, error: signError } =

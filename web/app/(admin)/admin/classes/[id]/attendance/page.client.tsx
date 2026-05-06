@@ -16,8 +16,8 @@ import {
   useExtendSession,
   AttendanceSession,
 } from '@/lib/hooks/useAttendance'
-import { useClass } from '@/lib/hooks/useClasses'
-import { useRoster } from '@/lib/hooks/useClasses'
+import { useClass, useRoster } from '@/lib/hooks/useClasses'
+import ExportAttendanceModal from '@/components/ui/admin/ExportAttendanceModal'
 import AttendancePinDisplay from '@/components/ui/tutor/AttendancePinDisplay'
 import { SkeletonCard } from '@/components/ui/shared/SkeletonCard'
 import { InlineError } from '@/components/ui/shared/InlineError'
@@ -264,6 +264,7 @@ export default function AttendancePageClient({ params }: { params: Promise<{ id:
   const endSession = useEndSession()
   const extendSession = useExtendSession()
   const [duration, setDuration] = useState(10)
+  const [exportOpen, setExportOpen] = useState(false)
 
   const totalStudents = roster?.length ?? 0
   const activeSession = sessions.find((s) => s.is_active) ?? null
@@ -446,11 +447,34 @@ export default function AttendancePageClient({ params }: { params: Promise<{ id:
         </div>
       )}
 
+      {exportOpen && (
+        <ExportAttendanceModal
+          classId={classId}
+          classTitle={classData?.title ?? 'Class'}
+          sessions={sessions}
+          roster={(roster ?? []).map(r => r.student)}
+          onClose={() => setExportOpen(false)}
+        />
+      )}
+
       {!(isClassLoading || isAttendanceLoading) && pastSessions.length > 0 && (
         <div className="space-y-3">
-          <p className="text-[12px] font-medium text-[#9CA3AF] uppercase tracking-wider mb-4">
-            Session History
-          </p>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-[12px] font-medium text-[#9CA3AF] uppercase tracking-wider">
+              Session History
+            </p>
+            <button
+              onClick={() => setExportOpen(true)}
+              className="flex items-center gap-1.5 h-8 px-3 border border-[#E5E5E5] rounded-lg text-[12px] text-[#6B7280] hover:bg-[#F8F8F8] hover:text-[#111] transition-colors"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Export
+            </button>
+          </div>
           {pastSessions
             .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime())
             .map((session) => (

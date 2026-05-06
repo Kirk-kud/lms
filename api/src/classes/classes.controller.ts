@@ -71,7 +71,12 @@ export class ClassesController {
     @Query('q') q: string,
   ) {
     const user = req.user as JwtPayload;
-    const data = await this.classesService.searchNonEnrolledStudents(id, user.sub, user.role, q ?? '');
+    const data = await this.classesService.searchNonEnrolledStudents(
+      id,
+      user.sub,
+      user.role,
+      q ?? '',
+    );
     return createResponse(data, 'Students fetched');
   }
 

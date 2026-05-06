@@ -74,7 +74,11 @@ export class CohortsController {
   @Roles('admin')
   async regenerateCode(@Req() req: Request, @Param('id') id: string) {
     const user = req.user as JwtPayload;
-    const data = await this.service.regenerateInviteCode(id, user.sub, user.role);
+    const data = await this.service.regenerateInviteCode(
+      id,
+      user.sub,
+      user.role,
+    );
     return createResponse(data, 'Invite code regenerated');
   }
 
