@@ -27,3 +27,8 @@ export class UpdateClassDto {
   @IsString()
   description?: string;
 }
+
+export class AddClassStudentDto {
+  @IsUUID()
+  student_id: string;
+}

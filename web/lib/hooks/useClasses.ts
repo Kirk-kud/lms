@@ -111,6 +111,38 @@ export function useRoster(classId: string) {
   })
 }
 
+export function useAddStudentToClass(classId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (student_id: string) =>
+      apiClient.post(`/classes/${classId}/students`, { student_id }),
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['roster', classId] }),
+        qc.invalidateQueries({ queryKey: ['classes'] }),
+        qc.invalidateQueries({ queryKey: ['classes', classId] }),
+        qc.invalidateQueries({ queryKey: ['searchable-students', classId] }),
+      ])
+    },
+  })
+}
+
+export function useRemoveStudentFromClass(classId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (studentId: string) =>
+      apiClient.delete(`/classes/${classId}/students/${studentId}`),
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['roster', classId] }),
+        qc.invalidateQueries({ queryKey: ['classes'] }),
+        qc.invalidateQueries({ queryKey: ['classes', classId] }),
+        qc.invalidateQueries({ queryKey: ['searchable-students', classId] }),
+      ])
+    },
+  })
+}
+
 export interface SearchableStudent {
   id: string
   full_name: string

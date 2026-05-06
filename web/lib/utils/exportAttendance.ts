@@ -130,7 +130,7 @@ export function exportSingleSession(
   const body = `
 <div class="hdr">
   <div>
-    <div class="kicker">Love Inc LMS</div>
+    <div class="kicker">Vine LMS</div>
     <div class="report-title">${esc(classTitle)}${studentNote}</div>
     <div class="report-sub">Attendance Report &nbsp;·&nbsp; ${sessionDate} &nbsp;·&nbsp; ${sessionTime}</div>
   </div>
@@ -156,7 +156,7 @@ export function exportSingleSession(
     ${absentRows}
   </div>
 </div>
-<div class="footer"><span>Love Inc LMS &nbsp;·&nbsp; Attendance Report</span><span>${sessionDate}</span></div>`
+<div class="footer"><span>Vine LMS &nbsp;·&nbsp; Attendance Report</span><span>${sessionDate}</span></div>`
 
   open(wrap(`Attendance — ${classTitle}`, body))
 }
@@ -221,7 +221,7 @@ export function exportMultiSession(
   const body = `
 <div class="hdr">
   <div>
-    <div class="kicker">Love Inc LMS</div>
+    <div class="kicker">Vine LMS</div>
     <div class="report-title">${esc(classTitle)}${esc(studentNote)}</div>
     <div class="report-sub">Attendance Report &nbsp;·&nbsp; ${esc(rangeLabel)}</div>
   </div>
@@ -262,7 +262,7 @@ export function exportMultiSession(
   </table>
 </div>
 
-<div class="footer"><span>Love Inc LMS &nbsp;·&nbsp; Attendance Report</span><span>${esc(rangeLabel)}</span></div>`
+<div class="footer"><span>Vine LMS &nbsp;·&nbsp; Attendance Report</span><span>${esc(rangeLabel)}</span></div>`
 
   open(wrap(`Attendance Report — ${classTitle}`, body))
 }

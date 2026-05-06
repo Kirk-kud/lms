@@ -15,7 +15,12 @@ import type { Request } from 'express';
 import { createResponse } from '../common/response.helper';
 import { Roles, RolesGuard } from '../auth/role.guard';
 import type { JwtPayload } from '../auth/jwt.strategy';
-import { CreateClassDto, JoinClassDto, UpdateClassDto } from './classes.dto';
+import {
+  AddClassStudentDto,
+  CreateClassDto,
+  JoinClassDto,
+  UpdateClassDto,
+} from './classes.dto';
 import { ClassesService } from './classes.service';
 
 @Controller('classes')
@@ -78,6 +83,35 @@ export class ClassesController {
       q ?? '',
     );
     return createResponse(data, 'Students fetched');
+  }
+
+  @Post(':id/students')
+  @Roles('admin')
+  async addStudent(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @Body() dto: AddClassStudentDto,
+  ) {
+    const user = req.user as JwtPayload;
+    const data = await this.classesService.addStudent(
+      id,
+      user.sub,
+      user.role,
+      dto,
+    );
+    return createResponse(data, 'Student added to class', 201);
+  }
+
+  @Delete(':id/students/:studentId')
+  @Roles('admin')
+  async removeStudent(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @Param('studentId') studentId: string,
+  ) {
+    const user = req.user as JwtPayload;
+    await this.classesService.removeStudent(id, user.sub, user.role, studentId);
+    return createResponse(null, 'Student removed from class');
   }
 
   @Patch(':id')

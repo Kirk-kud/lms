@@ -6,7 +6,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
-import { CreateClassDto, JoinClassDto, UpdateClassDto } from './classes.dto';
+import {
+  AddClassStudentDto,
+  CreateClassDto,
+  JoinClassDto,
+  UpdateClassDto,
+} from './classes.dto';
 
 interface QueryError {
   message: string;
@@ -70,6 +75,14 @@ interface CohortRecord {
 interface RosterEnrollmentRow {
   enrolled_at: string;
   student: StudentProfile | StudentProfile[] | null;
+}
+
+export interface EnrollmentRecord {
+  id: string;
+  class_id: string;
+  student_id: string;
+  cohort_id: string | null;
+  enrolled_at?: string;
 }
 
 export interface StudentProfile {
@@ -581,6 +594,58 @@ export class ClassesService {
   }
 
   // ----------------------------------------------------------------
+  // POST /classes/:id/students
+  // ----------------------------------------------------------------
+  async addStudent(
+    classId: string,
+    adminId: string,
+    role: string | null,
+    dto: AddClassStudentDto,
+  ) {
+    await this.assertCanManageClassRoster(classId, adminId, role);
+    await this.assertStudentProfile(dto.student_id);
+
+    const { data, error } = asSingleQueryResult<EnrollmentRecord>(
+      await this.supabase.adminClient
+        .from('enrollments')
+        .upsert(
+          {
+            class_id: classId,
+            student_id: dto.student_id,
+            cohort_id: null,
+          },
+          { onConflict: 'student_id,class_id' },
+        )
+        .select()
+        .single(),
+    );
+
+    if (error) throw new BadRequestException(error.message);
+    if (!data) throw new BadRequestException('Enrollment was not returned');
+    return data;
+  }
+
+  // ----------------------------------------------------------------
+  // DELETE /classes/:id/students/:studentId
+  // ----------------------------------------------------------------
+  async removeStudent(
+    classId: string,
+    adminId: string,
+    role: string | null,
+    studentId: string,
+  ) {
+    await this.assertCanManageClassRoster(classId, adminId, role);
+
+    const { error } = await this.supabase.adminClient
+      .from('enrollments')
+      .delete()
+      .eq('class_id', classId)
+      .eq('student_id', studentId);
+
+    if (error) throw new BadRequestException(error.message);
+  }
+
+  // ----------------------------------------------------------------
   // PATCH /classes/:id
   // ----------------------------------------------------------------
   async update(
@@ -613,6 +678,40 @@ export class ClassesService {
 
     if (updateError) throw new BadRequestException(updateError.message);
     return updated;
+  }
+
+  private async assertCanManageClassRoster(
+    classId: string,
+    adminId: string,
+    role: string | null,
+  ) {
+    const { data: cls, error } = asSingleQueryResult<
+      Pick<ClassRecord, 'id' | 'tutor_id'>
+    >(
+      await this.supabase.adminClient
+        .from('classes')
+        .select('id, tutor_id')
+        .eq('id', classId)
+        .single(),
+    );
+
+    if (error || !cls) throw new NotFoundException('Class not found');
+    if (role !== 'admin' && cls.tutor_id !== adminId)
+      throw new ForbiddenException();
+    return cls;
+  }
+
+  private async assertStudentProfile(studentId: string) {
+    const { data, error } = asSingleQueryResult<Pick<StudentProfile, 'id'>>(
+      await this.supabase.adminClient
+        .from('profiles')
+        .select('id')
+        .eq('id', studentId)
+        .eq('role', 'student')
+        .single(),
+    );
+
+    if (error || !data) throw new NotFoundException('Student not found');
   }
 
   // DELETE /classes/:id
