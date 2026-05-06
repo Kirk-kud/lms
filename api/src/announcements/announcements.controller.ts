@@ -21,8 +21,9 @@ export class AnnouncementsController {
   constructor(private readonly service: AnnouncementsService) {}
 
   @Get()
-  async findAll() {
-    const data = await this.service.findAll();
+  async findAll(@Req() req: Request) {
+    const user = req.user as JwtPayload;
+    const data = await this.service.findAll(user);
     return createResponse(data, 'Announcements fetched');
   }
 

@@ -86,6 +86,7 @@ function ComposeForm() {
   const [targetType, setTargetType]   = useState<TargetType>('all_tutors')
   const [selectedClass, setSelectedClass] = useState('')
   const [selectedCohort, setSelectedCohort] = useState('')
+  const [isAnonymous, setIsAnonymous] = useState(false)
 
   const { data: classes = [] } = useClasses()
   const { data: cohorts = [] } = useCohorts(selectedClass)
@@ -115,12 +116,14 @@ function ComposeForm() {
         target_type: targetType,
         class_id: targetType !== 'all_tutors' ? selectedClass : undefined,
         cohort_id: targetType === 'specific_cohort' ? selectedCohort : undefined,
+        is_anonymous: isAnonymous,
       })
       toast.success('Announcement sent')
       setMessage('')
       setTargetType('all_tutors')
       setSelectedClass('')
       setSelectedCohort('')
+      setIsAnonymous(false)
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Failed to send')
     }
@@ -223,6 +226,33 @@ function ComposeForm() {
           </select>
         </div>
       )}
+
+      <label style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: '10px',
+        marginBottom: '14px',
+        padding: '10px 12px',
+        border: '0.5px solid #E5E5E5',
+        borderRadius: '8px',
+        backgroundColor: '#FFFFFF',
+        cursor: 'pointer',
+      }}>
+        <input
+          type="checkbox"
+          checked={isAnonymous}
+          onChange={(e) => setIsAnonymous(e.target.checked)}
+          style={{ marginTop: '2px', accentColor: '#8B1A2F' }}
+        />
+        <span>
+          <span style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, color: '#111111' }}>
+            Send anonymously
+          </span>
+          <span style={{ display: 'block', fontSize: '11.5px', color: '#9C949A', marginTop: '2px', lineHeight: 1.4 }}>
+            Students will see this as from Admin instead of your name.
+          </span>
+        </span>
+      </label>
 
       <button
         onClick={handleSend}
@@ -335,6 +365,7 @@ function AnnouncementCard({ item }: { item: Announcement }) {
       <p style={{ fontSize: '11.5px', color: '#9C949A', margin: '8px 0 0' }}>
         {format(new Date(item.created_at), 'MMM d, yyyy · h:mm a')}
         {item.creator?.full_name && ` · ${item.creator.full_name}`}
+        {item.is_anonymous && ' · shown as Admin to students'}
       </p>
     </div>
   )

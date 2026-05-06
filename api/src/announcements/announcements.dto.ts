@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsEnum,
   IsNotEmpty,
   IsOptional,
@@ -21,4 +22,8 @@ export class CreateAnnouncementDto {
   @IsOptional()
   @IsUUID()
   cohort_id?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  is_anonymous?: boolean;
 }

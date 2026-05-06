@@ -7,6 +7,7 @@ import { useClasses } from '@/lib/hooks/useClasses'
 import { useAssignments } from '@/lib/hooks/useAssignments'
 import { useModules } from '@/lib/hooks/useModules'
 import { useMyAttendance } from '@/lib/hooks/useAttendance'
+import { useAnnouncements } from '@/lib/hooks/useAnnouncements'
 import { StatCardGrid } from '@/components/ui/shared/StatCard'
 import { SkeletonCard } from '@/components/ui/shared/SkeletonCard'
 import { EmptyState } from '@/components/ui/shared/EmptyState'
@@ -61,6 +62,13 @@ export default function StudentDashboardPageClient() {
     error: attendanceError,
     refetch: refetchAttendance,
   } = useMyAttendance(classId)
+  const {
+    data: announcements = [],
+    isLoading: isAnnouncementsLoading,
+    isError: isAnnouncementsError,
+    error: announcementsError,
+    refetch: refetchAnnouncements,
+  } = useAnnouncements()
 
   const firstName = ((user?.user_metadata?.full_name as string) ?? '').split(' ')[0] || 'there'
   const now = new Date()
@@ -69,6 +77,7 @@ export default function StudentDashboardPageClient() {
   const attendancePct = totalSessions > 0 ? Math.round((presentSessions / totalSessions) * 100) : null
   const submittedCount = assignments.filter((a) => a.submission).length
   const pendingCount = assignments.length - submittedCount
+  const recentAnnouncements = announcements.slice(0, 3)
 
   // Assignments due this week (for the subtitle)
   const weekEnd = endOfWeek(now)
@@ -99,11 +108,11 @@ export default function StudentDashboardPageClient() {
     .filter((a) => !a.submission)
     .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
 
-  const isLoading = isClassesLoading || isAssignmentsLoading || isModulesLoading || isAttendanceLoading
-  const hasError = isClassesError || isAssignmentsError || isModulesError || isAttendanceError
-  const firstError = classesError || assignmentsError || modulesError || attendanceError
+  const isLoading = isClassesLoading || isAssignmentsLoading || isModulesLoading || isAttendanceLoading || isAnnouncementsLoading
+  const hasError = isClassesError || isAssignmentsError || isModulesError || isAttendanceError || isAnnouncementsError
+  const firstError = classesError || assignmentsError || modulesError || attendanceError || announcementsError
   const handleRetry = () => {
-    refetchClasses(); refetchAssignments(); refetchModules(); refetchAttendance()
+    refetchClasses(); refetchAssignments(); refetchModules(); refetchAttendance(); refetchAnnouncements()
   }
 
   const nextAssignment = pendingAssignments[0] ?? null
@@ -267,6 +276,61 @@ export default function StudentDashboardPageClient() {
                   </p>
                 )}
               </div>
+            </div>
+
+            {/* Announcements */}
+            <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #ECE6E0', borderRadius: '8px', overflow: 'hidden' }}>
+              <div style={{ padding: '14px 20px', borderBottom: '1px solid #ECE6E0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <h2 style={{ fontSize: '14px', fontWeight: 600, color: '#0A0A0B', margin: 0 }}>Announcements</h2>
+                <button
+                  onClick={() => router.push('/student/announcements')}
+                  style={{ fontSize: '12.5px', color: '#8B1A2F', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                >
+                  View all
+                </button>
+              </div>
+              {recentAnnouncements.length === 0 ? (
+                <p style={{ padding: '16px 20px', fontSize: '13.5px', color: '#9C949A', margin: 0 }}>
+                  No announcements yet.
+                </p>
+              ) : (
+                recentAnnouncements.map((a, i) => (
+                  <button
+                    key={a.id}
+                    onClick={() => router.push('/student/announcements')}
+                    style={{
+                      width: '100%',
+                      display: 'block',
+                      textAlign: 'left',
+                      padding: '13px 20px',
+                      border: 'none',
+                      borderBottom: i < recentAnnouncements.length - 1 ? '1px solid #ECE6E0' : 'none',
+                      backgroundColor: 'transparent',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <p style={{ fontSize: '11px', fontWeight: 600, color: '#8B1A2F', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 5px' }}>
+                      From {a.is_anonymous ? 'Admin' : (a.creator?.full_name ?? 'Admin')}
+                    </p>
+                    <p style={{
+                      fontSize: '13px',
+                      fontWeight: 500,
+                      color: '#0A0A0B',
+                      lineHeight: 1.45,
+                      margin: '0 0 5px',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                    }}>
+                      {a.message}
+                    </p>
+                    <p style={{ fontSize: '11.5px', color: '#9C949A', margin: 0 }}>
+                      {format(new Date(a.created_at), 'MMM d')}
+                    </p>
+                  </button>
+                ))
+              )}
             </div>
 
             {/* Course modules */}

@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
+import type { JwtPayload } from '../auth/jwt.strategy';
 import { CreateAnnouncementDto } from './announcements.dto';
 
 interface QueryError {
@@ -28,12 +29,18 @@ export interface AnnouncementRecord {
   target_type: 'all_tutors' | 'whole_class' | 'specific_cohort';
   class_id: string | null;
   cohort_id: string | null;
+  is_anonymous: boolean;
   created_at: string;
   creator?: { full_name: string } | { full_name: string }[] | null;
 }
 
 interface IdRow {
   id: string;
+}
+
+interface StudentEnrollmentRow {
+  class_id: string | null;
+  cohort_id: string | null;
 }
 
 function asQueryResult<T>(value: unknown): QueryResult<T> {
@@ -48,13 +55,47 @@ function asSingleQueryResult<T>(value: unknown): SingleQueryResult<T> {
 export class AnnouncementsService {
   constructor(private readonly supabase: SupabaseService) {}
 
-  async findAll(): Promise<AnnouncementRecord[]> {
-    const { data, error } = asQueryResult<AnnouncementRecord>(
-      await this.supabase.adminClient
-        .from('announcements')
-        .select('*, creator:profiles!created_by(full_name)')
-        .order('created_at', { ascending: false }),
-    );
+  async findAll(user: JwtPayload): Promise<AnnouncementRecord[]> {
+    let query = this.supabase.adminClient
+      .from('announcements')
+      .select('*, creator:profiles!created_by(full_name)')
+      .order('created_at', { ascending: false });
+
+    if (user.role === 'student') {
+      const { data: enrollments, error: enrollmentError } =
+        asQueryResult<StudentEnrollmentRow>(
+          await this.supabase.adminClient
+            .from('enrollments')
+            .select('class_id, cohort_id')
+            .eq('student_id', user.sub),
+        );
+
+      if (enrollmentError)
+        throw new BadRequestException(enrollmentError.message);
+
+      const classIds = (enrollments ?? [])
+        .map((e) => e.class_id)
+        .filter((id): id is string => Boolean(id));
+      const cohortIds = (enrollments ?? [])
+        .map((e) => e.cohort_id)
+        .filter((id): id is string => Boolean(id));
+
+      if (classIds.length === 0) return [];
+
+      const filters = [
+        `and(target_type.eq.whole_class,class_id.in.(${classIds.join(',')}))`,
+      ];
+
+      if (cohortIds.length > 0) {
+        filters.push(
+          `and(target_type.eq.specific_cohort,cohort_id.in.(${cohortIds.join(',')}))`,
+        );
+      }
+
+      query = query.or(filters.join(','));
+    }
+
+    const { data, error } = asQueryResult<AnnouncementRecord>(await query);
 
     if (error) throw new BadRequestException(error.message);
     return data ?? [];
@@ -73,6 +114,7 @@ export class AnnouncementsService {
           target_type: dto.target_type,
           class_id: dto.class_id ?? null,
           cohort_id: dto.cohort_id ?? null,
+          is_anonymous: dto.is_anonymous ?? false,
         })
         .select('*, creator:profiles!created_by(full_name)')
         .single(),

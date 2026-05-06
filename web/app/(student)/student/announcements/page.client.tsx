@@ -63,11 +63,9 @@ export default function AnnouncementsPageClient() {
                   }}>
                     {a.target_type === 'all_tutors' ? 'All Tutors' : a.target_type === 'whole_class' ? 'Whole Class' : 'Your Cohort'}
                   </span>
-                  {a.creator?.full_name && (
-                    <p style={{ fontSize: '12px', color: '#6B7280', margin: 0 }}>
-                      From {a.creator.full_name}
-                    </p>
-                  )}
+                  <p style={{ fontSize: '12px', color: '#6B7280', margin: 0 }}>
+                    From {a.is_anonymous ? 'Admin' : (a.creator?.full_name ?? 'Admin')}
+                  </p>
                 </div>
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
                   <p style={{ fontSize: '12px', color: '#6B7280', margin: '0 0 2px', whiteSpace: 'nowrap' }}>

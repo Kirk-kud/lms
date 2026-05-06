@@ -250,7 +250,6 @@ export function CalendarPanel({ userId, onClose }: { userId: string; onClose: ()
 export function TodoPanel({ userId, onClose }: { userId: string; onClose: () => void }) {
   const { data: assignments, isLoading } = useMyAllAssignments(userId)
   const router = useRouter()
-  const now = new Date()
 
   const pending = assignments
     .filter((a) => !a.submission && isFuture(new Date(a.due_date)))
@@ -583,11 +582,9 @@ export function AnnouncementsPanel({ role, onClose }: { role: string; userId: st
           <p style={{ fontSize: '13px', color: '#6B6168', margin: 0, lineHeight: 1.5 }}>
             {a.message}
           </p>
-          {a.creator?.full_name && (
-            <p style={{ fontSize: '11px', color: '#9C949A', margin: '6px 0 0' }}>
-              — {a.creator.full_name}
-            </p>
-          )}
+          <p style={{ fontSize: '11px', color: '#9C949A', margin: '6px 0 0' }}>
+            — {a.is_anonymous ? 'Admin' : (a.creator?.full_name ?? 'Admin')}
+          </p>
         </div>
       ))}
       <div style={{ height: '16px' }} />

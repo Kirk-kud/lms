@@ -11,6 +11,7 @@ export interface Announcement {
   target_type: 'all_tutors' | 'whole_class' | 'specific_cohort'
   class_id: string | null
   cohort_id: string | null
+  is_anonymous: boolean
   created_at: string
 }
 
@@ -19,6 +20,7 @@ export interface CreateAnnouncementPayload {
   target_type: 'all_tutors' | 'whole_class' | 'specific_cohort'
   class_id?: string
   cohort_id?: string
+  is_anonymous?: boolean
 }
 
 export function useAnnouncements() {
