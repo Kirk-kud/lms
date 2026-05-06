@@ -14,7 +14,7 @@ import type { Request } from 'express';
 import { createResponse } from '../common/response.helper';
 import { Roles, RolesGuard } from '../auth/role.guard';
 import type { JwtPayload } from '../auth/jwt.strategy';
-import { CheckInDto, CreateSessionDto, ManualCheckInDto, RestartSessionDto } from './attendance.dto';
+import { CheckInDto, CreateSessionDto, ExtendSessionDto, ManualCheckInDto, RestartSessionDto } from './attendance.dto';
 import { AttendanceService } from './attendance.service';
 
 @Controller('attendance')
@@ -106,6 +106,18 @@ export class AttendanceController {
     const user = req.user as JwtPayload;
     const data = await this.service.endSession(sessionId, user);
     return createResponse(data, 'Session ended');
+  }
+
+  @Post('sessions/:sessionId/extend')
+  @Roles('admin', 'tutor')
+  async extendSession(
+    @Req() req: Request,
+    @Param('sessionId') sessionId: string,
+    @Body() dto: ExtendSessionDto,
+  ) {
+    const user = req.user as JwtPayload;
+    const data = await this.service.extendSession(sessionId, user, dto);
+    return createResponse(data, 'Session extended');
   }
 
   @Post('sessions/:sessionId/restart')

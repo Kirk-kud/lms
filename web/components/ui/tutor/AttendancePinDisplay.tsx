@@ -9,6 +9,8 @@ interface AttendancePinDisplayProps {
   checkedIn: number
   total: number
   onEndSession: () => void
+  onExtend?: (minutes: number) => void
+  isExtending?: boolean
 }
 
 export default function AttendancePinDisplay({
@@ -17,6 +19,8 @@ export default function AttendancePinDisplay({
   checkedIn,
   total,
   onEndSession,
+  onExtend,
+  isExtending,
 }: AttendancePinDisplayProps) {
   const [timeLeft, setTimeLeft] = useState('')
   const [secondsLeft, setSecondsLeft] = useState(0)
@@ -88,6 +92,22 @@ export default function AttendancePinDisplay({
             {checkedIn}{total > 0 ? ` / ${total}` : ''} checked in
           </span>
         </div>
+
+        {/* Add time */}
+        {onExtend && (
+          <div className="flex gap-1.5 mb-3">
+            {[5, 10, 15].map((min) => (
+              <button
+                key={min}
+                onClick={() => onExtend(min)}
+                disabled={isExtending}
+                className="flex-1 h-8 border border-[#333333] rounded-lg text-[11px] text-[#6B7280] hover:border-[#555] hover:text-white disabled:opacity-40 transition-colors"
+              >
+                +{min}m
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex gap-2">

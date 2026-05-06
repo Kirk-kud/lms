@@ -67,7 +67,7 @@ export function useRestartSession() {
 export function useEndSession() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ sessionId, classId }: { sessionId: string; classId: string }) =>
+    mutationFn: async ({ sessionId }: { sessionId: string; classId: string }) =>
       apiClient.patch<AttendanceSession>(`/attendance/sessions/${sessionId}`),
     onSuccess: (_data, { classId }) =>
       qc.invalidateQueries({ queryKey: ['attendance-sessions', classId] }),
@@ -109,6 +109,16 @@ export function useDeleteSession() {
   return useMutation({
     mutationFn: ({ sessionId }: { sessionId: string; classId: string }) =>
       apiClient.delete(`/attendance/sessions/${sessionId}`),
+    onSuccess: (_data, { classId }) =>
+      qc.invalidateQueries({ queryKey: ['attendance-sessions', classId] }),
+  })
+}
+
+export function useExtendSession() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ sessionId, duration_minutes }: { sessionId: string; classId: string; duration_minutes: number }) =>
+      apiClient.post<AttendanceSession>(`/attendance/sessions/${sessionId}/extend`, { duration_minutes }),
     onSuccess: (_data, { classId }) =>
       qc.invalidateQueries({ queryKey: ['attendance-sessions', classId] }),
   })

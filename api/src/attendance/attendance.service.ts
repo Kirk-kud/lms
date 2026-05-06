@@ -10,7 +10,7 @@ import {
   assertTutorOwnsCohort,
   getTutorCohortForClass,
 } from '../common/access.helper';
-import { CheckInDto, CreateSessionDto, RestartSessionDto } from './attendance.dto';
+import { CheckInDto, CreateSessionDto, ExtendSessionDto, RestartSessionDto } from './attendance.dto';
 
 @Injectable()
 export class AttendanceService {
@@ -454,6 +454,42 @@ export class AttendanceService {
     const { data: updated, error } = await this.supabase.adminClient
       .from('attendance_sessions')
       .update({ is_active: true, expires_at })
+      .eq('id', sessionId)
+      .select()
+      .single();
+
+    if (error) throw new BadRequestException(error.message);
+    return updated;
+  }
+
+  // ----------------------------------------------------------------
+  // POST /attendance/sessions/:sessionId/extend
+  // ----------------------------------------------------------------
+  async extendSession(sessionId: string, user: JwtPayload, dto: ExtendSessionDto) {
+    const { data: session, error: sErr } = await this.supabase.adminClient
+      .from('attendance_sessions')
+      .select('id, class_id, expires_at, is_active')
+      .eq('id', sessionId)
+      .single();
+
+    if (sErr || !session) throw new NotFoundException('Session not found');
+    if (!session.is_active) throw new BadRequestException('Session is not active');
+
+    if (user.role === 'admin') {
+      await this.assertTutorOwnsClass(session.class_id, user.sub, user.role);
+    } else if (user.role === 'tutor') {
+      await getTutorCohortForClass(this.supabase, session.class_id, user.sub);
+    } else {
+      throw new ForbiddenException();
+    }
+
+    const durationMs = dto.duration_minutes * 60 * 1000;
+    const base = Math.max(new Date(session.expires_at).getTime(), Date.now());
+    const expires_at = new Date(base + durationMs).toISOString();
+
+    const { data: updated, error } = await this.supabase.adminClient
+      .from('attendance_sessions')
+      .update({ expires_at })
       .eq('id', sessionId)
       .select()
       .single();

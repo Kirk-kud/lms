@@ -13,6 +13,7 @@ import {
   useDeleteSession,
   useMarkAbsent,
   useRestartSession,
+  useExtendSession,
   AttendanceSession,
 } from '@/lib/hooks/useAttendance'
 import { useClass } from '@/lib/hooks/useClasses'
@@ -261,6 +262,7 @@ export default function AttendancePageClient({ params }: { params: Promise<{ id:
   } = useAttendanceSessions(classId)
   const startSession = useStartSession()
   const endSession = useEndSession()
+  const extendSession = useExtendSession()
   const [duration, setDuration] = useState(10)
 
   const totalStudents = roster?.length ?? 0
@@ -330,6 +332,16 @@ export default function AttendancePageClient({ params }: { params: Promise<{ id:
     }
   }
 
+  const handleExtendSession = async (minutes: number) => {
+    if (!activeSession) return
+    try {
+      await extendSession.mutateAsync({ sessionId: activeSession.id, classId, duration_minutes: minutes })
+      toast.success(`Added ${minutes} min to session`)
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Unable to extend session')
+    }
+  }
+
   if (activeSession) {
     return (
       <AttendancePinDisplay
@@ -338,6 +350,8 @@ export default function AttendancePageClient({ params }: { params: Promise<{ id:
         checkedIn={activeSession.present_count ?? 0}
         total={totalStudents}
         onEndSession={handleEndSession}
+        onExtend={handleExtendSession}
+        isExtending={extendSession.isPending}
       />
     )
   }

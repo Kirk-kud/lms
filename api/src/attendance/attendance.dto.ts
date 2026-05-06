@@ -22,6 +22,14 @@ export class RestartSessionDto {
   duration_minutes?: number;
 }
 
+export class ExtendSessionDto {
+  @IsInt()
+  @Min(1)
+  @Max(60)
+  @Type(() => Number)
+  duration_minutes: number;
+}
+
 export class CheckInDto {
   @IsString()
   pin_code: string;
