@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
-import { CreateClassDto, JoinClassDto } from './classes.dto';
+import { CreateClassDto, JoinClassDto, UpdateClassDto } from './classes.dto';
 
 interface QueryError {
   message: string;
@@ -577,6 +577,32 @@ export class ClassesService {
   }
 
   // ----------------------------------------------------------------
+  // PATCH /classes/:id
+  // ----------------------------------------------------------------
+  async update(classId: string, userId: string, role: string | null, dto: UpdateClassDto) {
+    const { data: cls, error } = asSingleQueryResult<Pick<ClassRecord, 'id' | 'tutor_id'>>(
+      await this.supabase.adminClient
+        .from('classes')
+        .select('id, tutor_id')
+        .eq('id', classId)
+        .single(),
+    );
+
+    if (error || !cls) throw new NotFoundException('Class not found');
+    if (role !== 'admin' && cls.tutor_id !== userId)
+      throw new ForbiddenException();
+
+    const { data: updated, error: updateError } = await this.supabase.adminClient
+      .from('classes')
+      .update(dto)
+      .eq('id', classId)
+      .select()
+      .single();
+
+    if (updateError) throw new BadRequestException(updateError.message);
+    return updated;
+  }
+
   // DELETE /classes/:id
   // ----------------------------------------------------------------
   async remove(classId: string, userId: string, role: string | null) {

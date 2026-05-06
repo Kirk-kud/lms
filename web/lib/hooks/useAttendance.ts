@@ -47,10 +47,20 @@ export function useAttendanceSessions(classId: string) {
 export function useStartSession() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (body: { class_id: string }) =>
+    mutationFn: (body: { class_id: string; duration_minutes?: number }) =>
       apiClient.post<AttendanceSession>('/attendance/sessions', body),
     onSuccess: (_data, vars) =>
       qc.invalidateQueries({ queryKey: ['attendance-sessions', vars.class_id] }),
+  })
+}
+
+export function useRestartSession() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ sessionId, duration_minutes }: { sessionId: string; classId: string; duration_minutes?: number }) =>
+      apiClient.post<AttendanceSession>(`/attendance/sessions/${sessionId}/restart`, { duration_minutes }),
+    onSuccess: (_data, vars) =>
+      qc.invalidateQueries({ queryKey: ['attendance-sessions', vars.classId] }),
   })
 }
 
@@ -87,6 +97,28 @@ export function useManualCheckIn(sessionId: string) {
   return useMutation({
     mutationFn: (student_id: string) =>
       apiClient.post(`/attendance/sessions/${sessionId}/records/manual`, { student_id }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['session-records', sessionId] })
+      qc.invalidateQueries({ queryKey: ['attendance-sessions'] })
+    },
+  })
+}
+
+export function useDeleteSession() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ sessionId }: { sessionId: string; classId: string }) =>
+      apiClient.delete(`/attendance/sessions/${sessionId}`),
+    onSuccess: (_data, { classId }) =>
+      qc.invalidateQueries({ queryKey: ['attendance-sessions', classId] }),
+  })
+}
+
+export function useMarkAbsent(sessionId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (studentId: string) =>
+      apiClient.delete(`/attendance/sessions/${sessionId}/records/${studentId}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['session-records', sessionId] })
       qc.invalidateQueries({ queryKey: ['attendance-sessions'] })

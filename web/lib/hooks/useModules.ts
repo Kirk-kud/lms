@@ -82,6 +82,37 @@ export function useAddModuleItem() {
   })
 }
 
+export function useUpdateModule() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ moduleId, classId: _classId, title }: { moduleId: string; classId: string; title: string }) =>
+      apiClient.patch<CourseModule>(`/modules/${moduleId}`, { title }),
+    onSuccess: async (_data, vars) => {
+      await qc.invalidateQueries({ queryKey: ['modules', vars.classId] })
+    },
+  })
+}
+
+export function useUpdateModuleItem() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      itemId,
+      classId: _classId,
+      ...body
+    }: {
+      itemId: string
+      classId: string
+      title?: string
+      content_url?: string
+      content_text?: string
+    }) => apiClient.patch<ModuleItem>(`/modules/items/${itemId}`, body),
+    onSuccess: async (_data, vars) => {
+      await qc.invalidateQueries({ queryKey: ['modules', vars.classId] })
+    },
+  })
+}
+
 export function useDeleteModule() {
   const qc = useQueryClient()
   return useMutation({

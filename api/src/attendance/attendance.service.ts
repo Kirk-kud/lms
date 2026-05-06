@@ -10,7 +10,7 @@ import {
   assertTutorOwnsCohort,
   getTutorCohortForClass,
 } from '../common/access.helper';
-import { CheckInDto, CreateSessionDto } from './attendance.dto';
+import { CheckInDto, CreateSessionDto, RestartSessionDto } from './attendance.dto';
 
 @Injectable()
 export class AttendanceService {
@@ -66,7 +66,8 @@ export class AttendanceService {
       .eq('is_active', true);
 
     const pin_code = Math.floor(1000 + Math.random() * 9000).toString();
-    const expires_at = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    const durationMs = (dto.duration_minutes ?? 10) * 60 * 1000;
+    const expires_at = new Date(Date.now() + durationMs).toISOString();
 
     const { data: session, error } = await this.supabase.adminClient
       .from('attendance_sessions')
@@ -419,4 +420,96 @@ export class AttendanceService {
 
       return updated;
     }
+
+  // ----------------------------------------------------------------
+  // POST /attendance/sessions/:sessionId/restart
+  // ----------------------------------------------------------------
+  async restartSession(sessionId: string, user: JwtPayload, dto: RestartSessionDto) {
+    const { data: session, error: sErr } = await this.supabase.adminClient
+      .from('attendance_sessions')
+      .select('id, class_id')
+      .eq('id', sessionId)
+      .single();
+
+    if (sErr || !session) throw new NotFoundException('Session not found');
+
+    if (user.role === 'admin') {
+      await this.assertTutorOwnsClass(session.class_id, user.sub, user.role);
+    } else if (user.role === 'tutor') {
+      await getTutorCohortForClass(this.supabase, session.class_id, user.sub);
+    } else {
+      throw new ForbiddenException();
+    }
+
+    // Deactivate any currently active session for this class first
+    await this.supabase.adminClient
+      .from('attendance_sessions')
+      .update({ is_active: false })
+      .eq('class_id', session.class_id)
+      .eq('is_active', true);
+
+    const durationMs = (dto.duration_minutes ?? 10) * 60 * 1000;
+    const expires_at = new Date(Date.now() + durationMs).toISOString();
+
+    const { data: updated, error } = await this.supabase.adminClient
+      .from('attendance_sessions')
+      .update({ is_active: true, expires_at })
+      .eq('id', sessionId)
+      .select()
+      .single();
+
+    if (error) throw new BadRequestException(error.message);
+    return updated;
+  }
+
+  // ----------------------------------------------------------------
+  // DELETE /attendance/sessions/:sessionId
+  // ----------------------------------------------------------------
+  async deleteSession(sessionId: string, user: JwtPayload) {
+    const { data: session, error: sErr } = await this.supabase.adminClient
+      .from('attendance_sessions')
+      .select('id, class_id')
+      .eq('id', sessionId)
+      .single();
+
+    if (sErr || !session) throw new NotFoundException('Session not found');
+    await this.assertTutorOwnsClass(session.class_id, user.sub, user.role);
+
+    // Delete records first to satisfy FK constraints
+    await this.supabase.adminClient
+      .from('attendance_records')
+      .delete()
+      .eq('session_id', sessionId);
+
+    const { error } = await this.supabase.adminClient
+      .from('attendance_sessions')
+      .delete()
+      .eq('id', sessionId);
+
+    if (error) throw new BadRequestException(error.message);
+    return { success: true };
+  }
+
+  // ----------------------------------------------------------------
+  // DELETE /attendance/sessions/:sessionId/records/:studentId
+  // ----------------------------------------------------------------
+  async markAbsent(sessionId: string, user: JwtPayload, studentId: string) {
+    const { data: session, error: sErr } = await this.supabase.adminClient
+      .from('attendance_sessions')
+      .select('id, class_id')
+      .eq('id', sessionId)
+      .single();
+
+    if (sErr || !session) throw new NotFoundException('Session not found');
+    await this.assertTutorOwnsClass(session.class_id, user.sub, user.role);
+
+    const { error } = await this.supabase.adminClient
+      .from('attendance_records')
+      .delete()
+      .eq('session_id', sessionId)
+      .eq('student_id', studentId);
+
+    if (error) throw new BadRequestException(error.message);
+    return { success: true };
+  }
 }

@@ -76,6 +76,20 @@ export function useJoinClass() {
   })
 }
 
+export function useUpdateClass() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ classId, ...body }: { classId: string; title?: string; description?: string }) =>
+      apiClient.patch<ClassRecord>(`/classes/${classId}`, body),
+    onSuccess: async (_data, vars) => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['classes'] }),
+        qc.invalidateQueries({ queryKey: ['classes', vars.classId] }),
+      ])
+    },
+  })
+}
+
 export function useDeleteClass() {
   const qc = useQueryClient()
   return useMutation({

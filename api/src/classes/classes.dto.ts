@@ -17,3 +17,13 @@ export class JoinClassDto {
   @IsString()
   invite_code: string;
 }
+
+export class UpdateClassDto {
+  @IsOptional()
+  @IsString()
+  title?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+}

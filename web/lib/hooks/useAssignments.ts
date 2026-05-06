@@ -150,6 +150,29 @@ export function useSubmissionViewUrl(assignmentId: string, submissionId: string,
   })
 }
 
+export function useUpdateAssignment() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      assignmentId,
+      classId: _classId,
+      ...body
+    }: {
+      assignmentId: string
+      classId: string
+      title?: string
+      description?: string
+      due_date?: string
+    }) => apiClient.patch<Assignment>(`/assignments/${assignmentId}`, body),
+    onSuccess: async (_data, vars) => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['assignments', vars.classId] }),
+        qc.invalidateQueries({ queryKey: ['assignments-batch'] }),
+      ])
+    },
+  })
+}
+
 export function useGradeSubmission() {
   const qc = useQueryClient()
   return useMutation({

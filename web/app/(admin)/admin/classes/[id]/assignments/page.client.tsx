@@ -6,6 +6,7 @@ import { format, isPast } from 'date-fns'
 import {
   useAssignments,
   useCreateAssignment,
+  useUpdateAssignment,
   useDeleteAssignment,
   useAssignmentSubmissions,
   useSubmissionViewUrl,
@@ -130,6 +131,98 @@ function CreateAssignmentModal({
             <button type="submit" disabled={createAssignment.isPending || !title.trim() || !dueDate} className="h-9 px-4 text-[13px] font-medium bg-black text-white rounded-lg disabled:opacity-50 hover:bg-black/90 transition-colors flex items-center gap-2">
               {createAssignment.isPending && <LoadingSpinner className="text-white" />}
               {createAssignment.isPending ? 'Creating...' : 'Create'}
+            </button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function EditAssignmentModal({
+  assignment,
+  classId,
+  open,
+  onClose,
+}: {
+  assignment: Assignment
+  classId: string
+  open: boolean
+  onClose: () => void
+}) {
+  const [title, setTitle] = useState(assignment.title)
+  const [description, setDescription] = useState(assignment.description ?? '')
+  const [dueDate, setDueDate] = useState<Date | undefined>(new Date(assignment.due_date))
+  const [calOpen, setCalOpen] = useState(false)
+  const updateAssignment = useUpdateAssignment()
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!title.trim() || !dueDate) return
+    try {
+      await updateAssignment.mutateAsync({
+        assignmentId: assignment.id,
+        classId,
+        title: title.trim(),
+        description: description.trim() || undefined,
+        due_date: dueDate.toISOString(),
+      })
+      onClose()
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Unable to update assignment')
+    }
+  }
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%', height: '36px', borderRadius: '8px',
+    border: '0.5px solid #E5E5E5', fontSize: '13px',
+    padding: '0 10px', outline: 'none', boxSizing: 'border-box',
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-[15px] font-medium">Edit assignment</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="mt-2 space-y-4">
+          <div>
+            <label className="block text-[12px] text-[#6B6B6B] mb-1">Title</label>
+            <input autoFocus required value={title} onChange={(e) => setTitle(e.target.value)} style={inputStyle}
+              onFocus={(e) => (e.currentTarget.style.borderColor = '#8B1A2F')}
+              onBlur={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')} />
+          </div>
+          <div>
+            <label className="block text-[12px] text-[#6B6B6B] mb-1">Description <span className="text-[#9CA3AF]">(optional)</span></label>
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2}
+              style={{ ...inputStyle, height: 'auto', padding: '8px 10px', resize: 'none' }}
+              onFocus={(e) => (e.currentTarget.style.borderColor = '#8B1A2F')}
+              onBlur={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')} />
+          </div>
+          <div>
+            <label className="block text-[12px] text-[#6B6B6B] mb-1">Due date</label>
+            <Popover open={calOpen} onOpenChange={setCalOpen}>
+              <PopoverTrigger
+                className="w-full h-9 px-3 text-[13px] text-left border border-[#E5E5E5] rounded-lg hover:border-[#8B1A2F] transition-colors"
+                style={{ color: dueDate ? '#111' : '#9CA3AF' }}
+              >
+                {dueDate ? format(dueDate, 'MMM d, yyyy') : 'Pick a date'}
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={dueDate}
+                  onSelect={(d) => { setDueDate(d); setCalOpen(false) }}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+          <div className="flex gap-2 justify-end pt-1">
+            <button type="button" onClick={onClose} className="h-9 px-4 text-[13px] text-[#6B7280] border border-[#E5E5E5] rounded-lg hover:bg-[#F8F8F8] transition-colors">Cancel</button>
+            <button type="submit" disabled={updateAssignment.isPending || !title.trim() || !dueDate} className="h-9 px-4 text-[13px] font-medium bg-black text-white rounded-lg disabled:opacity-50 hover:bg-black/90 transition-colors flex items-center gap-2">
+              {updateAssignment.isPending && <LoadingSpinner className="text-white" />}
+              {updateAssignment.isPending ? 'Saving...' : 'Save'}
             </button>
           </div>
         </form>
@@ -391,10 +484,12 @@ function AssignmentCard({
   onDelete: () => void
 }) {
   const [expanded, setExpanded] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
   const submittedCount = assignment.submission_count ?? 0
   const needsReview = submittedCount > 0
 
   return (
+    <>
     <div
       style={{
         border: '1px solid #E5E5E5',
@@ -418,9 +513,19 @@ function AssignmentCard({
           </p>
         </div>
 
-        {/* Right: submission indicator + delete button */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+        {/* Right: submission indicator + action buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
           <SubmissionIndicator submitted={submittedCount} total={totalStudents} needsReview={needsReview} />
+          <button
+            onClick={() => setEditOpen(true)}
+            className="h-8 w-8 flex items-center justify-center border border-[#E5E5E5] rounded-lg hover:bg-[#F8F8F8] transition-colors text-[#9CA3AF] hover:text-[#111] shrink-0"
+            title="Edit assignment"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+          </button>
           <button
             onClick={onDelete}
             className="h-8 w-8 flex items-center justify-center border border-[#E5E5E5] rounded-lg hover:bg-red-50 hover:border-red-200 transition-colors text-[#9CA3AF] hover:text-red-500 shrink-0"
@@ -458,6 +563,15 @@ function AssignmentCard({
       {/* Expandable: submission list */}
       {expanded && <SubmissionsList assignmentId={assignment.id} />}
     </div>
+    {editOpen && (
+      <EditAssignmentModal
+        assignment={assignment}
+        classId={classId}
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+      />
+    )}
+    </>
   )
 }
 

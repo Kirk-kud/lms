@@ -1,8 +1,8 @@
 'use client'
 
-import { use, useState } from 'react'
+import { use, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useClass, useDeleteClass } from '@/lib/hooks/useClasses'
+import { useClass, useUpdateClass, useDeleteClass } from '@/lib/hooks/useClasses'
 import { SkeletonCard } from '@/components/ui/shared/SkeletonCard'
 import { InlineError } from '@/components/ui/shared/InlineError'
 import { LoadingSpinner } from '@/components/ui/shared/LoadingSpinner'
@@ -101,8 +101,38 @@ export default function SettingsPageClient({ params }: { params: Promise<{ id: s
     error,
     refetch,
   } = useClass(classId)
+  const updateClass = useUpdateClass()
   const deleteClass = useDeleteClass()
+
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+
+  useEffect(() => {
+    if (classData) {
+      setTitle(classData.title)
+      setDescription(classData.description ?? '')
+    }
+  }, [classData])
+
+  const isDirty = classData
+    ? title.trim() !== classData.title || description.trim() !== (classData.description ?? '')
+    : false
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!title.trim()) return
+    try {
+      await updateClass.mutateAsync({
+        classId,
+        title: title.trim(),
+        description: description.trim() || undefined,
+      })
+      toast.success('Class updated')
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Unable to update class')
+    }
+  }
 
   const handleDelete = async () => {
     try {
@@ -112,6 +142,12 @@ export default function SettingsPageClient({ params }: { params: Promise<{ id: s
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Unable to delete class')
     }
+  }
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%', height: '36px', borderRadius: '8px',
+    border: '0.5px solid #E5E5E5', fontSize: '13px',
+    padding: '0 10px', outline: 'none', boxSizing: 'border-box',
   }
 
   return (
@@ -152,7 +188,50 @@ export default function SettingsPageClient({ params }: { params: Promise<{ id: s
       {isLoading && <SkeletonCard lines={3} />}
 
       {!isLoading && classData && (
-        <div className="space-y-6">
+        <div className="space-y-6 max-w-lg">
+          {/* General info */}
+          <div className="border border-[#E5E5E5] rounded-xl overflow-hidden">
+            <div className="px-5 py-3 bg-[#F8F8F8] border-b border-[#E5E5E5]">
+              <p className="text-[12px] font-medium text-[#6B7280] uppercase tracking-wider">General</p>
+            </div>
+            <form onSubmit={handleSave} className="px-5 py-4 space-y-4">
+              <div>
+                <label className="block text-[12px] text-[#6B6B6B] mb-1">Class name</label>
+                <input
+                  required
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  style={inputStyle}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = '#8B1A2F')}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')}
+                />
+              </div>
+              <div>
+                <label className="block text-[12px] text-[#6B6B6B] mb-1">
+                  Description <span className="text-[#9CA3AF]">(optional)</span>
+                </label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={3}
+                  style={{ ...inputStyle, height: 'auto', padding: '8px 10px', resize: 'none' }}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = '#8B1A2F')}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')}
+                />
+              </div>
+              <div className="flex justify-end pt-1">
+                <button
+                  type="submit"
+                  disabled={!isDirty || updateClass.isPending || !title.trim()}
+                  className="h-9 px-4 text-[13px] font-medium bg-black text-white rounded-lg disabled:opacity-40 hover:bg-black/90 transition-colors flex items-center gap-2"
+                >
+                  {updateClass.isPending && <LoadingSpinner className="text-white" />}
+                  {updateClass.isPending ? 'Saving...' : 'Save changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+
           {/* Danger zone */}
           <div className="border border-red-200 rounded-xl overflow-hidden">
             <div className="px-5 py-3 bg-red-50 border-b border-red-200">

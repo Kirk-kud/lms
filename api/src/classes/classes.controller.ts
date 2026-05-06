@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   Param,
+  Patch,
   Post,
   Query,
   Req,
@@ -14,7 +15,7 @@ import type { Request } from 'express';
 import { createResponse } from '../common/response.helper';
 import { Roles, RolesGuard } from '../auth/role.guard';
 import type { JwtPayload } from '../auth/jwt.strategy';
-import { CreateClassDto, JoinClassDto } from './classes.dto';
+import { CreateClassDto, JoinClassDto, UpdateClassDto } from './classes.dto';
 import { ClassesService } from './classes.service';
 
 @Controller('classes')
@@ -72,6 +73,18 @@ export class ClassesController {
     const user = req.user as JwtPayload;
     const data = await this.classesService.searchNonEnrolledStudents(id, user.sub, user.role, q ?? '');
     return createResponse(data, 'Students fetched');
+  }
+
+  @Patch(':id')
+  @Roles('admin')
+  async update(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @Body() dto: UpdateClassDto,
+  ) {
+    const user = req.user as JwtPayload;
+    const data = await this.classesService.update(id, user.sub, user.role, dto);
+    return createResponse(data, 'Class updated');
   }
 
   @Delete(':id')

@@ -5,9 +5,12 @@ import { useRouter } from 'next/navigation'
 import {
   useModules,
   useCreateModule,
+  useUpdateModule,
+  useUpdateModuleItem,
   useDeleteModule,
   useDeleteModuleItem,
   useAddModuleItem,
+  CourseModule,
   ModuleItem,
 } from '@/lib/hooks/useModules'
 import { useClass } from '@/lib/hooks/useClasses'
@@ -209,6 +212,149 @@ function AddItemModal({
   )
 }
 
+function RenameModuleModal({
+  module: mod,
+  classId,
+  open,
+  onClose,
+}: {
+  module: CourseModule
+  classId: string
+  open: boolean
+  onClose: () => void
+}) {
+  const [title, setTitle] = useState(mod.title)
+  const updateModule = useUpdateModule()
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!title.trim() || title.trim() === mod.title) { onClose(); return }
+    try {
+      await updateModule.mutateAsync({ moduleId: mod.id, classId, title: title.trim() })
+      onClose()
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Unable to rename module')
+    }
+  }
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%', height: '36px', borderRadius: '8px',
+    border: '0.5px solid #E5E5E5', fontSize: '13px',
+    padding: '0 10px', outline: 'none', boxSizing: 'border-box',
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-[15px] font-medium">Rename module</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="mt-2 space-y-4">
+          <div>
+            <label className="block text-[12px] text-[#6B6B6B] mb-1">Module title</label>
+            <input
+              autoFocus required value={title} onChange={(e) => setTitle(e.target.value)} style={inputStyle}
+              onFocus={(e) => (e.currentTarget.style.borderColor = '#8B1A2F')}
+              onBlur={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')}
+            />
+          </div>
+          <div className="flex gap-2 justify-end pt-1">
+            <button type="button" onClick={onClose} className="h-9 px-4 text-[13px] text-[#6B7280] border border-[#E5E5E5] rounded-lg hover:bg-[#F8F8F8] transition-colors">Cancel</button>
+            <button type="submit" disabled={updateModule.isPending || !title.trim()} className="h-9 px-4 text-[13px] font-medium bg-black text-white rounded-lg disabled:opacity-50 hover:bg-black/90 transition-colors flex items-center gap-2">
+              {updateModule.isPending && <LoadingSpinner className="text-white" />}
+              {updateModule.isPending ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function EditItemModal({
+  item,
+  classId,
+  open,
+  onClose,
+}: {
+  item: ModuleItem
+  classId: string
+  open: boolean
+  onClose: () => void
+}) {
+  const [title, setTitle] = useState(item.title)
+  const [url, setUrl] = useState(item.content_url ?? '')
+  const [text, setText] = useState(item.content_text ?? '')
+  const updateItem = useUpdateModuleItem()
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!title.trim()) return
+    const body: { itemId: string; classId: string; title?: string; content_url?: string; content_text?: string } = {
+      itemId: item.id, classId, title: title.trim(),
+    }
+    if (item.type === 'video' || item.type === 'link') body.content_url = url
+    if (item.type === 'text') body.content_text = text
+    try {
+      await updateItem.mutateAsync(body)
+      onClose()
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Unable to update item')
+    }
+  }
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%', height: '36px', borderRadius: '8px',
+    border: '0.5px solid #E5E5E5', fontSize: '13px',
+    padding: '0 10px', outline: 'none', boxSizing: 'border-box',
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-[15px] font-medium">Edit item</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="mt-2 space-y-4">
+          <div>
+            <label className="block text-[12px] text-[#6B6B6B] mb-1">Title</label>
+            <input autoFocus required value={title} onChange={(e) => setTitle(e.target.value)} style={inputStyle}
+              onFocus={(e) => (e.currentTarget.style.borderColor = '#8B1A2F')}
+              onBlur={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')} />
+          </div>
+          {(item.type === 'video' || item.type === 'link') && (
+            <div>
+              <label className="block text-[12px] text-[#6B6B6B] mb-1">URL</label>
+              <input value={url} onChange={(e) => setUrl(e.target.value)} style={inputStyle} placeholder="https://"
+                onFocus={(e) => (e.currentTarget.style.borderColor = '#8B1A2F')}
+                onBlur={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')} />
+            </div>
+          )}
+          {item.type === 'text' && (
+            <div>
+              <label className="block text-[12px] text-[#6B6B6B] mb-1">Content</label>
+              <textarea value={text} onChange={(e) => setText(e.target.value)} rows={4}
+                style={{ ...inputStyle, height: 'auto', padding: '8px 10px', resize: 'none' }}
+                onFocus={(e) => (e.currentTarget.style.borderColor = '#8B1A2F')}
+                onBlur={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')} />
+            </div>
+          )}
+          {item.type === 'pdf' && (
+            <p className="text-[12px] text-[#9CA3AF]">To replace the PDF file, delete this item and add a new one.</p>
+          )}
+          <div className="flex gap-2 justify-end pt-1">
+            <button type="button" onClick={onClose} className="h-9 px-4 text-[13px] text-[#6B7280] border border-[#E5E5E5] rounded-lg hover:bg-[#F8F8F8] transition-colors">Cancel</button>
+            <button type="submit" disabled={updateItem.isPending || !title.trim()} className="h-9 px-4 text-[13px] font-medium bg-black text-white rounded-lg disabled:opacity-50 hover:bg-black/90 transition-colors flex items-center gap-2">
+              {updateItem.isPending && <LoadingSpinner className="text-white" />}
+              {updateItem.isPending ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export default function ModulesPageClient({ params }: { params: Promise<{ id: string }> }) {
   const { id: classId } = use(params)
   const router = useRouter()
@@ -231,6 +377,8 @@ export default function ModulesPageClient({ params }: { params: Promise<{ id: st
 
   const [showCreateModule, setShowCreateModule] = useState(false)
   const [previewItem, setPreviewItem] = useState<PreviewItem | null>(null)
+  const [renamingModule, setRenamingModule] = useState<CourseModule | null>(null)
+  const [editingItem, setEditingItem] = useState<ModuleItem | null>(null)
 
   const toastIdRef = useRef<string | number | null>(null)
   const didSuccessRef = useRef(false)
@@ -376,6 +524,8 @@ export default function ModulesPageClient({ params }: { params: Promise<{ id: st
                 mode="admin"
                 onAddItem={() => handleAddItem(mod.id)}
                 onDeleteItem={handleDeleteItem}
+                onEditItem={(item) => setEditingItem(item)}
+                onRenameModule={() => setRenamingModule(mod)}
                 onDeleteModule={() => handleDeleteModule(mod.id)}
                 onItemClick={handleItemClick}
               />
@@ -396,6 +546,24 @@ export default function ModulesPageClient({ params }: { params: Promise<{ id: st
           classId={classId}
           open={showAddItem}
           onClose={() => { setShowAddItem(false); setActiveModuleId(null) }}
+        />
+      )}
+
+      {renamingModule && (
+        <RenameModuleModal
+          module={renamingModule}
+          classId={classId}
+          open={renamingModule !== null}
+          onClose={() => setRenamingModule(null)}
+        />
+      )}
+
+      {editingItem && (
+        <EditItemModal
+          item={editingItem}
+          classId={classId}
+          open={editingItem !== null}
+          onClose={() => setEditingItem(null)}
         />
       )}
 

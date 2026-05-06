@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -13,7 +14,7 @@ import type { Request } from 'express';
 import { createResponse } from '../common/response.helper';
 import { Roles, RolesGuard } from '../auth/role.guard';
 import type { JwtPayload } from '../auth/jwt.strategy';
-import { CheckInDto, CreateSessionDto, ManualCheckInDto } from './attendance.dto';
+import { CheckInDto, CreateSessionDto, ManualCheckInDto, RestartSessionDto } from './attendance.dto';
 import { AttendanceService } from './attendance.service';
 
 @Controller('attendance')
@@ -105,5 +106,40 @@ export class AttendanceController {
     const user = req.user as JwtPayload;
     const data = await this.service.endSession(sessionId, user);
     return createResponse(data, 'Session ended');
+  }
+
+  @Post('sessions/:sessionId/restart')
+  @Roles('admin', 'tutor')
+  async restartSession(
+    @Req() req: Request,
+    @Param('sessionId') sessionId: string,
+    @Body() dto: RestartSessionDto,
+  ) {
+    const user = req.user as JwtPayload;
+    const data = await this.service.restartSession(sessionId, user, dto);
+    return createResponse(data, 'Session restarted', 201);
+  }
+
+  @Delete('sessions/:sessionId')
+  @Roles('admin')
+  async deleteSession(
+    @Req() req: Request,
+    @Param('sessionId') sessionId: string,
+  ) {
+    const user = req.user as JwtPayload;
+    const data = await this.service.deleteSession(sessionId, user);
+    return createResponse(data, 'Session deleted');
+  }
+
+  @Delete('sessions/:sessionId/records/:studentId')
+  @Roles('admin')
+  async markAbsent(
+    @Req() req: Request,
+    @Param('sessionId') sessionId: string,
+    @Param('studentId') studentId: string,
+  ) {
+    const user = req.user as JwtPayload;
+    const data = await this.service.markAbsent(sessionId, user, studentId);
+    return createResponse(data, 'Student marked absent');
   }
 }
