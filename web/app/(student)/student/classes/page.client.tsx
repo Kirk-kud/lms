@@ -22,7 +22,8 @@ function ClassCard({
   onClick: () => void
 }) {
   const [hovered, setHovered] = useState(false)
-  const isDA = title.toLowerCase().includes('discipleship')
+  const safeTitle = title ?? ''
+  const isDA = safeTitle.toLowerCase().includes('discipleship')
 
   const bannerStyle: React.CSSProperties = isDA
     ? {
@@ -36,7 +37,7 @@ function ClassCard({
       }
     : {
         height: '100px',
-        background: `hsl(${(title.charCodeAt(0) * 47) % 360}, 35%, 55%)`,
+        background: `hsl(${(safeTitle.charCodeAt(0) * 47) % 360}, 35%, 55%)`,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -71,7 +72,7 @@ function ClassCard({
           />
         ) : (
           <span style={{ fontSize: '36px', fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>
-            {title.charAt(0).toUpperCase()}
+            {safeTitle.charAt(0).toUpperCase()}
           </span>
         )}
       </div>
