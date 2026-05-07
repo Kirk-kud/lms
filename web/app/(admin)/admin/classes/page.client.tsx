@@ -44,6 +44,7 @@ function ClassCard({ id, title, description, enrolledCount, inviteCode }: {
   const router = useRouter()
   const [copied, setCopied] = useState(false)
   const [hovered, setHovered] = useState(false)
+  const isDA = title.toLowerCase().includes('discipleship')
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -52,6 +53,23 @@ function ClassCard({ id, title, description, enrolledCount, inviteCode }: {
     toast.success('Class code copied')
     setTimeout(() => setCopied(false), 2000)
   }
+
+  const bannerStyle: React.CSSProperties = isDA
+    ? {
+        height: '160px',
+        background: '#F5EEF0',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+      }
+    : {
+        height: '100px',
+        background: `hsl(${(title.charCodeAt(0) * 47) % 360}, 35%, 55%)`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }
 
   return (
     <div
@@ -70,54 +88,49 @@ function ClassCard({ id, title, description, enrolledCount, inviteCode }: {
         background: '#FFFFFF',
       }}
     >
-      {/* Branded header */}
-      <div
-        style={{
-          background: '#111111',
-          padding: '20px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '16px',
-        }}
-      >
-        <img
-          src="/da-logo.png"
-          alt="The Discipleship Academy"
-          style={{ width: '52px', height: '52px', objectFit: 'contain', flexShrink: 0 }}
-          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
-        />
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <p style={{ fontSize: '10px', fontWeight: 600, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.12em', margin: '0 0 4px' }}>
-            The Discipleship Academy
-          </p>
-          <p style={{ fontSize: '15px', fontWeight: 700, color: '#FFFFFF', margin: 0, lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {title}
-          </p>
-        </div>
-        <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', flexShrink: 0 }}>
-          {enrolledCount} {enrolledCount === 1 ? 'student' : 'students'}
-        </span>
+      {/* Banner */}
+      <div style={bannerStyle}>
+        {isDA ? (
+          <img
+            src="/da-logo.png"
+            alt="The Discipleship Academy"
+            style={{ width: '120px', height: '120px', objectFit: 'contain' }}
+          />
+        ) : (
+          <span style={{ fontSize: '36px', fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>
+            {title.charAt(0).toUpperCase()}
+          </span>
+        )}
       </div>
 
       {/* Body */}
-      <div style={{ padding: '16px 20px 20px', display: 'flex', flexDirection: 'column', gap: '14px', flex: 1 }}>
-        {description ? (
-          <p style={{ fontSize: '13px', color: '#6B7280', margin: 0, lineHeight: 1.55, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+      <div style={{ padding: '16px 18px 18px', display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+        {isDA && (
+          <p style={{ fontSize: '10px', fontWeight: 600, color: '#8B1A2F', textTransform: 'uppercase', letterSpacing: '0.10em', margin: 0 }}>
+            The Discipleship Academy
+          </p>
+        )}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
+          <p style={{ fontSize: '14px', fontWeight: 600, color: '#111', margin: 0, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+            {title}
+          </p>
+          <span style={{ fontSize: '11px', color: '#9CA3AF', flexShrink: 0 }}>
+            {enrolledCount} {enrolledCount === 1 ? 'student' : 'students'}
+          </span>
+        </div>
+        {description && (
+          <p style={{ fontSize: '12.5px', color: '#6B7280', margin: 0, lineHeight: 1.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
             {description}
           </p>
-        ) : (
-          <p style={{ fontSize: '13px', color: '#B5AFB3', margin: 0, fontStyle: 'italic' }}>No description</p>
         )}
 
-        {/* Invite code row */}
+        {/* Invite code */}
         <div
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#F8F8F8', borderRadius: '8px', padding: '8px 12px' }}
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#F8F8F8', borderRadius: '7px', padding: '7px 10px', marginTop: '4px' }}
           onClick={(e) => e.stopPropagation()}
         >
           <span style={{ fontSize: '10px', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0 }}>Invite</span>
-          <span style={{ flex: 1, fontSize: '13px', fontFamily: 'monospace', color: '#111', letterSpacing: '0.15em' }}>
-            {inviteCode}
-          </span>
+          <span style={{ flex: 1, fontSize: '12.5px', fontFamily: 'monospace', color: '#111', letterSpacing: '0.12em' }}>{inviteCode}</span>
           <button
             onClick={handleCopy}
             style={{ color: copied ? '#1F8B4C' : '#6B7280', background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}
@@ -127,19 +140,19 @@ function ClassCard({ id, title, description, enrolledCount, inviteCode }: {
           </button>
         </div>
 
-        <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'flex-end' }}>
+        <div style={{ marginTop: '6px', display: 'flex', justifyContent: 'flex-end' }}>
           <span
             style={{
-              fontSize: '12.5px',
+              fontSize: '12px',
               fontWeight: 600,
               color: hovered ? '#FFFFFF' : '#8B1A2F',
               backgroundColor: hovered ? '#8B1A2F' : 'rgba(139,26,47,0.08)',
-              padding: '6px 16px',
+              padding: '5px 14px',
               borderRadius: '6px',
               transition: 'background 120ms ease, color 120ms ease',
             }}
           >
-            Enter class →
+            Open →
           </span>
         </div>
       </div>
