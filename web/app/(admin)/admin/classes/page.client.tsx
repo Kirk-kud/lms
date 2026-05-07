@@ -43,6 +43,7 @@ function ClassCard({ id, title, description, enrolledCount, inviteCode }: {
 }) {
   const router = useRouter()
   const [copied, setCopied] = useState(false)
+  const [hovered, setHovered] = useState(false)
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -55,35 +56,92 @@ function ClassCard({ id, title, description, enrolledCount, inviteCode }: {
   return (
     <div
       onClick={() => router.push(`/admin/classes/${id}/modules`)}
-      className="border border-[#E5E5E5] rounded-xl p-5 cursor-pointer hover:border-[#8B1A2F]/30 hover:bg-[#FAFAFA] transition-all"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        border: '1px solid',
+        borderColor: hovered ? '#C9B8B4' : '#E5E5E5',
+        borderRadius: '12px',
+        overflow: 'hidden',
+        cursor: 'pointer',
+        transition: 'border-color 120ms ease',
+        background: '#FFFFFF',
+      }}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <h3 className="text-[14px] font-medium text-[#111] truncate">{title}</h3>
-          {description && (
-            <p className="text-[12px] text-[#6B7280] mt-1 line-clamp-2">{description}</p>
-          )}
+      {/* Branded header */}
+      <div
+        style={{
+          background: '#111111',
+          padding: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+        }}
+      >
+        <img
+          src="/da-logo.png"
+          alt="The Discipleship Academy"
+          style={{ width: '52px', height: '52px', objectFit: 'contain', flexShrink: 0 }}
+          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
+        />
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <p style={{ fontSize: '10px', fontWeight: 600, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.12em', margin: '0 0 4px' }}>
+            The Discipleship Academy
+          </p>
+          <p style={{ fontSize: '15px', fontWeight: 700, color: '#FFFFFF', margin: 0, lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {title}
+          </p>
         </div>
-        <span className="text-[11px] text-[#9CA3AF] shrink-0">
+        <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', flexShrink: 0 }}>
           {enrolledCount} {enrolledCount === 1 ? 'student' : 'students'}
         </span>
       </div>
 
-      <div
-        className="mt-4 flex items-center gap-2 bg-[#F8F8F8] rounded-lg px-3 py-2"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <span className="text-[11px] text-[#9CA3AF] uppercase tracking-wider">Invite</span>
-        <span className="flex-1 text-[13px] font-mono text-[#111] tracking-widest">
-          {inviteCode}
-        </span>
-        <button
-          onClick={handleCopy}
-          className="text-[#6B7280] hover:text-[#8B1A2F] transition-colors"
-          title="Copy invite code"
+      {/* Body */}
+      <div style={{ padding: '16px 20px 20px', display: 'flex', flexDirection: 'column', gap: '14px', flex: 1 }}>
+        {description ? (
+          <p style={{ fontSize: '13px', color: '#6B7280', margin: 0, lineHeight: 1.55, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+            {description}
+          </p>
+        ) : (
+          <p style={{ fontSize: '13px', color: '#B5AFB3', margin: 0, fontStyle: 'italic' }}>No description</p>
+        )}
+
+        {/* Invite code row */}
+        <div
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#F8F8F8', borderRadius: '8px', padding: '8px 12px' }}
+          onClick={(e) => e.stopPropagation()}
         >
-          {copied ? <CheckIcon /> : <CopyIcon />}
-        </button>
+          <span style={{ fontSize: '10px', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0 }}>Invite</span>
+          <span style={{ flex: 1, fontSize: '13px', fontFamily: 'monospace', color: '#111', letterSpacing: '0.15em' }}>
+            {inviteCode}
+          </span>
+          <button
+            onClick={handleCopy}
+            style={{ color: copied ? '#1F8B4C' : '#6B7280', background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}
+            title="Copy invite code"
+          >
+            {copied ? <CheckIcon /> : <CopyIcon />}
+          </button>
+        </div>
+
+        <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'flex-end' }}>
+          <span
+            style={{
+              fontSize: '12.5px',
+              fontWeight: 600,
+              color: hovered ? '#FFFFFF' : '#8B1A2F',
+              backgroundColor: hovered ? '#8B1A2F' : 'rgba(139,26,47,0.08)',
+              padding: '6px 16px',
+              borderRadius: '6px',
+              transition: 'background 120ms ease, color 120ms ease',
+            }}
+          >
+            Enter class →
+          </span>
+        </div>
       </div>
     </div>
   )

@@ -22,7 +22,6 @@ function ClassCard({
   onClick: () => void
 }) {
   const [hovered, setHovered] = useState(false)
-  const initial = title.charAt(0).toUpperCase()
 
   return (
     <button
@@ -34,80 +33,84 @@ function ClassCard({
         flexDirection: 'column',
         width: '100%',
         textAlign: 'left',
-        background: hovered ? '#FAF7F4' : '#FFFFFF',
+        background: '#FFFFFF',
         border: '1px solid #ECE6E0',
-        borderRadius: '10px',
-        padding: '20px',
+        borderRadius: '12px',
+        overflow: 'hidden',
         cursor: 'pointer',
-        transition: 'background 120ms ease, border-color 120ms ease',
+        transition: 'border-color 120ms ease',
         borderColor: hovered ? '#C9B8B4' : '#ECE6E0',
       }}
     >
-      {/* Icon + title row */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', marginBottom: '12px' }}>
-        <div
-          style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '9px',
-            backgroundColor: '#8B1A2F',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-            color: '#FFFFFF',
-            fontSize: '16px',
-            fontWeight: 700,
-          }}
-        >
-          {initial}
-        </div>
+      {/* Branded header */}
+      <div
+        style={{
+          background: '#111111',
+          padding: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+        }}
+      >
+        <img
+          src="/da-logo.png"
+          alt="The Discipleship Academy"
+          style={{ width: '52px', height: '52px', objectFit: 'contain', flexShrink: 0 }}
+          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
+        />
         <div style={{ minWidth: 0 }}>
-          <p style={{ fontSize: '14px', fontWeight: 600, color: '#0A0A0B', margin: 0, lineHeight: 1.35 }}>
+          <p style={{ fontSize: '10px', fontWeight: 600, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.12em', margin: '0 0 4px' }}>
+            The Discipleship Academy
+          </p>
+          <p style={{ fontSize: '15px', fontWeight: 700, color: '#FFFFFF', margin: 0, lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {title}
           </p>
-          {description && (
-            <p
-              style={{
-                fontSize: '12.5px',
-                color: '#9C949A',
-                margin: '4px 0 0',
-                lineHeight: 1.4,
-                overflow: 'hidden',
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-              }}
-            >
-              {description}
-            </p>
-          )}
         </div>
       </div>
 
-      {/* Footer */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {tutorName && (
-            <span style={{ fontSize: '11.5px', color: '#6B6168' }}>{tutorName}</span>
-          )}
-          <span style={{ fontSize: '11px', color: '#9C949A' }}>
-            {enrolledCount} enrolled
+      {/* Body */}
+      <div style={{ padding: '16px 20px 20px', flex: 1, display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        {description ? (
+          <p
+            style={{
+              fontSize: '13px',
+              color: '#6B6168',
+              margin: 0,
+              lineHeight: 1.55,
+              overflow: 'hidden',
+              display: '-webkit-box',
+              WebkitLineClamp: 3,
+              WebkitBoxOrient: 'vertical',
+            }}
+          >
+            {description}
+          </p>
+        ) : (
+          <p style={{ fontSize: '13px', color: '#B5AFB3', margin: 0, fontStyle: 'italic' }}>No description</p>
+        )}
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            {tutorName && (
+              <span style={{ fontSize: '11.5px', color: '#6B6168' }}>{tutorName}</span>
+            )}
+            <span style={{ fontSize: '11px', color: '#9C949A' }}>{enrolledCount} enrolled</span>
+          </div>
+          <span
+            style={{
+              fontSize: '12.5px',
+              fontWeight: 600,
+              color: hovered ? '#FFFFFF' : '#8B1A2F',
+              backgroundColor: hovered ? '#8B1A2F' : 'rgba(139,26,47,0.08)',
+              padding: '6px 16px',
+              borderRadius: '6px',
+              transition: 'background 120ms ease, color 120ms ease',
+              flexShrink: 0,
+            }}
+          >
+            Enter class →
           </span>
         </div>
-        <span
-          style={{
-            fontSize: '12px',
-            fontWeight: 600,
-            color: hovered ? '#FFFFFF' : '#8B1A2F',
-            backgroundColor: hovered ? '#8B1A2F' : 'rgba(139,26,47,0.08)',
-            padding: '4px 12px',
-            borderRadius: '5px',
-            transition: 'background 120ms ease, color 120ms ease',
-          }}
-        >
-          Open →
-        </span>
       </div>
     </button>
   )
