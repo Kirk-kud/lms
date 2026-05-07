@@ -1,15 +1,28 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient, useQueries } from '@tanstack/react-query'
-import { apiClient } from '@/lib/api'
+import { apiClient, ApiError, getApiBaseUrl } from '@/lib/api'
+
+export interface SubmissionViewPayload {
+  submission_kind: 'pdf' | 'text' | 'link'
+  signed_url: string | null
+  submission_text: string | null
+  submission_link_url: string | null
+}
 import { useClasses } from './useClasses'
+
+export type ExpectedSubmissionType = 'pdf_file' | 'text' | 'link'
 
 export interface Submission {
   id: string
   assignment_id: string
   student_id: string
-  file_url: string
-  file_name: string
+  file_url: string | null
+  file_name: string | null
+  /** Student text response when `expected_submission_type` is `text`. */
+  submission_text?: string | null
+  /** Student URL when `expected_submission_type` is `link`. */
+  submission_link_url?: string | null
   status: 'submitted' | 'late'
   submitted_at: string
   signed_url?: string | null
@@ -27,6 +40,14 @@ export interface Assignment {
   week_number: number
   due_date: string
   created_at: string
+  /** What students submit (defaults to pdf_file server-side when missing). */
+  expected_submission_type?: ExpectedSubmissionType
+  instruction_file_path?: string | null
+  instruction_file_name?: string | null
+  instruction_link_url?: string | null
+  instruction_text?: string | null
+  /** Signed URL when `instruction_file_path` is set (API-enriched). */
+  instruction_file_signed_url?: string | null
   // tutor-enriched
   submission_count?: number
   missing_count?: number
@@ -102,6 +123,9 @@ export function useCreateAssignment() {
       description?: string
       week_number: number
       due_date: string
+      expected_submission_type?: ExpectedSubmissionType
+      instruction_link_url?: string
+      instruction_text?: string
     }) => apiClient.post<Assignment>('/assignments', body),
     onSuccess: async (_data, vars) => {
       await Promise.all([
@@ -144,7 +168,7 @@ export function useSubmissionViewUrl(assignmentId: string, submissionId: string,
   return useQuery({
     queryKey: ['submission-view-url', assignmentId, submissionId],
     queryFn: () =>
-      apiClient.get<{ signed_url: string }>(`/assignments/${assignmentId}/submissions/${submissionId}/view-url`),
+      apiClient.get<SubmissionViewPayload>(`/assignments/${assignmentId}/submissions/${submissionId}/view-url`),
     enabled: enabled && !!assignmentId && !!submissionId,
     staleTime: 50 * 60 * 1000, // 50 min (signed URLs last 1 hour)
   })
@@ -153,17 +177,72 @@ export function useSubmissionViewUrl(assignmentId: string, submissionId: string,
 export function useUpdateAssignment() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({
-      assignmentId,
-      classId: _classId,
-      ...body
-    }: {
+    mutationFn: (vars: {
       assignmentId: string
       classId: string
       title?: string
       description?: string
       due_date?: string
-    }) => apiClient.patch<Assignment>(`/assignments/${assignmentId}`, body),
+      expected_submission_type?: ExpectedSubmissionType
+      instruction_link_url?: string | null
+      instruction_text?: string | null
+      clear_instruction_pdf?: boolean
+    }) => {
+      const { assignmentId, classId, ...body } = vars
+      void classId
+      return apiClient.patch<Assignment>(`/assignments/${assignmentId}`, body)
+    },
+    onSuccess: async (_data, vars) => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['assignments', vars.classId] }),
+        qc.invalidateQueries({ queryKey: ['assignments-batch'] }),
+      ])
+    },
+  })
+}
+
+export async function uploadAssignmentInstructionPdf(
+  assignmentId: string,
+  file: File,
+): Promise<Assignment> {
+  const formData = new FormData()
+  formData.append('file', file)
+  const token =
+    typeof window !== 'undefined' ? localStorage.getItem('access_token') : null
+  const res = await fetch(
+    `${getApiBaseUrl()}/assignments/${assignmentId}/instruction-file`,
+    {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    },
+  )
+
+  const json = (await res.json().catch(() => null)) as {
+    data?: Assignment
+    message?: string
+  } | null
+
+  if (!res.ok) {
+    throw new ApiError(res.status, json?.message ?? 'Unable to upload file')
+  }
+  if (!json?.data) {
+    throw new ApiError(res.status, 'Invalid API response')
+  }
+  return json.data
+}
+
+export function useUploadAssignmentInstructionPdf() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (vars: {
+      assignmentId: string
+      classId: string
+      file: File
+    }) => {
+      void vars.classId
+      return uploadAssignmentInstructionPdf(vars.assignmentId, vars.file)
+    },
     onSuccess: async (_data, vars) => {
       await Promise.all([
         qc.invalidateQueries({ queryKey: ['assignments', vars.classId] }),

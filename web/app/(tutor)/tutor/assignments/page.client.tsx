@@ -35,7 +35,7 @@ function GradeModal({
   onClose: () => void
 }) {
   const submissionId = row.submission?.id ?? ''
-  const { data: urlData, isLoading: urlLoading } = useSubmissionViewUrl(assignmentId, submissionId, open && !!submissionId)
+  const { data: preview, isLoading: urlLoading } = useSubmissionViewUrl(assignmentId, submissionId, open && !!submissionId)
   const gradeSubmission = useGradeSubmission()
   const [grade, setGrade] = useState<string>(
     row.submission?.grade !== null && row.submission?.grade !== undefined ? String(row.submission.grade) : '',
@@ -82,10 +82,28 @@ function GradeModal({
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '8px', color: '#9CA3AF', fontSize: '13px' }}>
                 <LoadingSpinner /> Loading file…
               </div>
-            ) : urlData?.signed_url ? (
-              <iframe src={urlData.signed_url} style={{ width: '100%', height: '100%', border: 'none' }} title={`Submission by ${row.student.full_name}`} />
+            ) : preview?.submission_kind === 'pdf' && preview?.signed_url ? (
+              <iframe src={preview.signed_url} style={{ width: '100%', height: '100%', border: 'none' }} title={`Submission by ${row.student.full_name}`} />
+            ) : preview?.submission_kind === 'text' && preview.submission_text ? (
+              <div style={{ height: '100%', overflow: 'auto', padding: '20px', boxSizing: 'border-box', background: '#fff' }}>
+                <pre style={{ margin: 0, fontSize: '13px', lineHeight: 1.55, color: '#111', fontFamily: 'Inter, sans-serif', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                  {preview.submission_text}
+                </pre>
+              </div>
+            ) : preview?.submission_kind === 'link' && preview.submission_link_url ? (
+              <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '12px', padding: '20px', textAlign: 'center' }}>
+                <p style={{ fontSize: '13px', color: '#6B7280', margin: 0 }}>Submitted as a URL</p>
+                <a
+                  href={preview.submission_link_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ fontSize: '14px', color: '#8B1A2F', fontWeight: 500, textDecoration: 'underline', wordBreak: 'break-all' }}
+                >
+                  {preview.submission_link_url}
+                </a>
+              </div>
             ) : (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#9CA3AF', fontSize: '13px' }}>Unable to load file</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#9CA3AF', fontSize: '13px' }}>Unable to load submission</div>
             )}
           </div>
 
@@ -129,7 +147,13 @@ function GradeModal({
 
 function SubmissionRowItem({ row, assignmentId }: { row: SubmissionRow; assignmentId: string }) {
   const [reviewOpen, setReviewOpen] = useState(false)
-  const hasSubmission = !!row.submission?.file_url
+  const sub = row.submission
+  const hasSubmission = !!sub && !!(
+    (sub.file_url && sub.file_url.length > 0) ||
+    (sub.file_name && sub.file_name.length > 0) ||
+    (sub.submission_text && sub.submission_text.trim()) ||
+    (sub.submission_link_url && sub.submission_link_url.trim())
+  )
   const graded = row.submission?.grade !== null && row.submission?.grade !== undefined
 
   return (

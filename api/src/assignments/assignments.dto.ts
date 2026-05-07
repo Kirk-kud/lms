@@ -1,12 +1,17 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsDateString,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
   IsUUID,
+  MaxLength,
   Min,
 } from 'class-validator';
+
+/** What students submit for this assignment. */
+export type ExpectedSubmissionType = 'pdf_file' | 'text' | 'link';
 
 export class CreateAssignmentDto {
   @IsUUID()
@@ -30,6 +35,39 @@ export class CreateAssignmentDto {
   @IsOptional()
   @IsUUID()
   cohort_id?: string;
+
+  @IsOptional()
+  @IsIn(['pdf_file', 'text', 'link'])
+  expected_submission_type?: ExpectedSubmissionType;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
+  instruction_link_url?: string;
+
+  /** Optional pasted instructions (students read on the assignment page). */
+  @IsOptional()
+  @IsString()
+  @MaxLength(50_000)
+  instruction_text?: string;
+}
+
+export class SubmitAssignmentBodyDto {
+  @IsOptional()
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
+  @IsString()
+  @MaxLength(50_000)
+  submission_text?: string;
+
+  @IsOptional()
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
+  @IsString()
+  @MaxLength(2048)
+  submission_link_url?: string;
 }
 
 export class GradeSubmissionDto {
@@ -59,4 +97,19 @@ export class UpdateAssignmentDto {
   @IsOptional()
   @IsUUID()
   cohort_id?: string;
+
+  @IsOptional()
+  @IsIn(['pdf_file', 'text', 'link'])
+  expected_submission_type?: ExpectedSubmissionType;
+
+  @IsOptional()
+  instruction_link_url?: string | null;
+
+  @IsOptional()
+  instruction_text?: string | null;
+
+  /** Remove the uploaded PDF handout from storage and clear path/name columns. */
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  clear_instruction_pdf?: boolean;
 }

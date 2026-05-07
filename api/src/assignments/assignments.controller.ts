@@ -20,6 +20,7 @@ import type { JwtPayload } from '../auth/jwt.strategy';
 import {
   CreateAssignmentDto,
   GradeSubmissionDto,
+  SubmitAssignmentBodyDto,
   UpdateAssignmentDto,
 } from './assignments.dto';
 import { AssignmentsService } from './assignments.service';
@@ -94,11 +95,30 @@ export class AssignmentsController {
   async submit(
     @Req() req: Request,
     @Param('id') id: string,
-    @UploadedFile() file?: Express.Multer.File,
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @Body() body: SubmitAssignmentBodyDto,
   ) {
     const user = req.user as JwtPayload;
-    const data = await this.service.submit(id, user.sub, file);
+    const data = await this.service.submit(id, user.sub, file, body);
     return createResponse(data, 'Assignment submitted', 201);
+  }
+
+  @Post(':id/instruction-file')
+  @Roles('admin')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadInstructionFile(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const user = req.user as JwtPayload;
+    const data = await this.service.uploadInstructionPdf(
+      id,
+      user.sub,
+      user.role ?? null,
+      file,
+    );
+    return createResponse(data, 'Instruction file uploaded');
   }
 
   @Get(':id/submissions/:submissionId/view-url')

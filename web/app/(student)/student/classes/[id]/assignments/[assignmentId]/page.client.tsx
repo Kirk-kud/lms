@@ -6,20 +6,54 @@ import { useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
 import confetti from 'canvas-confetti'
 import { toast } from 'sonner'
-import { useAssignments, Assignment } from '@/lib/hooks/useAssignments'
+import {
+  useAssignments,
+  Assignment,
+  type ExpectedSubmissionType,
+} from '@/lib/hooks/useAssignments'
 import { useClass } from '@/lib/hooks/useClasses'
 import { useUser } from '@/lib/hooks/useUser'
 import AssignmentUpload from '@/components/ui/student/AssignmentUpload'
+import type {
+  AssignmentMaterialsBlock,
+  SubmitPayload,
+} from '@/components/ui/student/AssignmentUpload'
 import { SkeletonCard } from '@/components/ui/shared/SkeletonCard'
 import { InlineError } from '@/components/ui/shared/InlineError'
 import { ApiError, getApiBaseUrl } from '@/lib/api'
 
-function toSubmissionData(assignment: Assignment) {
-  if (!assignment.submission) return null
+function deriveExpectedType(row: Assignment): ExpectedSubmissionType {
+  return row.expected_submission_type ?? 'pdf_file'
+}
+
+function deriveMaterials(row: Assignment): AssignmentMaterialsBlock {
   return {
-    file_name: assignment.submission.file_name,
-    submitted_at: new Date(assignment.submission.submitted_at),
-    signed_url: assignment.submission.signed_url ?? null,
+    instructionPdfSignedUrl: row.instruction_file_signed_url ?? null,
+    instructionPdfFileName: row.instruction_file_name ?? null,
+    instructionLink: row.instruction_link_url ?? null,
+    instructionText: row.instruction_text ?? null,
+  }
+}
+
+/** Infer how the student handed work in — older rows assume PDF-only. */
+function deriveSubmissionPresentation(row: Assignment) {
+  const s = row.submission
+  if (!s) return null
+
+  const linkTrim = (s.submission_link_url ?? '').trim()
+  const textTrim = (s.submission_text ?? '').trim()
+  let kind: ExpectedSubmissionType = deriveExpectedType(row)
+  if (linkTrim.length > 0) kind = 'link'
+  else if (textTrim.length > 0) kind = 'text'
+  else if ((s.file_name ?? '').length > 0 || (s.file_url ?? '').length > 0) kind = 'pdf_file'
+
+  return {
+    submitted_at: new Date(s.submitted_at),
+    kind,
+    file_display_name: s.file_name,
+    pdf_signed_url: kind === 'pdf_file' ? s.signed_url ?? null : null,
+    response_text: kind === 'text' ? textTrim || null : null,
+    response_link: kind === 'link' ? linkTrim || null : null,
   }
 }
 
@@ -68,72 +102,145 @@ export default function AssignmentDetailPageClient({
   const isLoading = isClassLoading || isAssignmentsLoading
   const isOverdue = assignment ? new Date(assignment.due_date) < new Date() : false
 
-  const handleSubmit = useCallback(async (file: File) => {
-    const token = getAccessToken()
-    const formData = new FormData()
-    formData.append('file', file)
+  const handleSubmit = useCallback(
+    async (payload: SubmitPayload) => {
+      const token = getAccessToken()
+      const formData = new FormData()
 
-    qc.setQueryData<Assignment[]>(['assignments', classId], (prev) =>
-      prev?.map((a) =>
-        a.id === assignmentId
-          ? {
-              ...a,
-              submission: {
-                id: `optimistic-${assignmentId}`,
-                assignment_id: assignmentId,
-                student_id: user?.id ?? '',
-                file_url: '',
-                file_name: file.name,
-                status: 'submitted' as const,
-                submitted_at: new Date().toISOString(),
-                grade: null,
-                feedback: null,
-                graded_at: null,
-                graded_by: null,
-              },
-            }
-          : a
-      )
-    )
+      if (payload.kind === 'pdf_file') formData.append('file', payload.file)
+      else if (payload.kind === 'text')
+        formData.append('submission_text', payload.submission_text)
+      else formData.append('submission_link_url', payload.submission_link_url)
 
-    try {
-      setUploadProgress(10)
-      await axios.post(
-        `${getApiBaseUrl()}/assignments/${assignmentId}/submit`,
-        formData,
-        {
-          headers: { Authorization: token ? `Bearer ${token}` : undefined },
-          onUploadProgress: (event) => {
-            const total = event.total ?? 0
-            if (total > 0) {
-              const progress = Math.round((event.loaded / total) * 100)
-              setUploadProgress(Math.min(95, progress))
-            }
-          },
-        }
-      )
-      setUploadProgress(100)
-      await new Promise(resolve => setTimeout(resolve, 400))
-      await qc.invalidateQueries({ queryKey: ['assignments', classId] })
-      toast.success('Assignment submitted!')
-      fireConfetti()
-    } catch (err) {
-      let errorMsg = 'Unable to submit assignment'
-      if (err instanceof ApiError) {
-        errorMsg = err.message
-      } else if (axios.isAxiosError(err)) {
-        const msg = err.response?.data?.message
-        if (typeof msg === 'string') errorMsg = msg
-        else if (err.response?.status === 401) errorMsg = 'Session expired — please sign in again'
-        else if (err.response?.status === 403) errorMsg = "You're not enrolled in this class"
-        else if (err.response?.status === 413) errorMsg = 'File is too large (max 15 MB)'
+      const isPdfSubmit = payload.kind === 'pdf_file'
+
+      if (isPdfSubmit) {
+        qc.setQueryData<Assignment[]>(['assignments', classId], (prev) =>
+          prev?.map((a) =>
+            a.id === assignmentId
+              ? {
+                  ...a,
+                  submission: {
+                    id: `optimistic-${assignmentId}`,
+                    assignment_id: assignmentId,
+                    student_id: user?.id ?? '',
+                    file_url: '',
+                    file_name: payload.file.name,
+                    submission_text: null,
+                    submission_link_url: null,
+                    status: 'submitted',
+                    submitted_at: new Date().toISOString(),
+                    grade: null,
+                    feedback: null,
+                    graded_at: null,
+                    graded_by: null,
+                  },
+                }
+              : a,
+          ),
+        )
+      } else if (payload.kind === 'text') {
+        qc.setQueryData<Assignment[]>(['assignments', classId], (prev) =>
+          prev?.map((a) =>
+            a.id === assignmentId
+              ? {
+                  ...a,
+                  submission: {
+                    id: `optimistic-${assignmentId}`,
+                    assignment_id: assignmentId,
+                    student_id: user?.id ?? '',
+                    file_url: null,
+                    file_name: null,
+                    submission_text: payload.submission_text,
+                    submission_link_url: null,
+                    status: 'submitted',
+                    submitted_at: new Date().toISOString(),
+                    grade: null,
+                    feedback: null,
+                    graded_at: null,
+                    graded_by: null,
+                  },
+                }
+              : a,
+          ),
+        )
+      } else if (payload.kind === 'link') {
+        qc.setQueryData<Assignment[]>(['assignments', classId], (prev) =>
+          prev?.map((a) =>
+            a.id === assignmentId
+              ? {
+                  ...a,
+                  submission: {
+                    id: `optimistic-${assignmentId}`,
+                    assignment_id: assignmentId,
+                    student_id: user?.id ?? '',
+                    file_url: null,
+                    file_name: null,
+                    submission_text: null,
+                    submission_link_url: payload.submission_link_url,
+                    status: 'submitted',
+                    submitted_at: new Date().toISOString(),
+                    grade: null,
+                    feedback: null,
+                    graded_at: null,
+                    graded_by: null,
+                  },
+                }
+              : a,
+          ),
+        )
       }
-      toast.error(errorMsg)
-      await qc.invalidateQueries({ queryKey: ['assignments', classId] })
-    } finally {
-      setUploadProgress(0)
-    }
-  }, [assignmentId, classId, qc, user?.id])
+
+      try {
+        if (isPdfSubmit) setUploadProgress(10)
+
+        await axios.post(
+          `${getApiBaseUrl()}/assignments/${assignmentId}/submit`,
+          formData,
+          {
+            headers: { Authorization: token ? `Bearer ${token}` : undefined },
+            onUploadProgress: isPdfSubmit
+              ? (event) => {
+                  const total = event.total ?? 0
+                  if (total > 0) {
+                    const progress = Math.round((event.loaded / total) * 100)
+                    setUploadProgress(Math.min(95, progress))
+                  }
+                }
+              : undefined,
+          },
+        )
+
+        if (isPdfSubmit) {
+          setUploadProgress(100)
+          await new Promise((resolve) => setTimeout(resolve, 400))
+        }
+
+        await qc.invalidateQueries({ queryKey: ['assignments', classId] })
+        toast.success('Assignment submitted!')
+        fireConfetti()
+      } catch (err) {
+        let errorMsg = 'Unable to submit assignment'
+        if (err instanceof ApiError) {
+          errorMsg = err.message
+        } else if (axios.isAxiosError(err)) {
+          const msg = err.response?.data?.message
+          if (typeof msg === 'string') errorMsg = msg
+          else if (err.response?.status === 401)
+            errorMsg = 'Session expired — please sign in again'
+          else if (err.response?.status === 403)
+            errorMsg = "You're not enrolled in this class"
+          else if (err.response?.status === 413)
+            errorMsg = 'File is too large (max 15 MB)'
+        }
+        toast.error(errorMsg)
+        await qc.invalidateQueries({ queryKey: ['assignments', classId] })
+      } finally {
+        setUploadProgress(0)
+      }
+    },
+    [assignmentId, classId, qc, user?.id],
+  )
 
   return (
     <div className="p-4 sm:p-8">
@@ -160,7 +267,9 @@ export default function AssignmentDetailPageClient({
         <span>/</span>
         <button
           onClick={() => router.push(`/student/classes/${classId}/assignments`)}
-          onMouseEnter={() => router.prefetch(`/student/classes/${classId}/assignments`)}
+          onMouseEnter={() =>
+            router.prefetch(`/student/classes/${classId}/assignments`)
+          }
           className="hover:text-[#111] transition-colors"
         >
           Assignments
@@ -198,11 +307,14 @@ export default function AssignmentDetailPageClient({
 
       {!isLoading && assignment && (
         <AssignmentUpload
+          key={`${assignmentId}-${deriveExpectedType(assignment)}`}
           title={assignment.title}
           description={assignment.description ?? undefined}
+          materials={deriveMaterials(assignment)}
+          expectedSubmissionType={deriveExpectedType(assignment)}
           dueDate={new Date(assignment.due_date)}
           isOverdue={isOverdue}
-          submission={toSubmissionData(assignment)}
+          submission={deriveSubmissionPresentation(assignment)}
           onSubmit={handleSubmit}
           uploadProgress={uploadProgress}
         />

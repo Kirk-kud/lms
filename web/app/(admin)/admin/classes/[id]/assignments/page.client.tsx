@@ -11,7 +11,9 @@ import {
   useAssignmentSubmissions,
   useSubmissionViewUrl,
   useGradeSubmission,
+  useUploadAssignmentInstructionPdf,
   Assignment,
+  type ExpectedSubmissionType,
   type SubmissionRow,
 } from '@/lib/hooks/useAssignments'
 import { useClass } from '@/lib/hooks/useClasses'
@@ -34,38 +36,107 @@ import {
 } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
 
+type InstructionAttachMode = 'none' | 'pdf' | 'link' | 'text'
+
+function summarizeExpectation(t: ExpectedSubmissionType | undefined) {
+  switch (t) {
+    case 'text':
+      return 'Written reply'
+    case 'link':
+      return 'Link upload'
+    default:
+      return 'PDF hand-in'
+  }
+}
+
+function deriveInstructionMode(a: Assignment): InstructionAttachMode {
+  if (a.instruction_link_url?.trim()) return 'link'
+  if (a.instruction_text?.trim()) return 'text'
+  if (a.instruction_file_path || a.instruction_file_name) return 'pdf'
+  return 'none'
+}
+
 function CreateAssignmentModal({
   classId,
-  open,
-  onClose,
   nextWeek,
+  onClose,
 }: {
   classId: string
-  open: boolean
-  onClose: () => void
   nextWeek: number
+  onClose: () => void
 }) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [weekNumber, setWeekNumber] = useState(nextWeek)
   const [dueDate, setDueDate] = useState<Date | undefined>()
   const [calOpen, setCalOpen] = useState(false)
+  const [expectedSubmissionType, setExpectedSubmissionType] =
+    useState<ExpectedSubmissionType>('pdf_file')
+  const [instructionMode, setInstructionMode] =
+    useState<InstructionAttachMode>('none')
+  const [instructionLink, setInstructionLink] = useState('')
+  const [instructionTextBody, setInstructionTextBody] = useState('')
+  const [instructionPdfFile, setInstructionPdfFile] = useState<File | null>(null)
+  const pdfInputRef = useRef<HTMLInputElement>(null)
   const createAssignment = useCreateAssignment()
+  const uploadInstructionPdf = useUploadAssignmentInstructionPdf()
+
+  const resetForm = () => {
+    setTitle('')
+    setDescription('')
+    setDueDate(undefined)
+    setWeekNumber(nextWeek)
+    setExpectedSubmissionType('pdf_file')
+    setInstructionMode('none')
+    setInstructionLink('')
+    setInstructionTextBody('')
+    setInstructionPdfFile(null)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim() || !dueDate) return
+    if (
+      instructionMode === 'link' &&
+      !instructionLink.trim()
+    ) {
+      toast.error('Add a URL for students, or switch materials type')
+      return
+    }
+    if (
+      instructionMode === 'text' &&
+      !instructionTextBody.trim()
+    ) {
+      toast.error('Paste some instructions for students')
+      return
+    }
+    if (instructionMode === 'pdf' && !instructionPdfFile) {
+      toast.error('Pick a PDF to attach')
+      return
+    }
     try {
-      await createAssignment.mutateAsync({
+      const created = await createAssignment.mutateAsync({
         class_id: classId,
         title: title.trim(),
         description: description.trim() || undefined,
         week_number: weekNumber,
         due_date: dueDate.toISOString(),
+        expected_submission_type: expectedSubmissionType,
+        instruction_link_url:
+          instructionMode === 'link' ? instructionLink.trim() : undefined,
+        instruction_text:
+          instructionMode === 'text' ? instructionTextBody.trim() : undefined,
       })
-      setTitle('')
-      setDescription('')
-      setDueDate(undefined)
+
+      if (instructionMode === 'pdf' && instructionPdfFile && created?.id) {
+        await uploadInstructionPdf.mutateAsync({
+          assignmentId: created.id,
+          classId,
+          file: instructionPdfFile,
+        })
+      }
+
+      resetForm()
       onClose()
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Unable to create assignment')
@@ -79,8 +150,8 @@ function CreateAssignmentModal({
   }
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-md">
+    <Dialog open onOpenChange={(v) => { if (!v) { resetForm(); onClose() } }}>
+      <DialogContent className="max-w-md max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-[15px] font-medium">New assignment</DialogTitle>
         </DialogHeader>
@@ -98,6 +169,81 @@ function CreateAssignmentModal({
               onFocus={(e) => (e.currentTarget.style.borderColor = '#8B1A2F')}
               onBlur={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')} />
           </div>
+          <div>
+            <label className="block text-[12px] text-[#6B6B6B] mb-1">What students submit</label>
+            <select
+              value={expectedSubmissionType}
+              onChange={(e) =>
+                setExpectedSubmissionType(e.target.value as ExpectedSubmissionType)}
+              style={inputStyle}
+            >
+              <option value="pdf_file">PDF file</option>
+              <option value="text">Written reply in the app</option>
+              <option value="link">Link (URL)</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-[12px] text-[#6B6B6B] mb-1">
+              Instructions or reading for students <span className="text-[#9CA3AF]">(optional)</span>
+            </label>
+            <select
+              value={instructionMode}
+              onChange={(e) => {
+                const v = e.target.value as InstructionAttachMode
+                setInstructionMode(v)
+                setInstructionPdfFile(null)
+                if (pdfInputRef.current) pdfInputRef.current.value = ''
+              }}
+              className="w-full h-9 text-[13px] border border-[#E5E5E5] rounded-lg px-2 outline-none hover:border-[#8B1A2F]"
+            >
+              <option value="none">None for now</option>
+              <option value="pdf">Attach a PDF handout</option>
+              <option value="link">Share an external link</option>
+              <option value="text">Paste directions as text</option>
+            </select>
+          </div>
+          {instructionMode === 'pdf' && (
+            <div className="space-y-2">
+              <input
+                ref={pdfInputRef}
+                type="file"
+                accept="application/pdf"
+                className="hidden"
+                onChange={(e) => setInstructionPdfFile(e.target.files?.[0] ?? null)}
+              />
+              <button
+                type="button"
+                onClick={() => pdfInputRef.current?.click()}
+                className="w-full h-9 text-[13px] border border-[#E5E5E5] rounded-lg hover:border-[#8B1A2F]"
+              >
+                {instructionPdfFile ? instructionPdfFile.name : 'Choose PDF (max 15 MB)'}
+              </button>
+            </div>
+          )}
+          {instructionMode === 'link' && (
+            <div>
+              <label className="block text-[12px] text-[#6B6B6B] mb-1">Link URL</label>
+              <input
+                type="url"
+                value={instructionLink}
+                onChange={(e) => setInstructionLink(e.target.value)}
+                placeholder="https://..."
+                style={inputStyle}
+              />
+            </div>
+          )}
+          {instructionMode === 'text' && (
+            <div>
+              <label className="block text-[12px] text-[#6B6B6B] mb-1">Instructions text</label>
+              <textarea
+                value={instructionTextBody}
+                onChange={(e) => setInstructionTextBody(e.target.value)}
+                rows={4}
+                placeholder="Anything students should read before they start…"
+                style={{ ...inputStyle, height: 'auto', padding: '8px 10px', resize: 'vertical' }}
+              />
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-[12px] text-[#6B6B6B] mb-1">Week</label>
@@ -127,10 +273,10 @@ function CreateAssignmentModal({
             </div>
           </div>
           <div className="flex gap-2 justify-end pt-1">
-            <button type="button" onClick={onClose} className="h-9 px-4 text-[13px] text-[#6B7280] border border-[#E5E5E5] rounded-lg hover:bg-[#F8F8F8] transition-colors">Cancel</button>
-            <button type="submit" disabled={createAssignment.isPending || !title.trim() || !dueDate} className="h-9 px-4 text-[13px] font-medium bg-black text-white rounded-lg disabled:opacity-50 hover:bg-black/90 transition-colors flex items-center gap-2">
-              {createAssignment.isPending && <LoadingSpinner className="text-white" />}
-              {createAssignment.isPending ? 'Creating...' : 'Create'}
+            <button type="button" onClick={() => { resetForm(); onClose() }} className="h-9 px-4 text-[13px] text-[#6B7280] border border-[#E5E5E5] rounded-lg hover:bg-[#F8F8F8] transition-colors">Cancel</button>
+            <button type="submit" disabled={createAssignment.isPending || uploadInstructionPdf.isPending || !title.trim() || !dueDate} className="h-9 px-4 text-[13px] font-medium bg-black text-white rounded-lg disabled:opacity-50 hover:bg-black/90 transition-colors flex items-center gap-2">
+              {(createAssignment.isPending || uploadInstructionPdf.isPending) && <LoadingSpinner className="text-white" />}
+              {createAssignment.isPending || uploadInstructionPdf.isPending ? 'Saving…' : 'Create'}
             </button>
           </div>
         </form>
@@ -142,31 +288,82 @@ function CreateAssignmentModal({
 function EditAssignmentModal({
   assignment,
   classId,
-  open,
   onClose,
 }: {
   assignment: Assignment
   classId: string
-  open: boolean
   onClose: () => void
 }) {
   const [title, setTitle] = useState(assignment.title)
   const [description, setDescription] = useState(assignment.description ?? '')
   const [dueDate, setDueDate] = useState<Date | undefined>(new Date(assignment.due_date))
   const [calOpen, setCalOpen] = useState(false)
+  const [expectedSubmissionType, setExpectedSubmissionType] =
+    useState<ExpectedSubmissionType>(assignment.expected_submission_type ?? 'pdf_file')
+  const [instructionMode, setInstructionMode] =
+    useState<InstructionAttachMode>(deriveInstructionMode(assignment))
+  const [instructionLink, setInstructionLink] = useState(assignment.instruction_link_url ?? '')
+  const [instructionTextBody, setInstructionTextBody] = useState(assignment.instruction_text ?? '')
+  const [instructionPdfFile, setInstructionPdfFile] = useState<File | null>(null)
+  const pdfInputRef = useRef<HTMLInputElement>(null)
   const updateAssignment = useUpdateAssignment()
+  const uploadInstructionPdf = useUploadAssignmentInstructionPdf()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim() || !dueDate) return
+    if (
+      instructionMode === 'link' &&
+      !instructionLink.trim()
+    ) {
+      toast.error('Add a URL, or switch the materials option')
+      return
+    }
+    if (
+      instructionMode === 'text' &&
+      !instructionTextBody.trim()
+    ) {
+      toast.error('Paste some directions, or switch the materials option')
+      return
+    }
+    if (
+      instructionMode === 'pdf' &&
+      !assignment.instruction_file_path &&
+      !assignment.instruction_file_name &&
+      !instructionPdfFile
+    ) {
+      toast.error('Upload a PDF handout, or switch the materials option')
+      return
+    }
     try {
+      const hadPdf =
+        !!(assignment.instruction_file_path ?? assignment.instruction_file_name)
+
+      const trimmedLink = instructionLink.trim()
+      const trimmedText = instructionTextBody.trim()
+
       await updateAssignment.mutateAsync({
         assignmentId: assignment.id,
         classId,
         title: title.trim(),
         description: description.trim() || undefined,
         due_date: dueDate.toISOString(),
+        expected_submission_type: expectedSubmissionType,
+        instruction_link_url:
+          instructionMode === 'link' ? trimmedLink || null : null,
+        instruction_text:
+          instructionMode === 'text' ? trimmedText || null : null,
+        clear_instruction_pdf: instructionMode === 'none' && hadPdf,
       })
+
+      if (instructionMode === 'pdf' && instructionPdfFile) {
+        await uploadInstructionPdf.mutateAsync({
+          assignmentId: assignment.id,
+          classId,
+          file: instructionPdfFile,
+        })
+      }
+
       onClose()
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Unable to update assignment')
@@ -180,8 +377,8 @@ function EditAssignmentModal({
   }
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-md">
+    <Dialog open onOpenChange={(v) => { if (!v) onClose() }}>
+      <DialogContent className="max-w-md max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-[15px] font-medium">Edit assignment</DialogTitle>
         </DialogHeader>
@@ -199,6 +396,85 @@ function EditAssignmentModal({
               onFocus={(e) => (e.currentTarget.style.borderColor = '#8B1A2F')}
               onBlur={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')} />
           </div>
+          <div>
+            <label className="block text-[12px] text-[#6B6B6B] mb-1">What students submit</label>
+            <select
+              value={expectedSubmissionType}
+              onChange={(e) =>
+                setExpectedSubmissionType(e.target.value as ExpectedSubmissionType)}
+              style={inputStyle}
+            >
+              <option value="pdf_file">PDF file</option>
+              <option value="text">Written reply in the app</option>
+              <option value="link">Link (URL)</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-[12px] text-[#6B6B6B] mb-1">Instructions or reading</label>
+            <select
+              value={instructionMode}
+              onChange={(e) => {
+                const v = e.target.value as InstructionAttachMode
+                setInstructionMode(v)
+                setInstructionPdfFile(null)
+                if (pdfInputRef.current) pdfInputRef.current.value = ''
+              }}
+              className="w-full h-9 text-[13px] border border-[#E5E5E5] rounded-lg px-2 outline-none hover:border-[#8B1A2F]"
+            >
+              <option value="none">None</option>
+              <option value="pdf">PDF handout</option>
+              <option value="link">External link</option>
+              <option value="text">Directions as text</option>
+            </select>
+          </div>
+          {instructionMode === 'pdf' && (
+            <div className="space-y-2">
+              <p className="text-[12px] text-[#9CA3AF]">
+                {assignment.instruction_file_name
+                  ? `Current handout: ${assignment.instruction_file_name}`
+                  : 'Upload a PDF for students.'}
+              </p>
+              <input
+                ref={pdfInputRef}
+                type="file"
+                accept="application/pdf"
+                className="hidden"
+                onChange={(e) => setInstructionPdfFile(e.target.files?.[0] ?? null)}
+              />
+              <button
+                type="button"
+                onClick={() => pdfInputRef.current?.click()}
+                className="w-full h-9 text-[13px] border border-[#E5E5E5] rounded-lg hover:border-[#8B1A2F]"
+              >
+                {instructionPdfFile
+                  ? `Replace with: ${instructionPdfFile.name}`
+                  : 'Choose new PDF (optional)' }
+              </button>
+            </div>
+          )}
+          {instructionMode === 'link' && (
+            <div>
+              <label className="block text-[12px] text-[#6B6B6B] mb-1">Link URL</label>
+              <input
+                type="url"
+                value={instructionLink}
+                onChange={(e) => setInstructionLink(e.target.value)}
+                placeholder="https://..."
+                style={inputStyle}
+              />
+            </div>
+          )}
+          {instructionMode === 'text' && (
+            <div>
+              <label className="block text-[12px] text-[#6B6B6B] mb-1">Instructions text</label>
+              <textarea
+                value={instructionTextBody}
+                onChange={(e) => setInstructionTextBody(e.target.value)}
+                rows={4}
+                style={{ ...inputStyle, height: 'auto', padding: '8px 10px', resize: 'vertical' }}
+              />
+            </div>
+          )}
           <div>
             <label className="block text-[12px] text-[#6B6B6B] mb-1">Due date</label>
             <Popover open={calOpen} onOpenChange={setCalOpen}>
@@ -220,9 +496,9 @@ function EditAssignmentModal({
           </div>
           <div className="flex gap-2 justify-end pt-1">
             <button type="button" onClick={onClose} className="h-9 px-4 text-[13px] text-[#6B7280] border border-[#E5E5E5] rounded-lg hover:bg-[#F8F8F8] transition-colors">Cancel</button>
-            <button type="submit" disabled={updateAssignment.isPending || !title.trim() || !dueDate} className="h-9 px-4 text-[13px] font-medium bg-black text-white rounded-lg disabled:opacity-50 hover:bg-black/90 transition-colors flex items-center gap-2">
-              {updateAssignment.isPending && <LoadingSpinner className="text-white" />}
-              {updateAssignment.isPending ? 'Saving...' : 'Save'}
+            <button type="submit" disabled={updateAssignment.isPending || uploadInstructionPdf.isPending || !title.trim() || !dueDate} className="h-9 px-4 text-[13px] font-medium bg-black text-white rounded-lg disabled:opacity-50 hover:bg-black/90 transition-colors flex items-center gap-2">
+              {(updateAssignment.isPending || uploadInstructionPdf.isPending) && <LoadingSpinner className="text-white" />}
+              {(updateAssignment.isPending || uploadInstructionPdf.isPending) ? 'Saving…' : 'Save'}
             </button>
           </div>
         </form>
@@ -282,7 +558,7 @@ function GradeModal({
   onClose: () => void
 }) {
   const submissionId = row.submission?.id ?? ''
-  const { data: urlData, isLoading: urlLoading } = useSubmissionViewUrl(assignmentId, submissionId, open && !!submissionId)
+  const { data: preview, isLoading: urlLoading } = useSubmissionViewUrl(assignmentId, submissionId, open && !!submissionId)
   const gradeSubmission = useGradeSubmission()
   const [grade, setGrade] = useState<string>(row.submission?.grade !== null && row.submission?.grade !== undefined ? String(row.submission.grade) : '')
   const [feedback, setFeedback] = useState(row.submission?.feedback ?? '')
@@ -331,15 +607,57 @@ function GradeModal({
                 <LoadingSpinner />
                 Loading file…
               </div>
-            ) : urlData?.signed_url ? (
+            ) : preview?.submission_kind === 'pdf' && preview?.signed_url ? (
               <iframe
-                src={urlData.signed_url}
+                src={preview.signed_url}
                 style={{ width: '100%', height: '100%', border: 'none' }}
                 title={`Submission by ${row.student.full_name}`}
               />
+            ) : preview?.submission_kind === 'text' && preview.submission_text ? (
+              <div
+                style={{
+                  height: '100%',
+                  overflow: 'auto',
+                  padding: '20px',
+                  boxSizing: 'border-box',
+                  background: '#fff',
+                }}
+              >
+                <pre
+                  style={{
+                    margin: 0,
+                    fontSize: '13px',
+                    lineHeight: 1.55,
+                    color: '#111',
+                    fontFamily: 'Inter, sans-serif',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                  }}
+                >
+                  {preview.submission_text}
+                </pre>
+              </div>
+            ) : preview?.submission_kind === 'link' && preview.submission_link_url ? (
+              <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '12px', padding: '20px', textAlign: 'center' }}>
+                <p style={{ fontSize: '13px', color: '#6B7280', margin: 0 }}>Submitted as a URL</p>
+                <a
+                  href={preview.submission_link_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    fontSize: '14px',
+                    color: '#8B1A2F',
+                    fontWeight: 500,
+                    textDecoration: 'underline',
+                    wordBreak: 'break-all',
+                  }}
+                >
+                  {preview.submission_link_url}
+                </a>
+              </div>
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#9CA3AF', fontSize: '13px' }}>
-                Unable to load file
+                Unable to load submission
               </div>
             )}
           </div>
@@ -394,7 +712,13 @@ function GradeModal({
 
 function SubmissionRow({ row, assignmentId }: { row: SubmissionRow; assignmentId: string }) {
   const [reviewOpen, setReviewOpen] = useState(false)
-  const hasSubmission = !!row.submission?.file_url
+  const sub = row.submission
+  const hasSubmission = !!sub && !!(
+    (sub.file_url && sub.file_url.length > 0) ||
+    (sub.file_name && sub.file_name.length > 0) ||
+    (sub.submission_text && sub.submission_text.trim()) ||
+    (sub.submission_link_url && sub.submission_link_url.trim())
+  )
   const graded = row.submission?.grade !== null && row.submission?.grade !== undefined
 
   return (
@@ -505,11 +829,14 @@ function AssignmentCard({
         {/* Left: title + due date */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontSize: '14px', fontWeight: 500, color: '#111' }}>{assignment.title}</p>
-          <p style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '3px' }}>
+          <p style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '3px', lineHeight: 1.45 }}>
             Due {format(new Date(assignment.due_date), 'MMM d, h:mm a')}
             {isPast(new Date(assignment.due_date)) && (
               <span style={{ marginLeft: '6px', color: '#991B1B' }}>· Closed</span>
             )}
+            <span style={{ display: 'block', marginTop: '4px', color: '#9CA3AF' }}>
+              Expects{' '}{summarizeExpectation(assignment.expected_submission_type)}
+            </span>
           </p>
         </div>
 
@@ -565,9 +892,9 @@ function AssignmentCard({
     </div>
     {editOpen && (
       <EditAssignmentModal
+        key={assignment.id}
         assignment={assignment}
         classId={classId}
-        open={editOpen}
         onClose={() => setEditOpen(false)}
       />
     )}
@@ -793,12 +1120,14 @@ export default function AssignmentsPageClient({ params }: { params: Promise<{ id
         </>
       )}
 
-      <CreateAssignmentModal
-        classId={classId}
-        open={showCreate}
-        onClose={() => setShowCreate(false)}
-        nextWeek={nextWeek}
-      />
+      {showCreate && (
+        <CreateAssignmentModal
+          key={`${nextWeek}-${classId}`}
+          classId={classId}
+          onClose={() => setShowCreate(false)}
+          nextWeek={nextWeek}
+        />
+      )}
     </div>
   )
 }
