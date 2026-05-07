@@ -88,23 +88,7 @@ export default function ItemPreviewModal({ item, open, onClose }: ItemPreviewMod
           return <p className="text-[13px] text-[#6B7280]">No file available.</p>
         }
         return (
-          <div className="space-y-3">
-            <div className="w-full h-[420px] rounded-lg overflow-hidden border border-[#E5E5E5] bg-[#F9F9F9]">
-              <iframe src={item.content_url} className="w-full h-full" title={item.title} />
-            </div>
-            <div className="flex justify-end">
-              <a
-                href={item.content_url}
-                download
-                target="_blank"
-                rel="noopener noreferrer"
-                className="h-9 px-4 text-[13px] font-medium bg-black text-white rounded-lg hover:bg-black/90 transition-colors inline-flex items-center gap-2"
-              >
-                <DownloadIcon />
-                Download
-              </a>
-            </div>
-          </div>
+          <iframe src={item.content_url} className="w-full h-full border-none" title={item.title} />
         )
       }
 
@@ -170,6 +154,55 @@ export default function ItemPreviewModal({ item, open, onClose }: ItemPreviewMod
         )
       }
     }
+  }
+
+  if (item.type === 'pdf' && item.content_url) {
+    return (
+      <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+        <DialogContent
+          style={{
+            width: '95vw',
+            maxWidth: '95vw',
+            height: '92vh',
+            maxHeight: '92vh',
+            display: 'flex',
+            flexDirection: 'column',
+            padding: 0,
+            overflow: 'hidden',
+          }}
+        >
+          <DialogHeader
+            style={{
+              padding: '12px 16px',
+              borderBottom: '0.5px solid #E5E5E5',
+              flexShrink: 0,
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <FileChip type="pdf" />
+              <DialogTitle className="text-[14px] font-medium truncate">{item.title}</DialogTitle>
+            </div>
+            <a
+              href={item.content_url}
+              download
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 h-8 px-3 text-[12px] font-medium bg-[#111] text-white rounded-md hover:bg-[#8B1A2F] transition-colors inline-flex items-center gap-1.5"
+            >
+              <DownloadIcon />
+              Download
+            </a>
+          </DialogHeader>
+          <div style={{ flex: 1, overflow: 'hidden', background: '#F8F8F8' }}>
+            {renderContent()}
+          </div>
+        </DialogContent>
+      </Dialog>
+    )
   }
 
   const maxWidth = item.type === 'video' ? 'max-w-3xl' : 'max-w-2xl'
