@@ -66,6 +66,9 @@ export default function AssignmentUpload({
     !!materials?.instructionLink?.trim() ||
     !!materials?.instructionText?.trim()
 
+  const isImageFile = (name: string) =>
+    /\.(jpe?g|png|gif|webp)$/i.test(name)
+
   const dueDateLabel = (() => {
     if (isOverdue) return 'Overdue'
     const h = dueDate.getHours(), m = dueDate.getMinutes()
@@ -259,23 +262,45 @@ export default function AssignmentUpload({
             Materials from your tutors
           </p>
           {materials?.instructionPdfSignedUrl && materials.instructionPdfFileName && (
-            <button
-              type="button"
-              onClick={() =>
-                setPreviewItem({
-                  title: materials.instructionPdfFileName!,
-                  type: 'pdf',
-                  content_url: materials.instructionPdfSignedUrl!,
-                  content_text: null,
-                })}
-              className="flex items-center gap-2 text-[12px] text-[#111] hover:text-[#8B1A2F] transition-colors"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-              </svg>
-              <span className="underline underline-offset-2 truncate">{materials.instructionPdfFileName}</span>
-            </button>
+            isImageFile(materials.instructionPdfFileName) ? (
+              <button
+                type="button"
+                onClick={() =>
+                  setPreviewItem({
+                    title: materials.instructionPdfFileName!,
+                    type: 'image',
+                    content_url: materials.instructionPdfSignedUrl!,
+                    content_text: null,
+                  })}
+                className="block w-full text-left group"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={materials.instructionPdfSignedUrl}
+                  alt={materials.instructionPdfFileName}
+                  className="max-h-[180px] max-w-full rounded-lg border border-[#E5E5E5] object-contain bg-white group-hover:opacity-90 transition-opacity"
+                />
+                <p className="mt-1.5 text-[11px] text-[#9CA3AF] truncate">{materials.instructionPdfFileName}</p>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() =>
+                  setPreviewItem({
+                    title: materials.instructionPdfFileName!,
+                    type: 'pdf',
+                    content_url: materials.instructionPdfSignedUrl!,
+                    content_text: null,
+                  })}
+                className="flex items-center gap-2 text-[12px] text-[#111] hover:text-[#8B1A2F] transition-colors"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                </svg>
+                <span className="underline underline-offset-2 truncate">{materials.instructionPdfFileName}</span>
+              </button>
+            )
           )}
           {materials?.instructionLink?.trim() && (
             <a

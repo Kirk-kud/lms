@@ -12,7 +12,7 @@ import { FileChip } from './FileChip'
 
 export interface PreviewItem {
   title: string
-  type: 'pdf' | 'video' | 'link' | 'text'
+  type: 'pdf' | 'video' | 'link' | 'text' | 'image'
   content_url: string | null
   content_text: string | null
 }
@@ -151,6 +151,36 @@ export default function ItemPreviewModal({ item, open, onClose }: ItemPreviewMod
                 </button>
               </div>
             )}
+          </div>
+        )
+      }
+
+      case 'image': {
+        if (!item.content_url) {
+          return <p className="text-[13px] text-[#6B7280]">No image available.</p>
+        }
+        return (
+          <div className="space-y-3">
+            <div className="w-full overflow-hidden rounded-lg border border-[#E5E5E5] bg-[#F8F8F8] flex items-center justify-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={item.content_url}
+                alt={item.title}
+                className="max-w-full max-h-[60vh] object-contain"
+              />
+            </div>
+            <div className="flex justify-end">
+              <a
+                href={item.content_url}
+                download
+                target="_blank"
+                rel="noopener noreferrer"
+                className="h-9 px-4 text-[13px] font-medium border border-[#E5E5E5] text-[#111] rounded-lg hover:bg-[#F8F8F8] transition-colors inline-flex items-center gap-2"
+              >
+                <DownloadIcon />
+                Download
+              </a>
+            </div>
           </div>
         )
       }

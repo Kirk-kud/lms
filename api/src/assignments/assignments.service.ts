@@ -650,7 +650,7 @@ export class AssignmentsService {
   }
 
   // ----------------------------------------------------------------
-  // POST /assignments/:id/instruction-file (admin uploads PDF materials)
+  // POST /assignments/:id/instruction-file (admin uploads PDF or image materials)
   // ----------------------------------------------------------------
   async uploadInstructionPdf(
     assignmentId: string,
@@ -660,11 +660,19 @@ export class AssignmentsService {
   ) {
     if (!file?.buffer?.length)
       throw new BadRequestException('File is required');
-    const isPdf =
-      file.mimetype === 'application/pdf' ||
-      file.originalname.toLowerCase().endsWith('.pdf');
-    if (!isPdf)
-      throw new BadRequestException('Instruction file must be a PDF');
+    const ALLOWED_MIMES = [
+      'application/pdf',
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+    ];
+    const ALLOWED_EXTS = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp'];
+    const ext = (file.originalname ?? '').split('.').pop()?.toLowerCase() ?? '';
+    const isAllowed =
+      ALLOWED_MIMES.includes(file.mimetype) || ALLOWED_EXTS.includes(ext);
+    if (!isAllowed)
+      throw new BadRequestException('Instruction file must be a PDF or image (JPG, PNG, GIF, WebP)');
     if (file.size > MAX_FILE_SIZE)
       throw new BadRequestException('File must be under 15 MB');
 
@@ -691,7 +699,7 @@ export class AssignmentsService {
     const { error: uploadError } = await this.supabase.adminClient.storage
       .from(ASSIGNMENT_INSTRUCTIONS_BUCKET)
       .upload(storagePath, file.buffer, {
-        contentType: 'application/pdf',
+        contentType: file.mimetype,
         upsert: true,
       });
 

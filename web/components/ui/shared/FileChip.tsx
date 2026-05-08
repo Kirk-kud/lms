@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type ModuleItemType = 'pdf' | 'video' | 'link' | 'text';
+export type ModuleItemType = 'pdf' | 'video' | 'link' | 'text' | 'image';
 
 export interface FileChipProps {
   type: ModuleItemType;
@@ -11,6 +11,7 @@ const LABELS: Record<ModuleItemType, string> = {
   video: 'VID',
   link: 'LNK',
   text: 'TXT',
+  image: 'IMG',
 };
 
 export function FileChip({ type }: FileChipProps) {

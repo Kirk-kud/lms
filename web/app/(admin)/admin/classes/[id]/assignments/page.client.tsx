@@ -37,7 +37,7 @@ import {
 } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
 
-type InstructionAttachMode = 'none' | 'pdf' | 'link' | 'text'
+type InstructionAttachMode = 'none' | 'pdf' | 'image' | 'link' | 'text'
 
 function summarizeExpectation(t: ExpectedSubmissionType | undefined) {
   switch (t) {
@@ -50,10 +50,19 @@ function summarizeExpectation(t: ExpectedSubmissionType | undefined) {
   }
 }
 
+const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'gif', 'webp']
+
+function isImageFileName(name: string | null | undefined): boolean {
+  if (!name) return false
+  return IMAGE_EXTS.includes(name.split('.').pop()?.toLowerCase() ?? '')
+}
+
 function deriveInstructionMode(a: Assignment): InstructionAttachMode {
   if (a.instruction_link_url?.trim()) return 'link'
   if (a.instruction_text?.trim()) return 'text'
-  if (a.instruction_file_path || a.instruction_file_name) return 'pdf'
+  if (a.instruction_file_path || a.instruction_file_name) {
+    return isImageFileName(a.instruction_file_name) ? 'image' : 'pdf'
+  }
   return 'none'
 }
 
@@ -92,7 +101,9 @@ function CreateAssignmentModal({
   const [instructionLink, setInstructionLink] = useState('')
   const [instructionTextBody, setInstructionTextBody] = useState('')
   const [instructionPdfFile, setInstructionPdfFile] = useState<File | null>(null)
+  const [instructionImageFile, setInstructionImageFile] = useState<File | null>(null)
   const pdfInputRef = useRef<HTMLInputElement>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
   const createAssignment = useCreateAssignment()
   const uploadInstructionPdf = useUploadAssignmentInstructionPdf()
 
@@ -108,6 +119,7 @@ function CreateAssignmentModal({
     setInstructionLink('')
     setInstructionTextBody('')
     setInstructionPdfFile(null)
+    setInstructionImageFile(null)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -131,6 +143,10 @@ function CreateAssignmentModal({
       toast.error('Pick a PDF to attach')
       return
     }
+    if (instructionMode === 'image' && !instructionImageFile) {
+      toast.error('Pick an image to attach')
+      return
+    }
     try {
       const created = await createAssignment.mutateAsync({
         class_id: classId,
@@ -146,11 +162,14 @@ function CreateAssignmentModal({
           instructionMode === 'text' ? instructionTextBody.trim() : undefined,
       })
 
-      if (instructionMode === 'pdf' && instructionPdfFile && created?.id) {
+      const fileToUpload = instructionMode === 'pdf' ? instructionPdfFile
+        : instructionMode === 'image' ? instructionImageFile
+        : null
+      if (fileToUpload && created?.id) {
         await uploadInstructionPdf.mutateAsync({
           assignmentId: created.id,
           classId,
-          file: instructionPdfFile,
+          file: fileToUpload,
         })
       }
 
@@ -221,12 +240,15 @@ function CreateAssignmentModal({
                 const v = e.target.value as InstructionAttachMode
                 setInstructionMode(v)
                 setInstructionPdfFile(null)
+                setInstructionImageFile(null)
                 if (pdfInputRef.current) pdfInputRef.current.value = ''
+                if (imageInputRef.current) imageInputRef.current.value = ''
               }}
               className="w-full h-9 text-[13px] border border-[#E5E5E5] rounded-lg px-2 outline-none hover:border-[#8B1A2F]"
             >
               <option value="none">None for now</option>
               <option value="pdf">Attach a PDF handout</option>
+              <option value="image">Attach an image</option>
               <option value="link">Share an external link</option>
               <option value="text">Paste directions as text</option>
             </select>
@@ -247,6 +269,32 @@ function CreateAssignmentModal({
               >
                 {instructionPdfFile ? instructionPdfFile.name : 'Choose PDF (max 15 MB)'}
               </button>
+            </div>
+          )}
+          {instructionMode === 'image' && (
+            <div className="space-y-2">
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                className="hidden"
+                onChange={(e) => setInstructionImageFile(e.target.files?.[0] ?? null)}
+              />
+              <button
+                type="button"
+                onClick={() => imageInputRef.current?.click()}
+                className="w-full h-9 text-[13px] border border-[#E5E5E5] rounded-lg hover:border-[#8B1A2F]"
+              >
+                {instructionImageFile ? instructionImageFile.name : 'Choose image (JPG, PNG, GIF, WebP)'}
+              </button>
+              {instructionImageFile && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={URL.createObjectURL(instructionImageFile)}
+                  alt="Preview"
+                  className="w-full max-h-40 object-contain rounded-lg border border-[#E5E5E5]"
+                />
+              )}
             </div>
           )}
           {instructionMode === 'link' && (
@@ -347,7 +395,9 @@ function EditAssignmentModal({
   const [instructionLink, setInstructionLink] = useState(assignment.instruction_link_url ?? '')
   const [instructionTextBody, setInstructionTextBody] = useState(assignment.instruction_text ?? '')
   const [instructionPdfFile, setInstructionPdfFile] = useState<File | null>(null)
+  const [instructionImageFile, setInstructionImageFile] = useState<File | null>(null)
   const pdfInputRef = useRef<HTMLInputElement>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
   const updateAssignment = useUpdateAssignment()
   const uploadInstructionPdf = useUploadAssignmentInstructionPdf()
 
@@ -377,8 +427,17 @@ function EditAssignmentModal({
       toast.error('Upload a PDF handout, or switch the materials option')
       return
     }
+    if (
+      instructionMode === 'image' &&
+      !assignment.instruction_file_path &&
+      !assignment.instruction_file_name &&
+      !instructionImageFile
+    ) {
+      toast.error('Upload an image, or switch the materials option')
+      return
+    }
     try {
-      const hadPdf =
+      const hadFile =
         !!(assignment.instruction_file_path ?? assignment.instruction_file_name)
 
       const trimmedLink = instructionLink.trim()
@@ -396,14 +455,17 @@ function EditAssignmentModal({
           instructionMode === 'link' ? trimmedLink || null : null,
         instruction_text:
           instructionMode === 'text' ? trimmedText || null : null,
-        clear_instruction_pdf: instructionMode === 'none' && hadPdf,
+        clear_instruction_pdf: instructionMode === 'none' && hadFile,
       })
 
-      if (instructionMode === 'pdf' && instructionPdfFile) {
+      const fileToUpload = instructionMode === 'pdf' ? instructionPdfFile
+        : instructionMode === 'image' ? instructionImageFile
+        : null
+      if (fileToUpload) {
         await uploadInstructionPdf.mutateAsync({
           assignmentId: assignment.id,
           classId,
-          file: instructionPdfFile,
+          file: fileToUpload,
         })
       }
 
@@ -471,12 +533,15 @@ function EditAssignmentModal({
                 const v = e.target.value as InstructionAttachMode
                 setInstructionMode(v)
                 setInstructionPdfFile(null)
+                setInstructionImageFile(null)
                 if (pdfInputRef.current) pdfInputRef.current.value = ''
+                if (imageInputRef.current) imageInputRef.current.value = ''
               }}
               className="w-full h-9 text-[13px] border border-[#E5E5E5] rounded-lg px-2 outline-none hover:border-[#8B1A2F]"
             >
               <option value="none">None</option>
               <option value="pdf">PDF handout</option>
+              <option value="image">Image</option>
               <option value="link">External link</option>
               <option value="text">Directions as text</option>
             </select>
@@ -484,7 +549,7 @@ function EditAssignmentModal({
           {instructionMode === 'pdf' && (
             <div className="space-y-2">
               <p className="text-[12px] text-[#9CA3AF]">
-                {assignment.instruction_file_name
+                {assignment.instruction_file_name && !isImageFileName(assignment.instruction_file_name)
                   ? `Current handout: ${assignment.instruction_file_name}`
                   : 'Upload a PDF for students.'}
               </p>
@@ -500,10 +565,37 @@ function EditAssignmentModal({
                 onClick={() => pdfInputRef.current?.click()}
                 className="w-full h-9 text-[13px] border border-[#E5E5E5] rounded-lg hover:border-[#8B1A2F]"
               >
-                {instructionPdfFile
-                  ? `Replace with: ${instructionPdfFile.name}`
-                  : 'Choose new PDF (optional)' }
+                {instructionPdfFile ? `Replace with: ${instructionPdfFile.name}` : 'Choose new PDF (optional)'}
               </button>
+            </div>
+          )}
+          {instructionMode === 'image' && (
+            <div className="space-y-2">
+              {assignment.instruction_file_name && isImageFileName(assignment.instruction_file_name) && !instructionImageFile && (
+                <p className="text-[12px] text-[#9CA3AF]">Current image: {assignment.instruction_file_name}</p>
+              )}
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                className="hidden"
+                onChange={(e) => setInstructionImageFile(e.target.files?.[0] ?? null)}
+              />
+              <button
+                type="button"
+                onClick={() => imageInputRef.current?.click()}
+                className="w-full h-9 text-[13px] border border-[#E5E5E5] rounded-lg hover:border-[#8B1A2F]"
+              >
+                {instructionImageFile ? `Replace with: ${instructionImageFile.name}` : 'Choose new image (optional)'}
+              </button>
+              {instructionImageFile && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={URL.createObjectURL(instructionImageFile)}
+                  alt="Preview"
+                  className="w-full max-h-40 object-contain rounded-lg border border-[#E5E5E5]"
+                />
+              )}
             </div>
           )}
           {instructionMode === 'link' && (
