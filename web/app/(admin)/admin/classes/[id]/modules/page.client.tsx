@@ -10,6 +10,7 @@ import {
   useDeleteModule,
   useDeleteModuleItem,
   useAddModuleItem,
+  useReorderItems,
   CourseModule,
   ModuleItem,
 } from '@/lib/hooks/useModules'
@@ -374,6 +375,7 @@ export default function ModulesPageClient({ params }: { params: Promise<{ id: st
   } = useModules(classId)
   const deleteModule = useDeleteModule()
   const deleteItem = useDeleteModuleItem()
+  const reorderItems = useReorderItems()
 
   const [showCreateModule, setShowCreateModule] = useState(false)
   const [previewItem, setPreviewItem] = useState<PreviewItem | null>(null)
@@ -528,6 +530,9 @@ export default function ModulesPageClient({ params }: { params: Promise<{ id: st
                 onRenameModule={() => setRenamingModule(mod)}
                 onDeleteModule={() => handleDeleteModule(mod.id)}
                 onItemClick={handleItemClick}
+                onReorderItems={(newOrder) =>
+                  reorderItems.mutate({ moduleId: mod.id, classId, items: newOrder })
+                }
               />
             ))}
         </div>

@@ -23,7 +23,7 @@ export interface Submission {
   submission_text?: string | null
   /** Student URL when `expected_submission_type` is `link`. */
   submission_link_url?: string | null
-  status: 'submitted' | 'late'
+  status: 'submitted' | 'late' | 'missing'
   submitted_at: string
   signed_url?: string | null
   grade?: number | null
@@ -42,6 +42,8 @@ export interface Assignment {
   created_at: string
   /** What students submit (defaults to pdf_file server-side when missing). */
   expected_submission_type?: ExpectedSubmissionType
+  /** How this assignment is graded: numeric score or pass/fail. */
+  grade_type?: 'score' | 'pass_fail'
   instruction_file_path?: string | null
   instruction_file_name?: string | null
   instruction_link_url?: string | null
@@ -124,6 +126,7 @@ export function useCreateAssignment() {
       week_number: number
       due_date: string
       expected_submission_type?: ExpectedSubmissionType
+      grade_type?: 'score' | 'pass_fail'
       instruction_link_url?: string
       instruction_text?: string
     }) => apiClient.post<Assignment>('/assignments', body),
@@ -184,6 +187,7 @@ export function useUpdateAssignment() {
       description?: string
       due_date?: string
       expected_submission_type?: ExpectedSubmissionType
+      grade_type?: 'score' | 'pass_fail'
       instruction_link_url?: string | null
       instruction_text?: string | null
       clear_instruction_pdf?: boolean
@@ -267,6 +271,27 @@ export function useGradeSubmission() {
       feedback?: string
     }) =>
       apiClient.patch(`/assignments/${assignmentId}/submissions/${submissionId}`, { grade, feedback }),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['submissions', vars.assignmentId] })
+    },
+  })
+}
+
+export function useManualGradeStudent() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      assignmentId,
+      studentId,
+      grade,
+      feedback,
+    }: {
+      assignmentId: string
+      studentId: string
+      grade: number
+      feedback?: string
+    }) =>
+      apiClient.post(`/assignments/${assignmentId}/manual-grade`, { student_id: studentId, grade, feedback }),
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ['submissions', vars.assignmentId] })
     },

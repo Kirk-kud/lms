@@ -215,7 +215,8 @@ export class AssignmentsService {
       this.supabase.adminClient
         .from('submissions')
         .select('assignment_id')
-        .in('assignment_id', assignmentIds),
+        .in('assignment_id', assignmentIds)
+        .neq('status', 'missing'),
     ]);
 
     if (enrollmentResult.error) {
@@ -271,7 +272,8 @@ export class AssignmentsService {
     const { data: subs } = await this.supabase.adminClient
       .from('submissions')
       .select('assignment_id')
-      .in('assignment_id', assignmentIds);
+      .in('assignment_id', assignmentIds)
+      .neq('status', 'missing');
 
     const countByAssignment = new Map<string, number>();
     for (const s of subs ?? []) {
@@ -303,7 +305,8 @@ export class AssignmentsService {
         'id, assignment_id, student_id, file_url, file_name, status, submitted_at, submission_text, submission_link_url',
       )
       .eq('student_id', studentId)
-      .in('assignment_id', assignmentIds);
+      .in('assignment_id', assignmentIds)
+      .neq('status', 'missing');
 
     const paths = (subs ?? [])
       .map((s) => s.file_url)
@@ -380,7 +383,8 @@ export class AssignmentsService {
           'id, assignment_id, student_id, file_url, file_name, status, submitted_at, submission_text, submission_link_url',
         )
         .eq('student_id', userId)
-        .in('assignment_id', ids);
+        .in('assignment_id', ids)
+        .neq('status', 'missing');
 
       const subPaths = (subs ?? [])
         .map((s) => s.file_url)
@@ -451,6 +455,7 @@ export class AssignmentsService {
         due_date: dto.due_date,
         cohort_id: dto.cohort_id ?? null,
         expected_submission_type: dto.expected_submission_type ?? 'pdf_file',
+        grade_type: dto.grade_type ?? 'score',
         instruction_link_url,
         instruction_text,
       })
@@ -497,6 +502,9 @@ export class AssignmentsService {
     if (dto.cohort_id !== undefined) patch.cohort_id = dto.cohort_id;
     if (dto.expected_submission_type !== undefined) {
       patch.expected_submission_type = dto.expected_submission_type;
+    }
+    if (dto.grade_type !== undefined) {
+      patch.grade_type = dto.grade_type;
     }
 
     if (dto.clear_instruction_pdf === true) {
@@ -934,6 +942,61 @@ export class AssignmentsService {
     }
 
     throw new BadRequestException('Nothing to preview for this submission');
+  }
+
+  // ----------------------------------------------------------------
+  // POST /assignments/:id/manual-grade  (grade or create-then-grade for non-submitters)
+  // ----------------------------------------------------------------
+  async manualGradeStudent(
+    assignmentId: string,
+    userId: string,
+    role: string | null,
+    dto: import('./assignments.dto').ManualGradeDto,
+  ) {
+    await this.assertTutorOwnsAssignment(assignmentId, userId, role);
+
+    // Check if a submission already exists for this student
+    const { data: existing } = await this.supabase.adminClient
+      .from('submissions')
+      .select('id')
+      .eq('assignment_id', assignmentId)
+      .eq('student_id', dto.student_id)
+      .maybeSingle();
+
+    let submissionId: string;
+
+    if (existing) {
+      submissionId = existing.id;
+    } else {
+      // Create a placeholder missing submission so we can attach a grade
+      const { data: created, error: cErr } = await this.supabase.adminClient
+        .from('submissions')
+        .insert({
+          assignment_id: assignmentId,
+          student_id: dto.student_id,
+          status: 'missing',
+          submitted_at: new Date().toISOString(),
+        })
+        .select('id')
+        .single();
+      if (cErr || !created) throw new BadRequestException(cErr?.message ?? 'Could not create submission record');
+      submissionId = created.id;
+    }
+
+    const { data, error } = await this.supabase.adminClient
+      .from('submissions')
+      .update({
+        grade: dto.grade,
+        feedback: dto.feedback ?? null,
+        graded_at: new Date().toISOString(),
+        graded_by: userId,
+      })
+      .eq('id', submissionId)
+      .select()
+      .single();
+
+    if (error) throw new BadRequestException(error.message);
+    return data;
   }
 
   // ----------------------------------------------------------------

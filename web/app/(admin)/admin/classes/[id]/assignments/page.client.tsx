@@ -11,6 +11,7 @@ import {
   useAssignmentSubmissions,
   useSubmissionViewUrl,
   useGradeSubmission,
+  useManualGradeStudent,
   useUploadAssignmentInstructionPdf,
   Assignment,
   type ExpectedSubmissionType,
@@ -56,6 +57,18 @@ function deriveInstructionMode(a: Assignment): InstructionAttachMode {
   return 'none'
 }
 
+function combineDateAndTime(date: Date, time: string): Date {
+  const [h, m] = time.split(':').map(Number)
+  const result = new Date(date)
+  result.setHours(h, m, 0, 0)
+  return result
+}
+
+function initTimeFromDate(isoString: string): string {
+  const d = new Date(isoString)
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
 function CreateAssignmentModal({
   classId,
   nextWeek,
@@ -69,9 +82,11 @@ function CreateAssignmentModal({
   const [description, setDescription] = useState('')
   const [weekNumber, setWeekNumber] = useState(nextWeek)
   const [dueDate, setDueDate] = useState<Date | undefined>()
+  const [dueTime, setDueTime] = useState('23:59')
   const [calOpen, setCalOpen] = useState(false)
   const [expectedSubmissionType, setExpectedSubmissionType] =
     useState<ExpectedSubmissionType>('pdf_file')
+  const [gradeType, setGradeType] = useState<'score' | 'pass_fail'>('score')
   const [instructionMode, setInstructionMode] =
     useState<InstructionAttachMode>('none')
   const [instructionLink, setInstructionLink] = useState('')
@@ -85,8 +100,10 @@ function CreateAssignmentModal({
     setTitle('')
     setDescription('')
     setDueDate(undefined)
+    setDueTime('23:59')
     setWeekNumber(nextWeek)
     setExpectedSubmissionType('pdf_file')
+    setGradeType('score')
     setInstructionMode('none')
     setInstructionLink('')
     setInstructionTextBody('')
@@ -120,8 +137,9 @@ function CreateAssignmentModal({
         title: title.trim(),
         description: description.trim() || undefined,
         week_number: weekNumber,
-        due_date: dueDate.toISOString(),
+        due_date: combineDateAndTime(dueDate, dueTime).toISOString(),
         expected_submission_type: expectedSubmissionType,
+        grade_type: gradeType,
         instruction_link_url:
           instructionMode === 'link' ? instructionLink.trim() : undefined,
         instruction_text:
@@ -180,6 +198,17 @@ function CreateAssignmentModal({
               <option value="pdf_file">PDF file</option>
               <option value="text">Written reply in the app</option>
               <option value="link">Link (URL)</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-[12px] text-[#6B6B6B] mb-1">Grading mode</label>
+            <select
+              value={gradeType}
+              onChange={(e) => setGradeType(e.target.value as 'score' | 'pass_fail')}
+              style={inputStyle}
+            >
+              <option value="score">Score (0–100)</option>
+              <option value="pass_fail">Pass / Fail</option>
             </select>
           </div>
           <div>
@@ -272,6 +301,17 @@ function CreateAssignmentModal({
               </Popover>
             </div>
           </div>
+          <div>
+            <label className="block text-[12px] text-[#6B6B6B] mb-1">Due time</label>
+            <input
+              type="time"
+              value={dueTime}
+              onChange={(e) => setDueTime(e.target.value)}
+              style={inputStyle}
+              onFocus={(e) => (e.currentTarget.style.borderColor = '#8B1A2F')}
+              onBlur={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')}
+            />
+          </div>
           <div className="flex gap-2 justify-end pt-1">
             <button type="button" onClick={() => { resetForm(); onClose() }} className="h-9 px-4 text-[13px] text-[#6B7280] border border-[#E5E5E5] rounded-lg hover:bg-[#F8F8F8] transition-colors">Cancel</button>
             <button type="submit" disabled={createAssignment.isPending || uploadInstructionPdf.isPending || !title.trim() || !dueDate} className="h-9 px-4 text-[13px] font-medium bg-black text-white rounded-lg disabled:opacity-50 hover:bg-black/90 transition-colors flex items-center gap-2">
@@ -297,9 +337,11 @@ function EditAssignmentModal({
   const [title, setTitle] = useState(assignment.title)
   const [description, setDescription] = useState(assignment.description ?? '')
   const [dueDate, setDueDate] = useState<Date | undefined>(new Date(assignment.due_date))
+  const [dueTime, setDueTime] = useState(initTimeFromDate(assignment.due_date))
   const [calOpen, setCalOpen] = useState(false)
   const [expectedSubmissionType, setExpectedSubmissionType] =
     useState<ExpectedSubmissionType>(assignment.expected_submission_type ?? 'pdf_file')
+  const [gradeType, setGradeType] = useState<'score' | 'pass_fail'>(assignment.grade_type ?? 'score')
   const [instructionMode, setInstructionMode] =
     useState<InstructionAttachMode>(deriveInstructionMode(assignment))
   const [instructionLink, setInstructionLink] = useState(assignment.instruction_link_url ?? '')
@@ -347,8 +389,9 @@ function EditAssignmentModal({
         classId,
         title: title.trim(),
         description: description.trim() || undefined,
-        due_date: dueDate.toISOString(),
+        due_date: combineDateAndTime(dueDate, dueTime).toISOString(),
         expected_submission_type: expectedSubmissionType,
+        grade_type: gradeType,
         instruction_link_url:
           instructionMode === 'link' ? trimmedLink || null : null,
         instruction_text:
@@ -407,6 +450,17 @@ function EditAssignmentModal({
               <option value="pdf_file">PDF file</option>
               <option value="text">Written reply in the app</option>
               <option value="link">Link (URL)</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-[12px] text-[#6B6B6B] mb-1">Grading mode</label>
+            <select
+              value={gradeType}
+              onChange={(e) => setGradeType(e.target.value as 'score' | 'pass_fail')}
+              style={inputStyle}
+            >
+              <option value="score">Score (0–100)</option>
+              <option value="pass_fail">Pass / Fail</option>
             </select>
           </div>
           <div>
@@ -494,6 +548,17 @@ function EditAssignmentModal({
               </PopoverContent>
             </Popover>
           </div>
+          <div>
+            <label className="block text-[12px] text-[#6B6B6B] mb-1">Due time</label>
+            <input
+              type="time"
+              value={dueTime}
+              onChange={(e) => setDueTime(e.target.value)}
+              style={{ width: '100%', height: '36px', borderRadius: '8px', border: '0.5px solid #E5E5E5', fontSize: '13px', padding: '0 10px', outline: 'none', boxSizing: 'border-box' }}
+              onFocus={(e) => (e.currentTarget.style.borderColor = '#8B1A2F')}
+              onBlur={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')}
+            />
+          </div>
           <div className="flex gap-2 justify-end pt-1">
             <button type="button" onClick={onClose} className="h-9 px-4 text-[13px] text-[#6B7280] border border-[#E5E5E5] rounded-lg hover:bg-[#F8F8F8] transition-colors">Cancel</button>
             <button type="submit" disabled={updateAssignment.isPending || uploadInstructionPdf.isPending || !title.trim() || !dueDate} className="h-9 px-4 text-[13px] font-medium bg-black text-white rounded-lg disabled:opacity-50 hover:bg-black/90 transition-colors flex items-center gap-2">
@@ -549,21 +614,35 @@ function SubmissionIndicator({
 function GradeModal({
   row,
   assignmentId,
+  gradeType,
   open,
   onClose,
 }: {
   row: SubmissionRow
   assignmentId: string
+  gradeType: 'score' | 'pass_fail'
   open: boolean
   onClose: () => void
 }) {
   const submissionId = row.submission?.id ?? ''
   const { data: preview, isLoading: urlLoading } = useSubmissionViewUrl(assignmentId, submissionId, open && !!submissionId)
   const gradeSubmission = useGradeSubmission()
-  const [grade, setGrade] = useState<string>(row.submission?.grade !== null && row.submission?.grade !== undefined ? String(row.submission.grade) : '')
+
+  // Score mode state
+  const [grade, setGrade] = useState<string>(
+    row.submission?.grade !== null && row.submission?.grade !== undefined ? String(row.submission.grade) : ''
+  )
   const [feedback, setFeedback] = useState(row.submission?.feedback ?? '')
 
-  const handleSave = async () => {
+  // Pass/fail mode state: derive from existing grade (100=pass, 0=fail)
+  const existingGrade = row.submission?.grade
+  const [passFail, setPassFail] = useState<'pass' | 'fail' | null>(
+    existingGrade === 100 ? 'pass' : existingGrade === 0 ? 'fail' : null
+  )
+
+  const saving = gradeSubmission.isPending
+
+  const handleSaveScore = async () => {
     const g = Number(grade)
     if (isNaN(g) || g < 0 || g > 100) {
       toast.error('Grade must be 0–100')
@@ -578,13 +657,25 @@ function GradeModal({
     }
   }
 
+  const handleSavePassFail = async () => {
+    if (!passFail) return
+    const g = passFail === 'pass' ? 100 : 0
+    try {
+      await gradeSubmission.mutateAsync({ assignmentId, submissionId, grade: g, feedback: feedback.trim() || undefined })
+      toast.success(passFail === 'pass' ? 'Marked as Pass' : 'Marked as Fail')
+      onClose()
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Unable to save grade')
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent style={{ width: '95vw', maxWidth: '95vw', height: '92vh', maxHeight: '92vh', display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
         <DialogHeader style={{ padding: '16px 20px 12px', borderBottom: '0.5px solid #E5E5E5', flexShrink: 0 }}>
           <DialogTitle style={{ fontSize: '14px', fontWeight: 500 }}>
             {row.student.full_name}
-            {row.submission?.submitted_at && (
+            {row.submission?.submitted_at && row.submission.status !== 'missing' && (
               <span style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 400, marginLeft: '8px' }}>
                 Submitted {format(new Date(row.submission.submitted_at), 'MMM d, h:mm a')}
                 {row.submission.status === 'late' && (
@@ -596,7 +687,7 @@ function GradeModal({
         </DialogHeader>
 
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
-          {/* PDF viewer */}
+          {/* Submission viewer */}
           <div style={{ flex: 1, background: '#F8F8F8', position: 'relative', overflow: 'hidden' }}>
             {!submissionId ? (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#9CA3AF', fontSize: '13px' }}>
@@ -614,44 +705,15 @@ function GradeModal({
                 title={`Submission by ${row.student.full_name}`}
               />
             ) : preview?.submission_kind === 'text' && preview.submission_text ? (
-              <div
-                style={{
-                  height: '100%',
-                  overflow: 'auto',
-                  padding: '20px',
-                  boxSizing: 'border-box',
-                  background: '#fff',
-                }}
-              >
-                <pre
-                  style={{
-                    margin: 0,
-                    fontSize: '13px',
-                    lineHeight: 1.55,
-                    color: '#111',
-                    fontFamily: 'Inter, sans-serif',
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word',
-                  }}
-                >
+              <div style={{ height: '100%', overflow: 'auto', padding: '20px', boxSizing: 'border-box', background: '#fff' }}>
+                <pre style={{ margin: 0, fontSize: '13px', lineHeight: 1.55, color: '#111', fontFamily: 'Inter, sans-serif', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                   {preview.submission_text}
                 </pre>
               </div>
             ) : preview?.submission_kind === 'link' && preview.submission_link_url ? (
               <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '12px', padding: '20px', textAlign: 'center' }}>
                 <p style={{ fontSize: '13px', color: '#6B7280', margin: 0 }}>Submitted as a URL</p>
-                <a
-                  href={preview.submission_link_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    fontSize: '14px',
-                    color: '#8B1A2F',
-                    fontWeight: 500,
-                    textDecoration: 'underline',
-                    wordBreak: 'break-all',
-                  }}
-                >
+                <a href={preview.submission_link_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '14px', color: '#8B1A2F', fontWeight: 500, textDecoration: 'underline', wordBreak: 'break-all' }}>
                   {preview.submission_link_url}
                 </a>
               </div>
@@ -664,40 +726,54 @@ function GradeModal({
 
           {/* Grade panel */}
           <div style={{ width: '300px', flexShrink: 0, borderLeft: '0.5px solid #E5E5E5', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto' }}>
-            <div>
-              <label style={{ fontSize: '11px', fontWeight: 500, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '6px' }}>Grade (0–100)</label>
-              <input
-                type="number"
-                min={0}
-                max={100}
-                value={grade}
-                onChange={(e) => setGrade(e.target.value)}
-                placeholder="e.g. 85"
-                style={{ width: '100%', height: '36px', border: '0.5px solid #E5E5E5', borderRadius: '8px', fontSize: '20px', fontWeight: 600, padding: '0 10px', outline: 'none', boxSizing: 'border-box', color: '#111', textAlign: 'center' }}
-                onFocus={(e) => (e.currentTarget.style.borderColor = '#8B1A2F')}
-                onBlur={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: '11px', fontWeight: 500, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '6px' }}>Feedback</label>
-              <textarea
-                value={feedback}
-                onChange={(e) => setFeedback(e.target.value)}
-                rows={6}
-                placeholder="Leave feedback for the student…"
-                style={{ width: '100%', border: '0.5px solid #E5E5E5', borderRadius: '8px', fontSize: '12px', padding: '8px 10px', outline: 'none', boxSizing: 'border-box', resize: 'none', fontFamily: 'Inter, sans-serif', lineHeight: 1.5 }}
-                onFocus={(e) => (e.currentTarget.style.borderColor = '#8B1A2F')}
-                onBlur={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')}
-              />
-            </div>
-            <button
-              onClick={handleSave}
-              disabled={gradeSubmission.isPending || !grade}
-              style={{ height: '36px', background: '#111111', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 500, cursor: 'pointer', opacity: (gradeSubmission.isPending || !grade) ? 0.5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-            >
-              {gradeSubmission.isPending && <LoadingSpinner className="text-white" />}
-              {gradeSubmission.isPending ? 'Saving…' : 'Save grade'}
-            </button>
+            {gradeType === 'pass_fail' ? (
+              <>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 500, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '8px' }}>Result</label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      onClick={() => setPassFail('pass')}
+                      style={{ flex: 1, height: '40px', borderRadius: '8px', border: `1.5px solid ${passFail === 'pass' ? '#166534' : '#E5E5E5'}`, background: passFail === 'pass' ? '#F0FDF4' : '#fff', color: passFail === 'pass' ? '#166534' : '#6B7280', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'all 120ms' }}
+                    >
+                      Pass
+                    </button>
+                    <button
+                      onClick={() => setPassFail('fail')}
+                      style={{ flex: 1, height: '40px', borderRadius: '8px', border: `1.5px solid ${passFail === 'fail' ? '#991B1B' : '#E5E5E5'}`, background: passFail === 'fail' ? '#FEF2F2' : '#fff', color: passFail === 'fail' ? '#991B1B' : '#6B7280', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'all 120ms' }}
+                    >
+                      Fail
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 500, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '6px' }}>Feedback</label>
+                  <textarea value={feedback} onChange={(e) => setFeedback(e.target.value)} rows={5} placeholder="Leave feedback for the student…" style={{ width: '100%', border: '0.5px solid #E5E5E5', borderRadius: '8px', fontSize: '12px', padding: '8px 10px', outline: 'none', boxSizing: 'border-box', resize: 'none', fontFamily: 'Inter, sans-serif', lineHeight: 1.5 }} onFocus={(e) => (e.currentTarget.style.borderColor = '#8B1A2F')} onBlur={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')} />
+                </div>
+                <button
+                  onClick={handleSavePassFail}
+                  disabled={saving || !passFail}
+                  style={{ height: '36px', background: '#111111', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 500, cursor: 'pointer', opacity: (saving || !passFail) ? 0.5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                >
+                  {saving && <LoadingSpinner className="text-white" />}
+                  {saving ? 'Saving…' : passFail === 'pass' ? 'Mark as Pass' : passFail === 'fail' ? 'Mark as Fail' : 'Select result'}
+                </button>
+              </>
+            ) : (
+              <>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 500, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '6px' }}>Grade (0–100)</label>
+                  <input type="number" min={0} max={100} value={grade} onChange={(e) => setGrade(e.target.value)} placeholder="e.g. 85" style={{ width: '100%', height: '36px', border: '0.5px solid #E5E5E5', borderRadius: '8px', fontSize: '20px', fontWeight: 600, padding: '0 10px', outline: 'none', boxSizing: 'border-box', color: '#111', textAlign: 'center' }} onFocus={(e) => (e.currentTarget.style.borderColor = '#8B1A2F')} onBlur={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 500, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '6px' }}>Feedback</label>
+                  <textarea value={feedback} onChange={(e) => setFeedback(e.target.value)} rows={6} placeholder="Leave feedback for the student…" style={{ width: '100%', border: '0.5px solid #E5E5E5', borderRadius: '8px', fontSize: '12px', padding: '8px 10px', outline: 'none', boxSizing: 'border-box', resize: 'none', fontFamily: 'Inter, sans-serif', lineHeight: 1.5 }} onFocus={(e) => (e.currentTarget.style.borderColor = '#8B1A2F')} onBlur={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')} />
+                </div>
+                <button onClick={handleSaveScore} disabled={saving || !grade} style={{ height: '36px', background: '#111111', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 500, cursor: 'pointer', opacity: (saving || !grade) ? 0.5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                  {saving && <LoadingSpinner className="text-white" />}
+                  {saving ? 'Saving…' : 'Save grade'}
+                </button>
+              </>
+            )}
             {row.submission?.graded_at && (
               <p style={{ fontSize: '11px', color: '#9CA3AF', textAlign: 'center' }}>
                 Last graded {format(new Date(row.submission.graded_at), 'MMM d, h:mm a')}
@@ -710,28 +786,79 @@ function GradeModal({
   )
 }
 
-function SubmissionRow({ row, assignmentId }: { row: SubmissionRow; assignmentId: string }) {
+type SubmissionFilter = 'all' | 'needs_review' | 'not_submitted'
+
+function GradeChip({ grade, gradeType }: { grade: number; gradeType: 'score' | 'pass_fail' }) {
+  if (gradeType === 'pass_fail') {
+    const isPass = grade > 0
+    return (
+      <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '9999px', background: isPass ? '#F0FDF4' : '#FEF2F2', color: isPass ? '#166534' : '#991B1B' }}>
+        {isPass ? 'Pass' : 'Fail'}
+      </span>
+    )
+  }
+  return (
+    <span style={{ fontSize: '13px', fontWeight: 600, color: '#111' }}>
+      {grade}
+      <span style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 400 }}>/100</span>
+    </span>
+  )
+}
+
+function PassFailInline({ row, assignmentId }: { row: SubmissionRow; assignmentId: string }) {
+  const manualGrade = useManualGradeStudent()
+  const currentGrade = row.submission?.grade
+  const selected: 'pass' | 'fail' | null =
+    currentGrade === 100 ? 'pass' : currentGrade === 0 ? 'fail' : null
+
+  const mark = async (result: 'pass' | 'fail') => {
+    if (manualGrade.isPending) return
+    try {
+      await manualGrade.mutateAsync({
+        assignmentId,
+        studentId: row.student.id,
+        grade: result === 'pass' ? 100 : 0,
+      })
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Unable to record grade')
+    }
+  }
+
+  return (
+    <div style={{ display: 'flex', gap: '4px', opacity: manualGrade.isPending ? 0.5 : 1 }}>
+      <button
+        onClick={() => mark('pass')}
+        disabled={manualGrade.isPending}
+        style={{ height: '26px', padding: '0 10px', borderRadius: '6px', border: `1.5px solid ${selected === 'pass' ? '#166534' : '#E5E5E5'}`, background: selected === 'pass' ? '#F0FDF4' : '#fff', color: selected === 'pass' ? '#166534' : '#9CA3AF', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}
+      >
+        Pass
+      </button>
+      <button
+        onClick={() => mark('fail')}
+        disabled={manualGrade.isPending}
+        style={{ height: '26px', padding: '0 10px', borderRadius: '6px', border: `1.5px solid ${selected === 'fail' ? '#991B1B' : '#E5E5E5'}`, background: selected === 'fail' ? '#FEF2F2' : '#fff', color: selected === 'fail' ? '#991B1B' : '#9CA3AF', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}
+      >
+        Fail
+      </button>
+    </div>
+  )
+}
+
+function SubmissionRow({ row, assignmentId, gradeType }: { row: SubmissionRow; assignmentId: string; gradeType: 'score' | 'pass_fail' }) {
   const [reviewOpen, setReviewOpen] = useState(false)
   const sub = row.submission
-  const hasSubmission = !!sub && !!(
+  const isRealSubmission = !!sub && sub.status !== 'missing' && !!(
     (sub.file_url && sub.file_url.length > 0) ||
     (sub.file_name && sub.file_name.length > 0) ||
     (sub.submission_text && sub.submission_text.trim()) ||
     (sub.submission_link_url && sub.submission_link_url.trim())
   )
-  const graded = row.submission?.grade !== null && row.submission?.grade !== undefined
+  const graded = sub?.grade !== null && sub?.grade !== undefined
+  const notSubmitted = !sub || sub.status === 'missing'
 
   return (
     <>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '10px 0',
-          borderTop: '1px solid #F3F4F6',
-        }}
-      >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderTop: '1px solid #F3F4F6' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#F5E6EA', color: '#8B1A2F', fontSize: '11px', fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {row.student.avatar_initials}
@@ -740,24 +867,26 @@ function SubmissionRow({ row, assignmentId }: { row: SubmissionRow; assignmentId
             <p style={{ fontSize: '13px', color: '#111' }}>{row.student.full_name}</p>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <p style={{ fontSize: '11px', color: '#9CA3AF' }}>
-                {row.submission?.submitted_at
-                  ? `Submitted ${format(new Date(row.submission.submitted_at), 'MMM d, h:mm a')}`
+                {isRealSubmission && sub?.submitted_at
+                  ? `Submitted ${format(new Date(sub.submitted_at), 'MMM d, h:mm a')}`
                   : 'Not submitted'}
               </p>
-              {row.submission?.status === 'late' && (
+              {sub?.status === 'late' && (
                 <span style={{ fontSize: '10px', color: '#991B1B', fontWeight: 500 }}>Late</span>
               )}
             </div>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-          {graded && (
-            <span style={{ fontSize: '13px', fontWeight: 600, color: '#111' }}>
-              {row.submission!.grade}
-              <span style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 400 }}>/100</span>
-            </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          {/* Non-submitters in pass/fail: inline toggle (always visible, shows current state) */}
+          {notSubmitted && gradeType === 'pass_fail' && (
+            <PassFailInline row={row} assignmentId={assignmentId} />
           )}
-          {hasSubmission && (
+          {/* Real submissions: grade chip + review/edit button */}
+          {isRealSubmission && graded && (
+            <GradeChip grade={sub!.grade!} gradeType={gradeType} />
+          )}
+          {isRealSubmission && (
             <button
               onClick={() => setReviewOpen(true)}
               style={{ height: '28px', padding: '0 12px', background: graded ? '#F8F8F8' : '#8B1A2F', color: graded ? '#111' : '#fff', border: graded ? '0.5px solid #E5E5E5' : 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 500, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
@@ -768,30 +897,71 @@ function SubmissionRow({ row, assignmentId }: { row: SubmissionRow; assignmentId
         </div>
       </div>
       {reviewOpen && (
-        <GradeModal row={row} assignmentId={assignmentId} open={reviewOpen} onClose={() => setReviewOpen(false)} />
+        <GradeModal row={row} assignmentId={assignmentId} gradeType={gradeType} open={reviewOpen} onClose={() => setReviewOpen(false)} />
       )}
     </>
   )
 }
 
-function SubmissionsList({ assignmentId }: { assignmentId: string }) {
+function SubmissionsList({ assignmentId, gradeType }: { assignmentId: string; gradeType: 'score' | 'pass_fail' }) {
   const { data: rows = [], isLoading } = useAssignmentSubmissions(assignmentId)
+  const [filter, setFilter] = useState<SubmissionFilter>('all')
+
+  const filtered = rows.filter((row) => {
+    if (filter === 'needs_review') {
+      return !!row.submission && row.submission.status !== 'missing' && (row.submission.grade === null || row.submission.grade === undefined)
+    }
+    if (filter === 'not_submitted') {
+      return !row.submission || row.submission.status === 'missing'
+    }
+    return true
+  })
+
+  const needsReviewCount = rows.filter((r) => !!r.submission && r.submission.status !== 'missing' && (r.submission.grade === null || r.submission.grade === undefined)).length
+  const notSubmittedCount = rows.filter((r) => !r.submission || r.submission.status === 'missing').length
 
   if (isLoading) {
     return (
       <div className="mt-3 border-t border-[#F3F4F6] pt-3 space-y-3">
-        {Array.from({ length: 2 }).map((_, i) => (
-          <SkeletonCard key={i} lines={2} />
-        ))}
+        {Array.from({ length: 2 }).map((_, i) => <SkeletonCard key={i} lines={2} />)}
       </div>
     )
   }
 
+  const tabStyle = (active: boolean): React.CSSProperties => ({
+    height: '28px',
+    padding: '0 10px',
+    fontSize: '12px',
+    fontWeight: active ? 500 : 400,
+    color: active ? '#111' : '#9CA3AF',
+    background: active ? '#F3F4F6' : 'transparent',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontFamily: 'Inter, sans-serif',
+    whiteSpace: 'nowrap',
+  })
+
   return (
-    <div style={{ marginTop: '12px', borderTop: '1px solid #F3F4F6', paddingTop: '12px' }}>
-      {rows.map((row) => (
-        <SubmissionRow key={row.student.id} row={row} assignmentId={assignmentId} />
-      ))}
+    <div style={{ marginTop: '12px', borderTop: '1px solid #F3F4F6', paddingTop: '10px' }}>
+      <div style={{ display: 'flex', gap: '4px', marginBottom: '4px' }}>
+        <button style={tabStyle(filter === 'all')} onClick={() => setFilter('all')}>All ({rows.length})</button>
+        <button style={tabStyle(filter === 'needs_review')} onClick={() => setFilter('needs_review')}>
+          Needs review {needsReviewCount > 0 && `(${needsReviewCount})`}
+        </button>
+        <button style={tabStyle(filter === 'not_submitted')} onClick={() => setFilter('not_submitted')}>
+          Not submitted {notSubmittedCount > 0 && `(${notSubmittedCount})`}
+        </button>
+      </div>
+      {filtered.length === 0 ? (
+        <p style={{ fontSize: '12px', color: '#9CA3AF', padding: '12px 0', textAlign: 'center' }}>
+          {filter === 'needs_review' ? 'All submissions have been graded.' : filter === 'not_submitted' ? 'Everyone has submitted.' : 'No students enrolled.'}
+        </p>
+      ) : (
+        filtered.map((row) => (
+          <SubmissionRow key={row.student.id} row={row} assignmentId={assignmentId} gradeType={gradeType} />
+        ))
+      )}
     </div>
   )
 }
@@ -867,7 +1037,7 @@ function AssignmentCard({
       </div>
 
       {/* Expand toggle */}
-      {submittedCount > 0 && (
+      {totalStudents > 0 && (
         <button
           onClick={() => setExpanded((v) => !v)}
           style={{
@@ -883,12 +1053,14 @@ function AssignmentCard({
         >
           {expanded
             ? 'Hide submissions'
-            : `View ${submittedCount} submission${submittedCount !== 1 ? 's' : ''}`}
+            : submittedCount > 0
+              ? `View ${submittedCount} submission${submittedCount !== 1 ? 's' : ''}`
+              : 'View students'}
         </button>
       )}
 
       {/* Expandable: submission list */}
-      {expanded && <SubmissionsList assignmentId={assignment.id} />}
+      {expanded && <SubmissionsList assignmentId={assignment.id} gradeType={assignment.grade_type ?? 'score'} />}
     </div>
     {editOpen && (
       <EditAssignmentModal

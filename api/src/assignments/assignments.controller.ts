@@ -20,6 +20,7 @@ import type { JwtPayload } from '../auth/jwt.strategy';
 import {
   CreateAssignmentDto,
   GradeSubmissionDto,
+  ManualGradeDto,
   SubmitAssignmentBodyDto,
   UpdateAssignmentDto,
 } from './assignments.dto';
@@ -155,6 +156,18 @@ export class AssignmentsController {
       dto,
     );
     return createResponse(data, 'Submission graded');
+  }
+
+  @Post(':id/manual-grade')
+  @Roles('admin', 'tutor')
+  async manualGradeStudent(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @Body() dto: ManualGradeDto,
+  ) {
+    const user = req.user as JwtPayload;
+    const data = await this.service.manualGradeStudent(id, user.sub, user.role, dto);
+    return createResponse(data, 'Grade recorded');
   }
 
   @Patch(':id')

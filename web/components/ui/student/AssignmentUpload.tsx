@@ -66,6 +66,16 @@ export default function AssignmentUpload({
     !!materials?.instructionLink?.trim() ||
     !!materials?.instructionText?.trim()
 
+  const dueDateLabel = (() => {
+    if (isOverdue) return 'Overdue'
+    const h = dueDate.getHours(), m = dueDate.getMinutes()
+    const hasTime = h !== 0 || m !== 0
+    const dateStr = format(dueDate, 'MMM d')
+    return hasTime
+      ? `Due ${dateStr} · ${format(dueDate, 'h:mm a')}`
+      : `Due ${dateStr}`
+  })()
+
   const submissionModeLabel =
     expectedSubmissionType === 'text'
       ? 'Written response'
@@ -297,7 +307,7 @@ export default function AssignmentUpload({
           <div className="flex flex-col gap-2 items-end">
             <StatusBadge
               variant={isOverdue ? 'danger' : 'gray'}
-              label={isOverdue ? 'Overdue' : `Due ${format(dueDate, 'MMM d')}`}
+              label={dueDateLabel}
             />
             <span className="text-[11px] text-[#9CA3AF] font-medium">{submissionModeLabel}</span>
           </div>

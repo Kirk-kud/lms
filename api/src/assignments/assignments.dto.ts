@@ -41,6 +41,10 @@ export class CreateAssignmentDto {
   expected_submission_type?: ExpectedSubmissionType;
 
   @IsOptional()
+  @IsIn(['score', 'pass_fail'])
+  grade_type?: 'score' | 'pass_fail';
+
+  @IsOptional()
   @IsString()
   @MaxLength(2048)
   instruction_link_url?: string;
@@ -81,6 +85,20 @@ export class GradeSubmissionDto {
   feedback?: string;
 }
 
+export class ManualGradeDto {
+  @IsUUID()
+  student_id: string;
+
+  @IsInt()
+  @Min(0)
+  @Type(() => Number)
+  grade: number;
+
+  @IsOptional()
+  @IsString()
+  feedback?: string;
+}
+
 export class UpdateAssignmentDto {
   @IsOptional()
   @IsString()
@@ -101,6 +119,10 @@ export class UpdateAssignmentDto {
   @IsOptional()
   @IsIn(['pdf_file', 'text', 'link'])
   expected_submission_type?: ExpectedSubmissionType;
+
+  @IsOptional()
+  @IsIn(['score', 'pass_fail'])
+  grade_type?: 'score' | 'pass_fail';
 
   @IsOptional()
   instruction_link_url?: string | null;
