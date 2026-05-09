@@ -164,4 +164,10 @@ export class UpdateAssignmentDto {
   /** Admin-set reopen window — overrides available_until. */
   @IsOptional()
   reopened_until?: string | null;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Type(() => Number)
+  week_number?: number;
 }

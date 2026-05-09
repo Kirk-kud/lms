@@ -481,6 +481,7 @@ function EditAssignmentModal({
   onClose: () => void
 }) {
   const [title, setTitle] = useState(assignment.title)
+  const [weekNumber, setWeekNumber] = useState(assignment.week_number)
   const [description, setDescription] = useState(assignment.description ?? '')
   const [dueDate, setDueDate] = useState<Date | undefined>(new Date(assignment.due_date))
   const [dueTime, setDueTime] = useState(initTimeFromDate(assignment.due_date))
@@ -568,6 +569,7 @@ function EditAssignmentModal({
         assignmentId: assignment.id,
         classId,
         title: title.trim(),
+        week_number: weekNumber,
         description: description.trim() || undefined,
         due_date: combineDateAndTime(dueDate, dueTime).toISOString(),
         expected_submission_type: expectedSubmissionType,
@@ -621,6 +623,12 @@ function EditAssignmentModal({
           <div>
             <label className="block text-[12px] text-[#6B6B6B] mb-1">Title</label>
             <input autoFocus required value={title} onChange={(e) => setTitle(e.target.value)} style={inputStyle}
+              onFocus={(e) => (e.currentTarget.style.borderColor = '#8B1A2F')}
+              onBlur={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')} />
+          </div>
+          <div>
+            <label className="block text-[12px] text-[#6B6B6B] mb-1">Week</label>
+            <input type="number" min={1} required value={weekNumber} onChange={(e) => setWeekNumber(Number(e.target.value))} style={{ ...inputStyle, width: '100px' }}
               onFocus={(e) => (e.currentTarget.style.borderColor = '#8B1A2F')}
               onBlur={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')} />
           </div>

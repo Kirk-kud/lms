@@ -564,6 +564,7 @@ export class AssignmentsService {
     if (dto.publish_at !== undefined) patch.publish_at = dto.publish_at;
     if (dto.available_until !== undefined) patch.available_until = dto.available_until;
     if (dto.reopened_until !== undefined) patch.reopened_until = dto.reopened_until;
+    if (dto.week_number !== undefined) patch.week_number = dto.week_number;
 
     if (Object.keys(patch).length === 0) {
       return currentRow;

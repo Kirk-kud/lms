@@ -206,6 +206,7 @@ export function useUpdateAssignment() {
       publish_at?: string | null
       available_until?: string | null
       reopened_until?: string | null
+      week_number?: number
     }) => {
       const { assignmentId, classId, ...body } = vars
       void classId
