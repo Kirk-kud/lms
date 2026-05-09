@@ -17,12 +17,6 @@ const IconClasses = () => (
   </svg>
 )
 
-const IconOverview = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-    <path d="M1 1h6v5H1V1zm8 0h6v5H9V1zM1 8h6v7H1V8zm8 3h6v4H9v-4z" />
-  </svg>
-)
-
 const IconModules = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
     <path d="M1 2h6v6H1V2zm8 0h6v6H9V2zM1 10h6v4H1v-4zm8 0h6v4H9v-4z" />
@@ -312,14 +306,7 @@ export default function StudentSidebar({
               {className ?? 'Class'}
             </div>
 
-            <div style={{ margin: '2px 12px' }}>
-              <NavButton
-                label="Overview"
-                icon={<IconOverview />}
-                isActive={activeItem === 'Overview'}
-                onClick={() => onNavigate('Overview')}
-              />
-            </div>
+            <div style={sectionLabel}>CLASS</div>
             <div style={{ margin: '2px 12px' }}>
               <NavButton
                 label="Modules"
@@ -342,6 +329,24 @@ export default function StudentSidebar({
                 icon={<IconAttendance />}
                 isActive={activeItem === 'Attendance'}
                 onClick={() => onNavigate('Attendance')}
+              />
+            </div>
+
+            <div style={sectionLabel}>TOOLS</div>
+            <div style={{ margin: '2px 12px' }}>
+              <NavButton
+                label="Todo"
+                icon={<IconTodo />}
+                isActive={activeItem === 'Todo'}
+                onClick={() => onNavigate('Todo')}
+              />
+            </div>
+            <div style={{ margin: '2px 12px' }}>
+              <NavButton
+                label="Calendar"
+                icon={<IconCalendar />}
+                isActive={activeItem === 'Calendar'}
+                onClick={() => onNavigate('Calendar')}
               />
             </div>
           </div>

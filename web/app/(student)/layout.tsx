@@ -13,6 +13,8 @@ function activeItemFromPath(pathname: string): string {
   if (pathname.match(/\/student\/classes\/[^/]+\/modules/)) return 'Modules'
   if (pathname.match(/\/student\/classes\/[^/]+\/assignments/)) return 'Assignments'
   if (pathname.match(/\/student\/classes\/[^/]+\/attendance/)) return 'Attendance'
+  if (pathname.match(/\/student\/classes\/[^/]+\/todo/)) return 'Todo'
+  if (pathname.match(/\/student\/classes\/[^/]+\/calendar/)) return 'Calendar'
   if (pathname.match(/\/student\/classes\/[^/]+$/)) return 'Overview'
   if (pathname === '/student/classes') return 'Classes'
   if (pathname === '/student/notifications') return 'Notifications'
@@ -77,12 +79,6 @@ const IconAttendance = ({ active }: { active: boolean }) => (
   </svg>
 )
 
-const IconBack = ({ active }: { active: boolean }) => (
-  <svg width="20" height="20" viewBox="0 0 16 16" fill="none" className={active ? 'text-[#8B1A2F]' : 'text-[#9CA3AF]'}>
-    <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-)
-
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function StudentLayout({ children }: { children: React.ReactNode }) {
@@ -111,8 +107,14 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
       return
     }
     if (label === 'Classes') { router.push('/student/classes'); return }
-    if (label === 'Calendar') { router.push('/student/calendar'); return }
-    if (label === 'Todo') { router.push('/student/todo'); return }
+    if (label === 'Calendar') {
+      router.push(urlClassId ? `/student/classes/${urlClassId}/calendar` : '/student/calendar')
+      return
+    }
+    if (label === 'Todo') {
+      router.push(urlClassId ? `/student/classes/${urlClassId}/todo` : '/student/todo')
+      return
+    }
     if (label === 'Overview') {
       if (urlClassId) router.push(`/student/classes/${urlClassId}`)
       return
@@ -159,31 +161,53 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
             userInitials={initials}
           />
         </div>
-        <main className="flex-1 overflow-y-auto bg-white pb-20 md:pb-0">{children}</main>
+        <div className="flex flex-col flex-1 overflow-hidden">
+          {/* Mobile class sub-header — back button + class name */}
+          {isClassContext && (
+            <div className="md:hidden flex items-center gap-2 px-3 h-10 border-b border-[#E5E5E5] bg-white shrink-0">
+              <button
+                onClick={() => handleNavigate('All Classes')}
+                className="flex items-center gap-1 text-[12px] text-[#6B6168] hover:text-[#111] transition-colors"
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M9 2L4 7l5 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                All classes
+              </button>
+              {currentClass && (
+                <>
+                  <span className="text-[#E5E5E5] text-[12px]">/</span>
+                  <span className="text-[12px] text-[#0A0A0B] font-medium truncate">{currentClass.title}</span>
+                </>
+              )}
+            </div>
+          )}
+          <main className="flex-1 overflow-y-auto bg-white pb-20 md:pb-0">{children}</main>
+        </div>
       </div>
 
       {/* Mobile bottom nav — context-aware */}
       {isClassContext ? (
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t-[0.5px] border-[#E5E5E5] h-[calc(56px+env(safe-area-inset-bottom))] px-4 pb-[env(safe-area-inset-bottom)] flex items-center justify-between">
-          <button onClick={() => handleNavigate('All Classes')} aria-label="All Classes" className="flex flex-col items-center justify-center gap-1 py-2">
-            <IconBack active={false} />
-            <span className="text-[10px] text-[#6B6168]">Back</span>
-          </button>
-          <button onClick={() => handleNavigate('Overview')} aria-label="Overview" className="flex flex-col items-center justify-center gap-1 py-2">
-            <IconHome active={activeItem === 'Overview'} />
-            <span className={`text-[10px] ${activeItem === 'Overview' ? 'text-[#8B1A2F] font-medium' : 'text-[#6B6168]'}`}>Overview</span>
-          </button>
-          <button onClick={() => handleNavigate('Modules')} aria-label="Modules" className="flex flex-col items-center justify-center gap-1 py-2">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t-[0.5px] border-[#E5E5E5] h-[calc(56px+env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)] flex items-center justify-around px-2">
+          <button onClick={() => handleNavigate('Modules')} aria-label="Modules" className="flex flex-col items-center justify-center gap-1 py-2 flex-1">
             <IconModules active={activeItem === 'Modules'} />
             <span className={`text-[10px] ${activeItem === 'Modules' ? 'text-[#8B1A2F] font-medium' : 'text-[#6B6168]'}`}>Modules</span>
           </button>
-          <button onClick={() => handleNavigate('Assignments')} aria-label="Assignments" className="flex flex-col items-center justify-center gap-1 py-2">
+          <button onClick={() => handleNavigate('Assignments')} aria-label="Assignments" className="flex flex-col items-center justify-center gap-1 py-2 flex-1">
             <IconAssignments active={activeItem === 'Assignments'} />
-            <span className={`text-[10px] ${activeItem === 'Assignments' ? 'text-[#8B1A2F] font-medium' : 'text-[#6B6168]'}`}>Assignments</span>
+            <span className={`text-[10px] ${activeItem === 'Assignments' ? 'text-[#8B1A2F] font-medium' : 'text-[#6B6168]'}`}>Assign.</span>
           </button>
-          <button onClick={() => handleNavigate('Attendance')} aria-label="Attendance" className="flex flex-col items-center justify-center gap-1 py-2">
+          <button onClick={() => handleNavigate('Attendance')} aria-label="Attendance" className="flex flex-col items-center justify-center gap-1 py-2 flex-1">
             <IconAttendance active={activeItem === 'Attendance'} />
-            <span className={`text-[10px] ${activeItem === 'Attendance' ? 'text-[#8B1A2F] font-medium' : 'text-[#6B6168]'}`}>Attendance</span>
+            <span className={`text-[10px] ${activeItem === 'Attendance' ? 'text-[#8B1A2F] font-medium' : 'text-[#6B6168]'}`}>Attend.</span>
+          </button>
+          <button onClick={() => handleNavigate('Todo')} aria-label="To-do" className="flex flex-col items-center justify-center gap-1 py-2 flex-1">
+            <IconTodo active={activeItem === 'Todo'} />
+            <span className={`text-[10px] ${activeItem === 'Todo' ? 'text-[#8B1A2F] font-medium' : 'text-[#6B6168]'}`}>To-do</span>
+          </button>
+          <button onClick={() => handleNavigate('Calendar')} aria-label="Calendar" className="flex flex-col items-center justify-center gap-1 py-2 flex-1">
+            <IconCalendar active={activeItem === 'Calendar'} />
+            <span className={`text-[10px] ${activeItem === 'Calendar' ? 'text-[#8B1A2F] font-medium' : 'text-[#6B6168]'}`}>Calendar</span>
           </button>
         </nav>
       ) : (
