@@ -41,20 +41,6 @@ const IconChevronLeft = () => (
   </svg>
 )
 
-const IconBell = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M13 9.5V7a5 5 0 0 0-10 0v2.5L1.5 12h13L13 9.5z" />
-    <path d="M6.5 12v.5a1.5 1.5 0 0 0 3 0V12" />
-  </svg>
-)
-
-const IconInbox = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="1" y="2" width="14" height="12" rx="1.5" />
-    <polyline points="1,5 8,9 15,5" />
-  </svg>
-)
-
 const IconCalendar = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
     <rect x="1" y="2" width="14" height="13" rx="1.5" />
@@ -229,39 +215,6 @@ export default function StudentSidebar({
               />
             </div>
 
-            <div style={sectionLabel}>TOOLS</div>
-            <div style={{ margin: '2px 12px' }}>
-              <NavButton
-                label="Calendar"
-                icon={<IconCalendar />}
-                isActive={activeItem === 'Calendar'}
-                onClick={() => onNavigate('Calendar')}
-              />
-            </div>
-            <div style={{ margin: '2px 12px' }}>
-              <NavButton
-                label="Todo"
-                icon={<IconTodo />}
-                isActive={activeItem === 'Todo'}
-                onClick={() => onNavigate('Todo')}
-              />
-            </div>
-            <div style={{ margin: '2px 12px' }}>
-              <NavButton
-                label="Notifications"
-                icon={<IconBell />}
-                isActive={activeItem === 'Notifications'}
-                onClick={() => onNavigate('Notifications')}
-              />
-            </div>
-            <div style={{ margin: '2px 12px' }}>
-              <NavButton
-                label="Announcements"
-                icon={<IconInbox />}
-                isActive={activeItem === 'Announcements'}
-                onClick={() => onNavigate('Announcements')}
-              />
-            </div>
           </div>
         ) : (
           <div>

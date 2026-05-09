@@ -140,6 +140,32 @@ export default function Topbar({ userName, userInitials, role, userId, onSignOut
           {isStudent && userId && (
             <>
               <IconButton
+                label="To-do"
+                active={pathname === '/student/todo' || pathname.includes('/todo')}
+                onClick={() => router.push('/student/todo')}
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="3.5" cy="4" r="1" fill="currentColor" stroke="none" />
+                  <line x1="6.5" y1="4" x2="14" y2="4" />
+                  <circle cx="3.5" cy="8" r="1" fill="currentColor" stroke="none" />
+                  <line x1="6.5" y1="8" x2="14" y2="8" />
+                  <circle cx="3.5" cy="12" r="1" fill="currentColor" stroke="none" />
+                  <line x1="6.5" y1="12" x2="14" y2="12" />
+                </svg>
+              </IconButton>
+              <IconButton
+                label="Calendar"
+                active={pathname === '/student/calendar' || pathname.includes('/calendar')}
+                onClick={() => router.push('/student/calendar')}
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="1" y="2" width="14" height="13" rx="1.5" />
+                  <line x1="1" y1="6" x2="15" y2="6" />
+                  <line x1="5" y1="1" x2="5" y2="4" />
+                  <line x1="11" y1="1" x2="11" y2="4" />
+                </svg>
+              </IconButton>
+              <IconButton
                 label="Notifications"
                 active={pathname === '/student/notifications'}
                 badge={unreadCount}

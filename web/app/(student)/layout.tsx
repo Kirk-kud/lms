@@ -211,22 +211,14 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
           </button>
         </nav>
       ) : (
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t-[0.5px] border-[#E5E5E5] h-[calc(56px+env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)] flex items-center justify-around px-2">
-          <button onClick={() => handleNavigate('Dashboard')} aria-label="Dashboard" className="flex flex-col items-center justify-center gap-1 py-2">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t-[0.5px] border-[#E5E5E5] h-[calc(56px+env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)] flex items-center justify-around px-8">
+          <button onClick={() => handleNavigate('Dashboard')} aria-label="Dashboard" className="flex flex-col items-center justify-center gap-1 py-2 flex-1">
             <IconHome active={activeItem === 'Dashboard'} />
             <span className={`text-[10px] ${activeItem === 'Dashboard' ? 'text-[#8B1A2F] font-medium' : 'text-[#6B6168]'}`}>Dashboard</span>
           </button>
-          <button onClick={() => handleNavigate('Classes')} aria-label="Classes" className="flex flex-col items-center justify-center gap-1 py-2">
+          <button onClick={() => handleNavigate('Classes')} aria-label="Classes" className="flex flex-col items-center justify-center gap-1 py-2 flex-1">
             <IconClasses active={activeItem === 'Classes'} />
             <span className={`text-[10px] ${activeItem === 'Classes' ? 'text-[#8B1A2F] font-medium' : 'text-[#6B6168]'}`}>Classes</span>
-          </button>
-          <button onClick={() => handleNavigate('Calendar')} aria-label="Calendar" className="flex flex-col items-center justify-center gap-1 py-2">
-            <IconCalendar active={activeItem === 'Calendar'} />
-            <span className={`text-[10px] ${activeItem === 'Calendar' ? 'text-[#8B1A2F] font-medium' : 'text-[#6B6168]'}`}>Calendar</span>
-          </button>
-          <button onClick={() => handleNavigate('Todo')} aria-label="Todo" className="flex flex-col items-center justify-center gap-1 py-2">
-            <IconTodo active={activeItem === 'Todo'} />
-            <span className={`text-[10px] ${activeItem === 'Todo' ? 'text-[#8B1A2F] font-medium' : 'text-[#6B6168]'}`}>To-do</span>
           </button>
         </nav>
       )}
