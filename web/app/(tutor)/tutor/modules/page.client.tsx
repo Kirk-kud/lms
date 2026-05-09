@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { useTutorClass } from '@/lib/contexts/TutorClassContext'
 import { useCohort } from '@/lib/hooks/useCohorts'
@@ -12,6 +13,7 @@ import {
   useAddModuleItem,
   ModuleItem,
 } from '@/lib/hooks/useModules'
+import { useAssignments } from '@/lib/hooks/useAssignments'
 import ModuleCard from '@/components/ui/tutor/ModuleCard'
 import { SkeletonCard } from '@/components/ui/shared/SkeletonCard'
 import { EmptyState } from '@/components/ui/shared/EmptyState'
@@ -26,8 +28,16 @@ import {
 import ItemPreviewModal from '@/components/ui/shared/ItemPreviewModal'
 import type { PreviewItem } from '@/components/ui/shared/ItemPreviewModal'
 
-const ITEM_TYPES = ['pdf', 'video', 'link', 'text'] as const
+const ITEM_TYPES = ['pdf', 'video', 'link', 'text', 'assignment'] as const
 type ItemType = (typeof ITEM_TYPES)[number]
+
+const ITEM_TYPE_BUTTON_LABEL: Record<ItemType, string> = {
+  pdf: 'PDF',
+  video: 'Video',
+  link: 'Link',
+  text: 'Text',
+  assignment: 'Assignment',
+}
 
 function CreateModuleModal({
   classId,
@@ -105,6 +115,8 @@ function AddItemModal({
   const [url, setUrl] = useState('')
   const [text, setText] = useState('')
   const [file, setFile] = useState<File | null>(null)
+  const [assignmentId, setAssignmentId] = useState('')
+  const { data: classAssignments = [] } = useAssignments(classId)
   const addItem = useAddModuleItem()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -112,18 +124,31 @@ function AddItemModal({
     const formData = new FormData()
     formData.append('title', title.trim())
     formData.append('type', type)
+    if (type === 'assignment') {
+      if (!assignmentId) {
+        toast.error('Choose an assignment to link')
+        return
+      }
+      formData.append('assignment_id', assignmentId)
+    }
     if (type === 'pdf' && file) formData.append('file', file)
     if ((type === 'video' || type === 'link') && url) formData.append('content_url', url)
     if (type === 'text' && text) formData.append('content_text', text)
     formData.append('order_index', '0')
     try {
       await addItem.mutateAsync({ moduleId, classId, formData })
-      setTitle(''); setUrl(''); setText(''); setFile(null)
+      setTitle(''); setUrl(''); setText(''); setFile(null); setAssignmentId('')
       onClose()
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Unable to add item')
     }
   }
+
+  const sortedAssignments = [...classAssignments].sort((a, b) =>
+    a.week_number !== b.week_number
+      ? a.week_number - b.week_number
+      : a.title.localeCompare(b.title),
+  )
 
   const inputStyle: React.CSSProperties = {
     width: '100%', height: '36px', borderRadius: '8px',
@@ -148,12 +173,16 @@ function AddItemModal({
             <label className="block text-[12px] text-[#6B6B6B] mb-2">Type</label>
             <div className="flex gap-2 flex-wrap">
               {ITEM_TYPES.map((t) => (
-                <button key={t} type="button" onClick={() => setType(t)}
+                <button key={t} type="button" onClick={() => {
+                  setType(t)
+                  setAssignmentId('')
+                  setFile(null)
+                }}
                   className={`h-8 px-3 text-[12px] rounded-lg border transition-colors ${
                     type === t ? 'border-[#8B1A2F] text-[#8B1A2F] bg-[#F5E6EA]' : 'border-[#E5E5E5] text-[#6B7280] hover:bg-[#F8F8F8]'
                   }`}
                 >
-                  {t.toUpperCase()}
+                  {ITEM_TYPE_BUTTON_LABEL[t]}
                 </button>
               ))}
             </div>
@@ -182,6 +211,27 @@ function AddItemModal({
                 onBlur={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')} />
             </div>
           )}
+          {type === 'assignment' && (
+            <div>
+              <label className="block text-[12px] text-[#6B6B6B] mb-1">Class assignment</label>
+              <select
+                required
+                value={assignmentId}
+                onChange={(e) => setAssignmentId(e.target.value)}
+                style={inputStyle}
+              >
+                <option value="">Select assignment…</option>
+                {sortedAssignments.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    Week {a.week_number}: {a.title}
+                  </option>
+                ))}
+              </select>
+              {sortedAssignments.length === 0 && (
+                <p className="text-[11px] text-[#9CA3AF] mt-1">Create assignments for this class first.</p>
+              )}
+            </div>
+          )}
           <div className="flex gap-2 justify-end pt-1">
             <button type="button" onClick={onClose} className="h-9 px-4 text-[13px] text-[#6B7280] border border-[#E5E5E5] rounded-lg hover:bg-[#F8F8F8] transition-colors">Cancel</button>
             <button type="submit" disabled={addItem.isPending} className="h-9 px-4 text-[13px] font-medium bg-black text-white rounded-lg disabled:opacity-50 hover:bg-black/90 transition-colors flex items-center gap-2">
@@ -196,10 +246,11 @@ function AddItemModal({
 }
 
 const TYPE_LABELS: Record<string, string> = {
-  pdf: 'PDF', video: 'Video', link: 'Link', text: 'Text',
+  pdf: 'PDF', video: 'Video', link: 'Link', text: 'Text', assignment: 'Assignment',
 }
 
 export default function TutorModulesClient() {
+  const router = useRouter()
   const { selectedClass, cohortId } = useTutorClass()
   const classId = selectedClass?.id ?? ''
   const cohortName = selectedClass?.cohort_name ?? 'My Cohort'
@@ -222,6 +273,12 @@ export default function TutorModulesClient() {
   }
 
   const handleItemClick = (item: ModuleItem) => {
+    if (item.type === 'assignment') {
+      if (item.assignment_id) {
+        router.push('/tutor/assignments')
+      }
+      return
+    }
     if (item.type === 'link' && item.content_url) {
       window.open(item.content_url, '_blank', 'noopener,noreferrer')
       return
@@ -305,11 +362,19 @@ export default function TutorModulesClient() {
                       <p className="text-[13px] text-[#111] truncate">{item.title}</p>
                       <p className="text-[11px] text-[#9CA3AF]">{TYPE_LABELS[item.type] ?? item.type}</p>
                     </div>
-                    {item.content_url && (
+                    {item.type === 'assignment' && item.assignment_id ? (
+                      <button
+                        type="button"
+                        onClick={() => router.push('/tutor/assignments')}
+                        className="text-[12px] text-[#8B1A2F] font-medium hover:underline shrink-0 ml-4"
+                      >
+                        Assignments
+                      </button>
+                    ) : item.content_url ? (
                       <a href={item.content_url} target="_blank" rel="noopener noreferrer" className="text-[12px] text-[#8B1A2F] font-medium hover:underline shrink-0 ml-4">
                         Open
                       </a>
-                    )}
+                    ) : null}
                   </div>
                 ))
               ) : (

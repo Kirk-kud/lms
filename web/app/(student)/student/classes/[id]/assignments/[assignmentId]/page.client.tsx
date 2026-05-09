@@ -31,6 +31,7 @@ function deriveMaterials(row: Assignment): AssignmentMaterialsBlock {
     instructionPdfSignedUrl: row.instruction_file_signed_url ?? null,
     instructionPdfFileName: row.instruction_file_name ?? null,
     instructionLink: row.instruction_link_url ?? null,
+    instructionLinkLabel: row.instruction_link_label ?? null,
     instructionText: row.instruction_text ?? null,
   }
 }

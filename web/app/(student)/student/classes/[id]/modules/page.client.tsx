@@ -14,7 +14,7 @@ import { toast } from 'sonner'
 
 // ── Type chip config ──────────────────────────────────────────────────────────
 
-type ItemType = 'pdf' | 'video' | 'link' | 'text' | 'image'
+type ItemType = 'pdf' | 'video' | 'link' | 'text' | 'image' | 'assignment'
 
 const TYPE_CONFIG: Record<ItemType, { bg: string; iconColor: string; label: string }> = {
   pdf:   { bg: '#FEE2E2', iconColor: '#991B1B', label: 'PDF document' },
@@ -22,6 +22,7 @@ const TYPE_CONFIG: Record<ItemType, { bg: string; iconColor: string; label: stri
   link:  { bg: '#F3F4F6', iconColor: '#4B5563', label: 'External link — opens in new tab' },
   text:  { bg: '#F5E6EA', iconColor: '#8B1A2F', label: 'Reading' },
   image: { bg: '#F0FDF4', iconColor: '#15803D', label: 'Image' },
+  assignment: { bg: '#F5E6EA', iconColor: '#8B1A2F', label: 'Assignment — submit on assignment page' },
 }
 
 function TypeIcon({ type, color }: { type: ItemType; color: string }) {
@@ -57,6 +58,16 @@ function TypeIcon({ type, color }: { type: ItemType; color: string }) {
         <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
         <circle cx="8.5" cy="8.5" r="1.5" />
         <polyline points="21 15 16 10 5 21" />
+      </svg>
+    )
+  }
+  if (type === 'assignment') {
+    return (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+        <line x1="12" y1="18" x2="12" y2="12" />
+        <line x1="9" y1="15" x2="15" y2="15" />
       </svg>
     )
   }
@@ -205,6 +216,12 @@ export default function StudentModulesPageClient({ params }: { params: Promise<{
   }, [isClassLoading, isModulesLoading])
 
   const handleItemClick = (item: ModuleItem) => {
+    if (item.type === 'assignment') {
+      if (item.assignment_id) {
+        router.push(`/student/classes/${classId}/assignments/${item.assignment_id}`)
+      }
+      return
+    }
     if (item.type === 'link' && item.content_url) {
       window.open(item.content_url, '_blank', 'noopener,noreferrer')
       return

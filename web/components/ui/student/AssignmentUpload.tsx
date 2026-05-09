@@ -17,6 +17,8 @@ export interface AssignmentMaterialsBlock {
   instructionPdfSignedUrl?: string | null
   instructionPdfFileName?: string | null
   instructionLink?: string | null
+  /** Anchor text for instruction link (shown instead of the URL). */
+  instructionLinkLabel?: string | null
   instructionText?: string | null
 }
 
@@ -288,7 +290,9 @@ export default function AssignmentUpload({
             {materials?.instructionLink?.trim() && (
               <a href={materials.instructionLink.trim()} target="_blank" rel="noopener noreferrer" className="flex items-start gap-2 text-[12px] text-[#111] hover:text-[#8B1A2F]">
                 <span className="shrink-0 text-[10px] font-medium text-[#6B7280] mt-1">LINK</span>
-                <span className="underline underline-offset-2 break-all">{materials.instructionLink.trim()}</span>
+                <span className="underline underline-offset-2 break-words">
+                  {(materials.instructionLinkLabel ?? '').trim() || materials.instructionLink.trim()}
+                </span>
               </a>
             )}
             {materials?.instructionText?.trim() && (
@@ -373,7 +377,9 @@ export default function AssignmentUpload({
               className="flex items-start gap-2 text-[12px] text-[#111] hover:text-[#8B1A2F]"
             >
               <span className="shrink-0 text-[10px] font-medium text-[#6B7280] mt-1">LINK</span>
-              <span className="underline underline-offset-2 break-all">{materials.instructionLink.trim()}</span>
+              <span className="underline underline-offset-2 break-words">
+                {(materials.instructionLinkLabel ?? '').trim() || materials.instructionLink.trim()}
+              </span>
             </a>
           )}
           {materials?.instructionText?.trim() && (

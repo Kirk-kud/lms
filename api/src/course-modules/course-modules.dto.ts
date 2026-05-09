@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsIn,
   IsInt,
@@ -6,6 +6,7 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 
@@ -44,8 +45,8 @@ export class CreateModuleItemDto {
   @IsString()
   title: string;
 
-  @IsIn(['pdf', 'video', 'link', 'text', 'image'])
-  type: 'pdf' | 'video' | 'link' | 'text' | 'image';
+  @IsIn(['pdf', 'video', 'link', 'text', 'image', 'assignment'])
+  type: 'pdf' | 'video' | 'link' | 'text' | 'image' | 'assignment';
 
   @IsOptional()
   @IsString()
@@ -54,6 +55,12 @@ export class CreateModuleItemDto {
   @IsOptional()
   @IsString()
   content_text?: string;
+
+  /** Required when type is `assignment`; must belong to the same class/cohort as the module. */
+  @ValidateIf((o: CreateModuleItemDto) => o.type === 'assignment')
+  @Transform(({ value }) => (value === '' ? undefined : value))
+  @IsUUID()
+  assignment_id?: string;
 
   @IsInt()
   @Type(() => Number)
@@ -72,6 +79,12 @@ export class UpdateModuleItemDto {
   @IsOptional()
   @IsString()
   content_text?: string;
+
+  /** Only valid for module items with type `assignment`. Omit to leave unchanged. */
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null)
+  @IsUUID()
+  assignment_id?: string | null;
 }
 
 class ReorderItem {

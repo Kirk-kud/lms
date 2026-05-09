@@ -24,9 +24,10 @@ interface Item {
   id: string
   module_id: string
   title: string
-  type: 'pdf' | 'link' | 'video' | 'text' | 'image'
+  type: 'pdf' | 'link' | 'video' | 'text' | 'image' | 'assignment'
   content_url: string | null
   content_text: string | null
+  assignment_id?: string | null
   order_index: number
   created_at: string
 }
@@ -158,6 +159,13 @@ function SortableItemRow({
           {(item.type === 'link' || item.type === 'video') && (
             <span className="text-[#9CA3AF] group-hover:text-[#6B7280] transition-colors">
               <ExternalIcon />
+            </span>
+          )}
+          {item.type === 'assignment' && (
+            <span className="text-[#9CA3AF] group-hover:text-[#6B7280] transition-colors">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
             </span>
           )}
           {(item.type === 'pdf' || item.type === 'image') && (

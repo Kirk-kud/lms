@@ -50,6 +50,12 @@ export class CreateAssignmentDto {
   @MaxLength(2048)
   instruction_link_url?: string;
 
+  /** Anchor text for `instruction_link_url` (students see this instead of the raw URL). */
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  instruction_link_label?: string;
+
   /** Optional pasted instructions (students read on the assignment page). */
   @IsOptional()
   @IsString()
@@ -141,6 +147,9 @@ export class UpdateAssignmentDto {
 
   @IsOptional()
   instruction_link_url?: string | null;
+
+  @IsOptional()
+  instruction_link_label?: string | null;
 
   @IsOptional()
   instruction_text?: string | null;

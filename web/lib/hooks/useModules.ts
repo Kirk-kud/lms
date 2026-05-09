@@ -7,9 +7,11 @@ export interface ModuleItem {
   id: string
   module_id: string
   title: string
-  type: 'pdf' | 'video' | 'link' | 'text' | 'image'
+  type: 'pdf' | 'video' | 'link' | 'text' | 'image' | 'assignment'
   content_url: string | null
   content_text: string | null
+  /** Set when `type` is `assignment` — same class/cohort as the module. */
+  assignment_id?: string | null
   order_index: number
   created_at: string
 }
@@ -106,6 +108,7 @@ export function useUpdateModuleItem() {
       title?: string
       content_url?: string
       content_text?: string
+      assignment_id?: string
     }) => apiClient.patch<ModuleItem>(`/modules/items/${itemId}`, body),
     onSuccess: async (_data, vars) => {
       await qc.invalidateQueries({ queryKey: ['modules', vars.classId] })

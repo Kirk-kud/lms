@@ -95,7 +95,7 @@ export class CourseModulesService {
   ) {
     const { data: mod, error } = await this.supabase.adminClient
       .from('modules')
-      .select('id, class_id')
+      .select('id, class_id, cohort_id')
       .eq('id', moduleId)
       .single();
 
@@ -116,7 +116,7 @@ export class CourseModulesService {
   ) {
     const { data: item, error } = await this.supabase.adminClient
       .from('module_items')
-      .select('*, module:modules!module_id(id, class_id)')
+      .select('*, module:modules!module_id(id, class_id, cohort_id)')
       .eq('id', itemId)
       .single();
 
@@ -128,6 +128,37 @@ export class CourseModulesService {
       await this.assertTutorOwnsClass(classId, tutorId, role);
     }
     return item;
+  }
+
+  /** Ensures the assignment belongs to the same class and cohort scope as the module. */
+  private async assertAssignmentMatchesModule(
+    classId: string,
+    moduleCohortId: string | null,
+    assignmentId: string,
+  ) {
+    const { data: row, error } = await this.supabase.adminClient
+      .from('assignments')
+      .select('id, class_id, cohort_id')
+      .eq('id', assignmentId)
+      .maybeSingle();
+
+    if (error) throw new BadRequestException(error.message);
+    if (!row) throw new BadRequestException('Assignment not found');
+
+    if (row.class_id !== classId) {
+      throw new BadRequestException(
+        'Assignment does not belong to this class',
+      );
+    }
+
+    const ac = row.cohort_id as string | null;
+    const mc = moduleCohortId;
+    if (ac === null) return; // class-wide assignment is visible to all cohorts
+    if (mc !== null && ac === mc) return; // same cohort
+
+    throw new BadRequestException(
+      'Assignment cohort does not match this module',
+    );
   }
 
   // ----------------------------------------------------------------
@@ -278,8 +309,27 @@ export class CourseModulesService {
 
     const mod = await this.assertTutorOwnsModule(moduleId, tutorId, role);
     let contentUrl = dto.content_url ?? null;
+    let assignmentId: string | null = null;
 
-    if (dto.type === 'pdf') {
+    if (dto.type === 'assignment') {
+      if (!dto.assignment_id) {
+        throw new BadRequestException(
+          'assignment_id is required for assignment items',
+        );
+      }
+      if (file) {
+        throw new BadRequestException(
+          'Assignment items do not use file uploads',
+        );
+      }
+      await this.assertAssignmentMatchesModule(
+        mod.class_id,
+        mod.cohort_id as string | null,
+        dto.assignment_id,
+      );
+      assignmentId = dto.assignment_id;
+      contentUrl = null;
+    } else if (dto.type === 'pdf') {
       if (!file) throw new BadRequestException('PDF file is required');
       if (file.mimetype !== 'application/pdf') {
         throw new BadRequestException('Only PDF files are accepted');
@@ -367,6 +417,7 @@ export class CourseModulesService {
         content_url: contentUrl,
         content_text: dto.content_text ?? null,
         order_index: dto.order_index,
+        assignment_id: assignmentId,
       })
       .select()
       .single();
@@ -384,11 +435,50 @@ export class CourseModulesService {
     role: string | null,
     dto: UpdateModuleItemDto,
   ) {
-    await this.assertTutorOwnsItem(itemId, tutorId, role);
+    const item = await this.assertTutorOwnsItem(itemId, tutorId, role);
+    const moduleRow = item.module as {
+      id: string;
+      class_id: string;
+      cohort_id: string | null;
+    };
+
+    const patch: Record<string, unknown> = {};
+    if (dto.title !== undefined) patch.title = dto.title;
+    if (dto.content_url !== undefined) patch.content_url = dto.content_url;
+    if (dto.content_text !== undefined) patch.content_text = dto.content_text;
+
+    if (dto.assignment_id !== undefined) {
+      if ((item as { type: string }).type !== 'assignment') {
+        throw new BadRequestException(
+          'assignment_id can only be set on assignment module items',
+        );
+      }
+      if (dto.assignment_id === null) {
+        throw new BadRequestException(
+          'Choose another assignment or delete this item',
+        );
+      }
+      await this.assertAssignmentMatchesModule(
+        moduleRow.class_id,
+        moduleRow.cohort_id,
+        dto.assignment_id,
+      );
+      patch.assignment_id = dto.assignment_id;
+    }
+
+    if (Object.keys(patch).length === 0) {
+      const { data: fresh, error: fetchErr } = await this.supabase.adminClient
+        .from('module_items')
+        .select()
+        .eq('id', itemId)
+        .single();
+      if (fetchErr) throw new BadRequestException(fetchErr.message);
+      return fresh;
+    }
 
     const { data, error } = await this.supabase.adminClient
       .from('module_items')
-      .update(dto)
+      .update(patch)
       .eq('id', itemId)
       .select()
       .single();

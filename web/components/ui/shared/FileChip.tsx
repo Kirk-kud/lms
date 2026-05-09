@@ -1,9 +1,15 @@
 import React from 'react';
 
-export type ModuleItemType = 'pdf' | 'video' | 'link' | 'text' | 'image';
+export type ModuleItemType =
+  | 'pdf'
+  | 'video'
+  | 'link'
+  | 'text'
+  | 'image'
+  | 'assignment'
 
 export interface FileChipProps {
-  type: ModuleItemType;
+  type: ModuleItemType
 }
 
 const LABELS: Record<ModuleItemType, string> = {
@@ -12,7 +18,8 @@ const LABELS: Record<ModuleItemType, string> = {
   link: 'LNK',
   text: 'TXT',
   image: 'IMG',
-};
+  assignment: 'SUB',
+}
 
 export function FileChip({ type }: FileChipProps) {
   return (

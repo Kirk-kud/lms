@@ -448,6 +448,11 @@ export class AssignmentsService {
     if (trimmedLink) {
       instruction_link_url = this.normalizeHttpsUrl(trimmedLink);
     }
+    const trimmedLabel = dto.instruction_link_label?.trim();
+    let instruction_link_label: string | null =
+      instruction_link_url && trimmedLabel && trimmedLabel.length > 0
+        ? trimmedLabel.slice(0, 500)
+        : null;
     const trimmedText = dto.instruction_text?.trim();
     const instruction_text = trimmedText
       ? trimmedText.slice(0, 50_000)
@@ -465,6 +470,7 @@ export class AssignmentsService {
         expected_submission_type: dto.expected_submission_type ?? 'pdf_file',
         grade_type: dto.grade_type ?? 'score',
         instruction_link_url,
+        instruction_link_label,
         instruction_text,
         published: dto.published !== false,
         publish_at: dto.publish_at ?? null,
@@ -541,6 +547,25 @@ export class AssignmentsService {
         );
       } else {
         patch.instruction_link_url = null;
+        patch.instruction_link_label = null;
+      }
+    }
+
+    if (dto.instruction_link_label !== undefined) {
+      let urlNow: string | null =
+        (currentRow.instruction_link_url as string | null) ?? null;
+      if (dto.instruction_link_url !== undefined) {
+        urlNow = (patch.instruction_link_url as string | null) ?? null;
+      }
+      const hasLink =
+        typeof urlNow === 'string' && urlNow.trim().length > 0;
+      const raw = dto.instruction_link_label;
+      if (!hasLink) {
+        patch.instruction_link_label = null;
+      } else if (raw !== null && String(raw).trim().length > 0) {
+        patch.instruction_link_label = String(raw).trim().slice(0, 500);
+      } else {
+        patch.instruction_link_label = null;
       }
     }
 
@@ -728,6 +753,7 @@ export class AssignmentsService {
         instruction_file_path: storagePath,
         instruction_file_name: file.originalname,
         instruction_link_url: null,
+        instruction_link_label: null,
       })
       .eq('id', assignmentId)
       .select()

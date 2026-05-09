@@ -47,6 +47,8 @@ export interface Assignment {
   instruction_file_path?: string | null
   instruction_file_name?: string | null
   instruction_link_url?: string | null
+  /** Anchor text for instruction link (students see this instead of the raw URL). */
+  instruction_link_label?: string | null
   instruction_text?: string | null
   /** Signed URL when `instruction_file_path` is set (API-enriched). */
   instruction_file_signed_url?: string | null
@@ -136,6 +138,7 @@ export function useCreateAssignment() {
       expected_submission_type?: ExpectedSubmissionType
       grade_type?: 'score' | 'pass_fail'
       instruction_link_url?: string
+      instruction_link_label?: string
       instruction_text?: string
       published?: boolean
       publish_at?: string | null
@@ -200,6 +203,7 @@ export function useUpdateAssignment() {
       expected_submission_type?: ExpectedSubmissionType
       grade_type?: 'score' | 'pass_fail'
       instruction_link_url?: string | null
+      instruction_link_label?: string | null
       instruction_text?: string | null
       clear_instruction_pdf?: boolean
       published?: boolean

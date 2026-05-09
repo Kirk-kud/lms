@@ -14,6 +14,7 @@ import {
   CourseModule,
   ModuleItem,
 } from '@/lib/hooks/useModules'
+import { useAssignments } from '@/lib/hooks/useAssignments'
 import { useClass } from '@/lib/hooks/useClasses'
 import ModuleCard from '@/components/ui/tutor/ModuleCard'
 import { SkeletonCard } from '@/components/ui/shared/SkeletonCard'
@@ -31,8 +32,17 @@ import {
 import ItemPreviewModal from '@/components/ui/shared/ItemPreviewModal'
 import type { PreviewItem } from '@/components/ui/shared/ItemPreviewModal'
 
-const ITEM_TYPES = ['pdf', 'image', 'video', 'link', 'text'] as const
+const ITEM_TYPES = ['pdf', 'image', 'video', 'link', 'text', 'assignment'] as const
 type ItemType = (typeof ITEM_TYPES)[number]
+
+const ITEM_TYPE_BUTTON_LABEL: Record<ItemType, string> = {
+  pdf: 'PDF',
+  image: 'Image',
+  video: 'Video',
+  link: 'Link',
+  text: 'Text',
+  assignment: 'Assignment',
+}
 
 function CreateModuleModal({
   classId,
@@ -115,6 +125,8 @@ function AddItemModal({
   const [url, setUrl] = useState('')
   const [text, setText] = useState('')
   const [file, setFile] = useState<File | null>(null)
+  const [assignmentId, setAssignmentId] = useState('')
+  const { data: classAssignments = [] } = useAssignments(classId)
   const addItem = useAddModuleItem()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -122,6 +134,13 @@ function AddItemModal({
     const formData = new FormData()
     formData.append('title', title.trim())
     formData.append('type', type)
+    if (type === 'assignment') {
+      if (!assignmentId) {
+        toast.error('Choose an assignment to link')
+        return
+      }
+      formData.append('assignment_id', assignmentId)
+    }
     if ((type === 'pdf' || type === 'image') && file) formData.append('file', file)
     if ((type === 'video' || type === 'link') && url) formData.append('content_url', url)
     if (type === 'text' && text) formData.append('content_text', text)
@@ -132,11 +151,18 @@ function AddItemModal({
       setUrl('')
       setText('')
       setFile(null)
+      setAssignmentId('')
       onClose()
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Unable to add item')
     }
   }
+
+  const sortedAssignments = [...classAssignments].sort((a, b) =>
+    a.week_number !== b.week_number
+      ? a.week_number - b.week_number
+      : a.title.localeCompare(b.title),
+  )
 
   const inputStyle: React.CSSProperties = {
     width: '100%', height: '36px', borderRadius: '8px',
@@ -164,14 +190,18 @@ function AddItemModal({
                 <button
                   key={t}
                   type="button"
-                  onClick={() => { setType(t); setFile(null) }}
+                  onClick={() => {
+                    setType(t)
+                    setFile(null)
+                    setAssignmentId('')
+                  }}
                   className={`h-8 px-3 text-[12px] rounded-lg border transition-colors ${
                     type === t
                       ? 'border-[#8B1A2F] text-[#8B1A2F] bg-[#F5E6EA]'
                       : 'border-[#E5E5E5] text-[#6B7280] hover:bg-[#F8F8F8]'
                   }`}
                 >
-                  {t.charAt(0).toUpperCase() + t.slice(1)}
+                  {ITEM_TYPE_BUTTON_LABEL[t]}
                 </button>
               ))}
             </div>
@@ -218,6 +248,27 @@ function AddItemModal({
                 style={{ ...inputStyle, height: 'auto', padding: '8px 10px', resize: 'none' }}
                 onFocus={(e) => (e.currentTarget.style.borderColor = '#8B1A2F')}
                 onBlur={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')} />
+            </div>
+          )}
+          {type === 'assignment' && (
+            <div>
+              <label className="block text-[12px] text-[#6B6B6B] mb-1">Class assignment</label>
+              <select
+                required
+                value={assignmentId}
+                onChange={(e) => setAssignmentId(e.target.value)}
+                style={inputStyle}
+              >
+                <option value="">Select assignment…</option>
+                {sortedAssignments.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    Week {a.week_number}: {a.title}
+                  </option>
+                ))}
+              </select>
+              {sortedAssignments.length === 0 && (
+                <p className="text-[11px] text-[#9CA3AF] mt-1">Create assignments for this class first.</p>
+              )}
             </div>
           )}
           <div className="flex gap-2 justify-end pt-1">
@@ -306,13 +357,47 @@ function EditItemModal({
   const [title, setTitle] = useState(item.title)
   const [url, setUrl] = useState(item.content_url ?? '')
   const [text, setText] = useState(item.content_text ?? '')
+  const [assignmentId, setAssignmentId] = useState(item.assignment_id ?? '')
+  const { data: classAssignments = [] } = useAssignments(classId)
   const updateItem = useUpdateModuleItem()
+
+  const sortedAssignments = [...classAssignments].sort((a, b) =>
+    a.week_number !== b.week_number
+      ? a.week_number - b.week_number
+      : a.title.localeCompare(b.title),
+  )
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim()) return
-    const body: { itemId: string; classId: string; title?: string; content_url?: string; content_text?: string } = {
-      itemId: item.id, classId, title: title.trim(),
+    if (item.type === 'assignment') {
+      if (!assignmentId) {
+        toast.error('Choose an assignment')
+        return
+      }
+      try {
+        await updateItem.mutateAsync({
+          itemId: item.id,
+          classId,
+          title: title.trim(),
+          assignment_id: assignmentId,
+        })
+        onClose()
+      } catch (err) {
+        toast.error(err instanceof ApiError ? err.message : 'Unable to update item')
+      }
+      return
+    }
+    const body: {
+      itemId: string
+      classId: string
+      title?: string
+      content_url?: string
+      content_text?: string
+    } = {
+      itemId: item.id,
+      classId,
+      title: title.trim(),
     }
     if (item.type === 'video' || item.type === 'link') body.content_url = url
     if (item.type === 'text') body.content_text = text
@@ -358,6 +443,24 @@ function EditItemModal({
                 style={{ ...inputStyle, height: 'auto', padding: '8px 10px', resize: 'none' }}
                 onFocus={(e) => (e.currentTarget.style.borderColor = '#8B1A2F')}
                 onBlur={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')} />
+            </div>
+          )}
+          {item.type === 'assignment' && (
+            <div>
+              <label className="block text-[12px] text-[#6B6B6B] mb-1">Class assignment</label>
+              <select
+                required
+                value={assignmentId}
+                onChange={(e) => setAssignmentId(e.target.value)}
+                style={inputStyle}
+              >
+                <option value="">Select assignment…</option>
+                {sortedAssignments.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    Week {a.week_number}: {a.title}
+                  </option>
+                ))}
+              </select>
             </div>
           )}
           {item.type === 'pdf' && (
@@ -438,6 +541,12 @@ export default function ModulesPageClient({ params }: { params: Promise<{ id: st
   }
 
   const handleItemClick = (item: ModuleItem) => {
+    if (item.type === 'assignment') {
+      if (item.assignment_id) {
+        router.push(`/admin/classes/${classId}/assignments`)
+      }
+      return
+    }
     if (item.type === 'link' && item.content_url) {
       window.open(item.content_url, '_blank', 'noopener,noreferrer')
       return

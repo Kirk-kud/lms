@@ -100,6 +100,7 @@ function CreateAssignmentModal({
   const [instructionMode, setInstructionMode] =
     useState<InstructionAttachMode>('none')
   const [instructionLink, setInstructionLink] = useState('')
+  const [instructionLinkLabel, setInstructionLinkLabel] = useState('')
   const [instructionTextBody, setInstructionTextBody] = useState('')
   const [instructionPdfFile, setInstructionPdfFile] = useState<File | null>(null)
   const [instructionImageFile, setInstructionImageFile] = useState<File | null>(null)
@@ -128,6 +129,7 @@ function CreateAssignmentModal({
     setGradeType('score')
     setInstructionMode('none')
     setInstructionLink('')
+    setInstructionLinkLabel('')
     setInstructionTextBody('')
     setInstructionPdfFile(null)
     setInstructionImageFile(null)
@@ -175,6 +177,10 @@ function CreateAssignmentModal({
         grade_type: gradeType,
         instruction_link_url:
           instructionMode === 'link' ? instructionLink.trim() : undefined,
+        instruction_link_label:
+          instructionMode === 'link' && instructionLink.trim()
+            ? instructionLinkLabel.trim() || undefined
+            : undefined,
         instruction_text:
           instructionMode === 'text' ? instructionTextBody.trim() : undefined,
         published: publishMode !== 'hidden',
@@ -324,15 +330,30 @@ function CreateAssignmentModal({
             </div>
           )}
           {instructionMode === 'link' && (
-            <div>
-              <label className="block text-[12px] text-[#6B6B6B] mb-1">Link URL</label>
-              <input
-                type="url"
-                value={instructionLink}
-                onChange={(e) => setInstructionLink(e.target.value)}
-                placeholder="https://..."
-                style={inputStyle}
-              />
+            <div className="space-y-3">
+              <div>
+                <label className="block text-[12px] text-[#6B6B6B] mb-1">Link URL</label>
+                <input
+                  type="url"
+                  value={instructionLink}
+                  onChange={(e) => setInstructionLink(e.target.value)}
+                  placeholder="https://..."
+                  style={inputStyle}
+                />
+              </div>
+              <div>
+                <label className="block text-[12px] text-[#6B6B6B] mb-1">
+                  Link label <span className="text-[#9CA3AF]">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={instructionLinkLabel}
+                  onChange={(e) => setInstructionLinkLabel(e.target.value)}
+                  placeholder='e.g. "Join the Telegram channel"'
+                  style={inputStyle}
+                />
+                <p className="text-[11px] text-[#9CA3AF] mt-1">Students see this text instead of the raw URL.</p>
+              </div>
             </div>
           )}
           {instructionMode === 'text' && (
@@ -492,6 +513,9 @@ function EditAssignmentModal({
   const [instructionMode, setInstructionMode] =
     useState<InstructionAttachMode>(deriveInstructionMode(assignment))
   const [instructionLink, setInstructionLink] = useState(assignment.instruction_link_url ?? '')
+  const [instructionLinkLabel, setInstructionLinkLabel] = useState(
+    assignment.instruction_link_label ?? '',
+  )
   const [instructionTextBody, setInstructionTextBody] = useState(assignment.instruction_text ?? '')
   const [instructionPdfFile, setInstructionPdfFile] = useState<File | null>(null)
   const [instructionImageFile, setInstructionImageFile] = useState<File | null>(null)
@@ -576,6 +600,10 @@ function EditAssignmentModal({
         grade_type: gradeType,
         instruction_link_url:
           instructionMode === 'link' ? trimmedLink || null : null,
+        instruction_link_label:
+          instructionMode === 'link' && trimmedLink
+            ? instructionLinkLabel.trim() || null
+            : null,
         instruction_text:
           instructionMode === 'text' ? trimmedText || null : null,
         clear_instruction_pdf: instructionMode === 'none' && hadFile,
@@ -737,15 +765,30 @@ function EditAssignmentModal({
             </div>
           )}
           {instructionMode === 'link' && (
-            <div>
-              <label className="block text-[12px] text-[#6B6B6B] mb-1">Link URL</label>
-              <input
-                type="url"
-                value={instructionLink}
-                onChange={(e) => setInstructionLink(e.target.value)}
-                placeholder="https://..."
-                style={inputStyle}
-              />
+            <div className="space-y-3">
+              <div>
+                <label className="block text-[12px] text-[#6B6B6B] mb-1">Link URL</label>
+                <input
+                  type="url"
+                  value={instructionLink}
+                  onChange={(e) => setInstructionLink(e.target.value)}
+                  placeholder="https://..."
+                  style={inputStyle}
+                />
+              </div>
+              <div>
+                <label className="block text-[12px] text-[#6B6B6B] mb-1">
+                  Link label <span className="text-[#9CA3AF]">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={instructionLinkLabel}
+                  onChange={(e) => setInstructionLinkLabel(e.target.value)}
+                  placeholder='e.g. "Join the Telegram channel"'
+                  style={inputStyle}
+                />
+                <p className="text-[11px] text-[#9CA3AF] mt-1">Students see this text instead of the raw URL.</p>
+              </div>
             </div>
           )}
           {instructionMode === 'text' && (
