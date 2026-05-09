@@ -7,7 +7,7 @@ export interface ModuleItem {
   id: string
   module_id: string
   title: string
-  type: 'pdf' | 'video' | 'link' | 'text'
+  type: 'pdf' | 'video' | 'link' | 'text' | 'image'
   content_url: string | null
   content_text: string | null
   order_index: number

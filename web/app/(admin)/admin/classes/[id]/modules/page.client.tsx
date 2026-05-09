@@ -31,7 +31,7 @@ import {
 import ItemPreviewModal from '@/components/ui/shared/ItemPreviewModal'
 import type { PreviewItem } from '@/components/ui/shared/ItemPreviewModal'
 
-const ITEM_TYPES = ['pdf', 'video', 'link', 'text'] as const
+const ITEM_TYPES = ['pdf', 'image', 'video', 'link', 'text'] as const
 type ItemType = (typeof ITEM_TYPES)[number]
 
 function CreateModuleModal({
@@ -122,7 +122,7 @@ function AddItemModal({
     const formData = new FormData()
     formData.append('title', title.trim())
     formData.append('type', type)
-    if (type === 'pdf' && file) formData.append('file', file)
+    if ((type === 'pdf' || type === 'image') && file) formData.append('file', file)
     if ((type === 'video' || type === 'link') && url) formData.append('content_url', url)
     if (type === 'text' && text) formData.append('content_text', text)
     formData.append('order_index', '0')
@@ -164,14 +164,14 @@ function AddItemModal({
                 <button
                   key={t}
                   type="button"
-                  onClick={() => setType(t)}
+                  onClick={() => { setType(t); setFile(null) }}
                   className={`h-8 px-3 text-[12px] rounded-lg border transition-colors ${
                     type === t
                       ? 'border-[#8B1A2F] text-[#8B1A2F] bg-[#F5E6EA]'
                       : 'border-[#E5E5E5] text-[#6B7280] hover:bg-[#F8F8F8]'
                   }`}
                 >
-                  {t.toUpperCase()}
+                  {t.charAt(0).toUpperCase() + t.slice(1)}
                 </button>
               ))}
             </div>
@@ -181,6 +181,26 @@ function AddItemModal({
               <label className="block text-[12px] text-[#6B6B6B] mb-1">PDF file</label>
               <input type="file" accept="application/pdf" required onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                 className="w-full text-[13px] text-[#6B7280]" />
+            </div>
+          )}
+          {type === 'image' && (
+            <div>
+              <label className="block text-[12px] text-[#6B6B6B] mb-1">Image file</label>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                required
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                className="w-full text-[13px] text-[#6B7280]"
+              />
+              {file && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={URL.createObjectURL(file)}
+                  alt="Preview"
+                  className="mt-2 w-full max-h-40 object-contain rounded-lg border border-[#E5E5E5]"
+                />
+              )}
             </div>
           )}
           {(type === 'video' || type === 'link') && (
@@ -343,6 +363,9 @@ function EditItemModal({
           {item.type === 'pdf' && (
             <p className="text-[12px] text-[#9CA3AF]">To replace the PDF file, delete this item and add a new one.</p>
           )}
+          {item.type === 'image' && (
+            <p className="text-[12px] text-[#9CA3AF]">To replace the image, delete this item and add a new one.</p>
+          )}
           <div className="flex gap-2 justify-end pt-1">
             <button type="button" onClick={onClose} className="h-9 px-4 text-[13px] text-[#6B7280] border border-[#E5E5E5] rounded-lg hover:bg-[#F8F8F8] transition-colors">Cancel</button>
             <button type="submit" disabled={updateItem.isPending || !title.trim()} className="h-9 px-4 text-[13px] font-medium bg-black text-white rounded-lg disabled:opacity-50 hover:bg-black/90 transition-colors flex items-center gap-2">
@@ -421,7 +444,7 @@ export default function ModulesPageClient({ params }: { params: Promise<{ id: st
     }
     setPreviewItem({
       title: item.title,
-      type: item.type,
+      type: item.type as PreviewItem['type'],
       content_url: item.content_url,
       content_text: item.content_text,
     })

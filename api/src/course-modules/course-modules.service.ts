@@ -19,7 +19,10 @@ import {
   UpdateModuleItemDto,
 } from './course-modules.dto';
 
-const MAX_MODULE_PDF_SIZE = 25 * 1024 * 1024; // 25 MB
+const MAX_MODULE_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
+
+const ALLOWED_IMAGE_MIMES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const ALLOWED_IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
 
 @Injectable()
 export class CourseModulesService {
@@ -281,14 +284,13 @@ export class CourseModulesService {
       if (file.mimetype !== 'application/pdf') {
         throw new BadRequestException('Only PDF files are accepted');
       }
-      if (file.size > MAX_MODULE_PDF_SIZE) {
+      if (file.size > MAX_MODULE_FILE_SIZE) {
         throw new BadRequestException('PDF file must be under 25 MB');
       }
 
       this.logger.log(
         `Uploading PDF - filename=${file.originalname}, size=${file.buffer.length}`,
       );
-      // Sanitize filename: remove special characters, replace spaces with underscores
       const sanitized = file.originalname
         .replace(/[^a-zA-Z0-9.\-_]/g, '_')
         .replace(/\s+/g, '_');
@@ -313,6 +315,47 @@ export class CourseModulesService {
 
       contentUrl = urlData.publicUrl;
       this.logger.log(`File uploaded successfully - url=${contentUrl}`);
+    }
+
+    if (dto.type === 'image') {
+      if (!file) throw new BadRequestException('Image file is required');
+      const ext = (file.originalname ?? '').split('.').pop()?.toLowerCase() ?? '';
+      const isAllowed =
+        ALLOWED_IMAGE_MIMES.includes(file.mimetype) || ALLOWED_IMAGE_EXTS.includes(ext);
+      if (!isAllowed) {
+        throw new BadRequestException('Only image files are accepted (JPG, PNG, GIF, WebP)');
+      }
+      if (file.size > MAX_MODULE_FILE_SIZE) {
+        throw new BadRequestException('Image must be under 25 MB');
+      }
+
+      this.logger.log(
+        `Uploading image - filename=${file.originalname}, size=${file.buffer.length}`,
+      );
+      const sanitized = file.originalname
+        .replace(/[^a-zA-Z0-9.\-_]/g, '_')
+        .replace(/\s+/g, '_');
+      const path = `${mod.class_id}/${Date.now()}_${sanitized}`;
+      const { error: uploadError } = await this.supabase.adminClient.storage
+        .from('modules')
+        .upload(path, file.buffer, {
+          contentType: file.mimetype,
+          upsert: false,
+        });
+
+      if (uploadError) {
+        this.logger.error(
+          `Supabase upload error: ${JSON.stringify(uploadError)}`,
+        );
+        throw new BadRequestException(uploadError.message);
+      }
+
+      const { data: urlData } = this.supabase.adminClient.storage
+        .from('modules')
+        .getPublicUrl(path);
+
+      contentUrl = urlData.publicUrl;
+      this.logger.log(`Image uploaded successfully - url=${contentUrl}`);
     }
 
     const { data, error } = await this.supabase.adminClient
@@ -360,8 +403,8 @@ export class CourseModulesService {
   async removeItem(itemId: string, tutorId: string, role: string | null) {
     const item = await this.assertTutorOwnsItem(itemId, tutorId, role);
 
-    // Delete storage file for PDFs
-    if (item.type === 'pdf' && item.content_url) {
+    // Delete storage file for PDFs and images
+    if ((item.type === 'pdf' || item.type === 'image') && item.content_url) {
       const storagePath = (item.content_url as string).replace(
         this.storageUrl,
         '',

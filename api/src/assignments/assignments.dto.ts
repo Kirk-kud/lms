@@ -1,5 +1,6 @@
 import { Transform, Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsDateString,
   IsIn,
   IsInt,
@@ -54,6 +55,20 @@ export class CreateAssignmentDto {
   @IsString()
   @MaxLength(50_000)
   instruction_text?: string;
+
+  /** Whether the assignment is visible to students (default true). */
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => value === true || value === 'true')
+  published?: boolean;
+
+  /** If set, assignment becomes visible to students at this timestamp (requires published=true). */
+  @IsOptional()
+  publish_at?: string | null;
+
+  /** Hard late-submission cutoff. After this, the assignment is fully closed. */
+  @IsOptional()
+  available_until?: string | null;
 }
 
 export class SubmitAssignmentBodyDto {
@@ -134,4 +149,19 @@ export class UpdateAssignmentDto {
   @IsOptional()
   @Transform(({ value }) => value === true || value === 'true')
   clear_instruction_pdf?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => value === true || value === 'true')
+  published?: boolean;
+
+  @IsOptional()
+  publish_at?: string | null;
+
+  @IsOptional()
+  available_until?: string | null;
+
+  /** Admin-set reopen window — overrides available_until. */
+  @IsOptional()
+  reopened_until?: string | null;
 }

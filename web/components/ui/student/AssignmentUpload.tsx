@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { format } from 'date-fns'
+import { format, isPast } from 'date-fns'
 import { StatusBadge } from '@/components/ui/shared/Badge'
 import { LoadingSpinner } from '@/components/ui/shared/LoadingSpinner'
 import ItemPreviewModal from '@/components/ui/shared/ItemPreviewModal'
@@ -36,6 +36,10 @@ interface AssignmentUploadProps {
   expectedSubmissionType?: ExpectedSubmissionType
   dueDate: Date
   isOverdue: boolean
+  /** When true, the assignment is fully closed. Blocks submission but still shows submitted state if already done. */
+  windowClosed?: boolean
+  /** When set (and isOverdue), changes the badge to "Late accepted until [date]" instead of "Overdue". */
+  lateWindowEnd?: Date | null
   submission?: SubmissionSummary | null
   onSubmit: (payload: SubmitPayload) => Promise<void>
   uploadProgress?: number
@@ -48,6 +52,8 @@ export default function AssignmentUpload({
   expectedSubmissionType = 'pdf_file',
   dueDate,
   isOverdue,
+  windowClosed = false,
+  lateWindowEnd,
   submission,
   onSubmit,
   uploadProgress = 0,
@@ -70,6 +76,8 @@ export default function AssignmentUpload({
     /\.(jpe?g|png|gif|webp)$/i.test(name)
 
   const dueDateLabel = (() => {
+    if (windowClosed) return 'Closed'
+    if (isOverdue && lateWindowEnd) return `Late until ${format(lateWindowEnd, 'MMM d, h:mm a')}`
     if (isOverdue) return 'Overdue'
     const h = dueDate.getHours(), m = dueDate.getMinutes()
     const hasTime = h !== 0 || m !== 0
@@ -254,6 +262,61 @@ export default function AssignmentUpload({
     )
   }
 
+  // Closed with no submission — block submission UI
+  if (windowClosed && !submission) {
+    return (
+      <div className="space-y-4">
+        {hasMaterials && (
+          <div className="border border-[#E5E5E5] rounded-xl p-4 bg-[#F8F8F8] space-y-3">
+            <p className="text-[11px] font-medium text-[#6B7280] uppercase tracking-wider">
+              Materials from your tutors
+            </p>
+            {materials?.instructionPdfSignedUrl && materials.instructionPdfFileName && (
+              isImageFile(materials.instructionPdfFileName) ? (
+                <button type="button" onClick={() => setPreviewItem({ title: materials.instructionPdfFileName!, type: 'image', content_url: materials.instructionPdfSignedUrl!, content_text: null })} className="block w-full text-left group">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={materials.instructionPdfSignedUrl} alt={materials.instructionPdfFileName} className="max-h-[180px] max-w-full rounded-lg border border-[#E5E5E5] object-contain bg-white" />
+                  <p className="mt-1.5 text-[11px] text-[#9CA3AF] truncate">{materials.instructionPdfFileName}</p>
+                </button>
+              ) : (
+                <button type="button" onClick={() => setPreviewItem({ title: materials.instructionPdfFileName!, type: 'pdf', content_url: materials.instructionPdfSignedUrl!, content_text: null })} className="flex items-center gap-2 text-[12px] text-[#111] hover:text-[#8B1A2F] transition-colors">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+                  <span className="underline underline-offset-2 truncate">{materials.instructionPdfFileName}</span>
+                </button>
+              )
+            )}
+            {materials?.instructionLink?.trim() && (
+              <a href={materials.instructionLink.trim()} target="_blank" rel="noopener noreferrer" className="flex items-start gap-2 text-[12px] text-[#111] hover:text-[#8B1A2F]">
+                <span className="shrink-0 text-[10px] font-medium text-[#6B7280] mt-1">LINK</span>
+                <span className="underline underline-offset-2 break-all">{materials.instructionLink.trim()}</span>
+              </a>
+            )}
+            {materials?.instructionText?.trim() && (
+              <div className="text-[13px] text-[#111] whitespace-pre-wrap border border-[#E5E5E5] rounded-lg p-3 bg-white max-h-[200px] overflow-y-auto leading-relaxed">
+                {materials.instructionText.trim()}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="border border-[#E5E5E5] rounded-xl p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+            <div className="min-w-0">
+              <h3 className="text-[14px] font-medium text-[#111]">{title}</h3>
+              {description && <p className="text-[13px] text-[#6B7280] mt-1">{description}</p>}
+            </div>
+            <StatusBadge variant="danger" label="Closed" />
+          </div>
+          <p className="text-[13px] text-[#6B7280] leading-relaxed">
+            This assignment is no longer accepting submissions.
+          </p>
+        </div>
+
+        <ItemPreviewModal item={previewItem} open={previewItem !== null} onClose={() => setPreviewItem(null)} />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-4">
       {hasMaterials && (
@@ -331,7 +394,7 @@ export default function AssignmentUpload({
           </div>
           <div className="flex flex-col gap-2 items-end">
             <StatusBadge
-              variant={isOverdue ? 'danger' : 'gray'}
+              variant={windowClosed ? 'danger' : isOverdue && lateWindowEnd ? 'warning' : isOverdue ? 'danger' : 'gray'}
               label={dueDateLabel}
             />
             <span className="text-[11px] text-[#9CA3AF] font-medium">{submissionModeLabel}</span>
@@ -346,9 +409,14 @@ export default function AssignmentUpload({
           onChange={(e) => handleFileChange(e.target.files)}
         />
 
-        {isOverdue && !submission && (
+        {isOverdue && !submission && !lateWindowEnd && (
           <p className="text-[12px] text-[#6B7280] mb-3 leading-relaxed">
             This one passed. If you still want to submit, reach out to your tutor.
+          </p>
+        )}
+        {isOverdue && !submission && lateWindowEnd && (
+          <p className="text-[12px] text-[#D97706] mb-3 leading-relaxed">
+            Late submissions accepted until {format(lateWindowEnd, 'MMM d, h:mm a')}.
           </p>
         )}
 

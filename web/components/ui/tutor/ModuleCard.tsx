@@ -24,7 +24,7 @@ interface Item {
   id: string
   module_id: string
   title: string
-  type: 'pdf' | 'link' | 'video' | 'text'
+  type: 'pdf' | 'link' | 'video' | 'text' | 'image'
   content_url: string | null
   content_text: string | null
   order_index: number
@@ -160,7 +160,7 @@ function SortableItemRow({
               <ExternalIcon />
             </span>
           )}
-          {item.type === 'pdf' && (
+          {(item.type === 'pdf' || item.type === 'image') && (
             <span className="text-[#9CA3AF] group-hover:text-[#6B7280] transition-colors">
               <DownloadIcon />
             </span>
@@ -342,7 +342,7 @@ export default function ModuleCard({
                         <ExternalIcon />
                       </span>
                     )}
-                    {item.type === 'pdf' && (
+                    {(item.type === 'pdf' || item.type === 'image') && (
                       <span className="text-[#9CA3AF] group-hover:text-[#6B7280] transition-colors">
                         <DownloadIcon />
                       </span>

@@ -44,8 +44,8 @@ export class CreateModuleItemDto {
   @IsString()
   title: string;
 
-  @IsIn(['pdf', 'video', 'link', 'text'])
-  type: 'pdf' | 'video' | 'link' | 'text';
+  @IsIn(['pdf', 'video', 'link', 'text', 'image'])
+  type: 'pdf' | 'video' | 'link' | 'text' | 'image';
 
   @IsOptional()
   @IsString()

@@ -174,6 +174,14 @@ export class AssignmentsService {
       query = scopedCohortId
         ? query.or(`cohort_id.is.null,cohort_id.eq.${scopedCohortId}`)
         : query.is('cohort_id', null);
+
+      if (role === 'student') {
+        // Only show published assignments that are past their scheduled publish date
+        const now = new Date().toISOString();
+        query = query
+          .eq('published', true)
+          .or(`publish_at.is.null,publish_at.lte.${now}`);
+      }
     }
 
     const { data: assignments, error } = await query;
@@ -458,6 +466,9 @@ export class AssignmentsService {
         grade_type: dto.grade_type ?? 'score',
         instruction_link_url,
         instruction_text,
+        published: dto.published !== false,
+        publish_at: dto.publish_at ?? null,
+        available_until: dto.available_until ?? null,
       })
       .select()
       .single();
@@ -548,6 +559,11 @@ export class AssignmentsService {
       }
       patch.instruction_text = payload;
     }
+
+    if (dto.published !== undefined) patch.published = dto.published;
+    if (dto.publish_at !== undefined) patch.publish_at = dto.publish_at;
+    if (dto.available_until !== undefined) patch.available_until = dto.available_until;
+    if (dto.reopened_until !== undefined) patch.reopened_until = dto.reopened_until;
 
     if (Object.keys(patch).length === 0) {
       return currentRow;
@@ -733,7 +749,7 @@ export class AssignmentsService {
     const { data: assignment, error: aErr } = await this.supabase.adminClient
       .from('assignments')
       .select(
-        'id, class_id, due_date, expected_submission_type',
+        'id, class_id, due_date, expected_submission_type, available_until, reopened_until',
       )
       .eq('id', assignmentId)
       .single();
@@ -742,6 +758,27 @@ export class AssignmentsService {
       throw new NotFoundException('Assignment not found');
 
     await this.assertStudentEnrolled(assignment.class_id, studentId);
+
+    // Enforce submission window if explicit cutoffs are configured
+    const now = new Date();
+    const dueDate = new Date(assignment.due_date as string);
+    const availableUntil = assignment.available_until
+      ? new Date(assignment.available_until as string)
+      : null;
+    const reopenedUntil = assignment.reopened_until
+      ? new Date(assignment.reopened_until as string)
+      : null;
+
+    if (availableUntil || reopenedUntil) {
+      const cutoffMs = Math.max(
+        ...[availableUntil?.getTime(), reopenedUntil?.getTime()].filter(
+          (t): t is number => t !== undefined,
+        ),
+      );
+      if (now.getTime() > cutoffMs) {
+        throw new BadRequestException('This assignment is closed for submissions');
+      }
+    }
 
     const submissionType =
       (assignment.expected_submission_type as string) ?? 'pdf_file';
@@ -761,8 +798,7 @@ export class AssignmentsService {
         ? priorSubmission.file_url
         : null;
 
-    const status =
-      new Date() > new Date(assignment.due_date) ? 'late' : 'submitted';
+    const status = now > dueDate ? 'late' : 'submitted';
 
     const submitted_at = new Date().toISOString();
 

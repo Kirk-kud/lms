@@ -2,7 +2,7 @@
 
 import { use, useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { format, isPast } from 'date-fns'
+import { format, isPast, isFuture } from 'date-fns'
 import {
   useAssignments,
   useCreateAssignment,
@@ -38,6 +38,7 @@ import {
 import { Calendar } from '@/components/ui/calendar'
 
 type InstructionAttachMode = 'none' | 'pdf' | 'image' | 'link' | 'text'
+type PublishMode = 'now' | 'hidden' | 'scheduled'
 
 function summarizeExpectation(t: ExpectedSubmissionType | undefined) {
   switch (t) {
@@ -104,6 +105,16 @@ function CreateAssignmentModal({
   const [instructionImageFile, setInstructionImageFile] = useState<File | null>(null)
   const pdfInputRef = useRef<HTMLInputElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
+  // Visibility
+  const [publishMode, setPublishMode] = useState<PublishMode>('now')
+  const [publishDate, setPublishDate] = useState<Date | undefined>()
+  const [publishTime, setPublishTime] = useState('08:00')
+  const [publishCalOpen, setPublishCalOpen] = useState(false)
+  // Late submission window
+  const [hasLateWindow, setHasLateWindow] = useState(false)
+  const [lateDate, setLateDate] = useState<Date | undefined>()
+  const [lateTime, setLateTime] = useState('23:59')
+  const [lateCalOpen, setLateCalOpen] = useState(false)
   const createAssignment = useCreateAssignment()
   const uploadInstructionPdf = useUploadAssignmentInstructionPdf()
 
@@ -120,6 +131,12 @@ function CreateAssignmentModal({
     setInstructionTextBody('')
     setInstructionPdfFile(null)
     setInstructionImageFile(null)
+    setPublishMode('now')
+    setPublishDate(undefined)
+    setPublishTime('08:00')
+    setHasLateWindow(false)
+    setLateDate(undefined)
+    setLateTime('23:59')
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -160,6 +177,15 @@ function CreateAssignmentModal({
           instructionMode === 'link' ? instructionLink.trim() : undefined,
         instruction_text:
           instructionMode === 'text' ? instructionTextBody.trim() : undefined,
+        published: publishMode !== 'hidden',
+        publish_at:
+          publishMode === 'scheduled' && publishDate
+            ? combineDateAndTime(publishDate, publishTime).toISOString()
+            : null,
+        available_until:
+          hasLateWindow && lateDate
+            ? combineDateAndTime(lateDate, lateTime).toISOString()
+            : null,
       })
 
       const fileToUpload = instructionMode === 'pdf' ? instructionPdfFile
@@ -360,6 +386,78 @@ function CreateAssignmentModal({
               onBlur={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')}
             />
           </div>
+
+          {/* Visibility */}
+          <div>
+            <label className="block text-[12px] text-[#6B6B6B] mb-1">Visibility</label>
+            <select
+              value={publishMode}
+              onChange={(e) => setPublishMode(e.target.value as PublishMode)}
+              className="w-full h-9 text-[13px] border border-[#E5E5E5] rounded-lg px-2 outline-none hover:border-[#8B1A2F]"
+            >
+              <option value="now">Publish immediately</option>
+              <option value="hidden">Keep hidden</option>
+              <option value="scheduled">Schedule publish date</option>
+            </select>
+          </div>
+          {publishMode === 'scheduled' && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[12px] text-[#6B6B6B] mb-1">Publish date</label>
+                <Popover open={publishCalOpen} onOpenChange={setPublishCalOpen}>
+                  <PopoverTrigger
+                    className="w-full h-9 px-3 text-[13px] text-left border border-[#E5E5E5] rounded-lg hover:border-[#8B1A2F] transition-colors"
+                    style={{ color: publishDate ? '#111' : '#9CA3AF' }}
+                  >
+                    {publishDate ? format(publishDate, 'MMM d, yyyy') : 'Pick a date'}
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={publishDate} onSelect={(d) => { setPublishDate(d); setPublishCalOpen(false) }} initialFocus />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div>
+                <label className="block text-[12px] text-[#6B6B6B] mb-1">Publish time</label>
+                <input type="time" value={publishTime} onChange={(e) => setPublishTime(e.target.value)} style={inputStyle} />
+              </div>
+            </div>
+          )}
+
+          {/* Late submission window */}
+          <div>
+            <label className="block text-[12px] text-[#6B6B6B] mb-1">Late submissions <span className="text-[#9CA3AF]">(optional)</span></label>
+            <select
+              value={hasLateWindow ? 'yes' : 'no'}
+              onChange={(e) => setHasLateWindow(e.target.value === 'yes')}
+              className="w-full h-9 text-[13px] border border-[#E5E5E5] rounded-lg px-2 outline-none hover:border-[#8B1A2F]"
+            >
+              <option value="no">Close on due date</option>
+              <option value="yes">Accept late submissions until…</option>
+            </select>
+          </div>
+          {hasLateWindow && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[12px] text-[#6B6B6B] mb-1">Accept until date</label>
+                <Popover open={lateCalOpen} onOpenChange={setLateCalOpen}>
+                  <PopoverTrigger
+                    className="w-full h-9 px-3 text-[13px] text-left border border-[#E5E5E5] rounded-lg hover:border-[#8B1A2F] transition-colors"
+                    style={{ color: lateDate ? '#111' : '#9CA3AF' }}
+                  >
+                    {lateDate ? format(lateDate, 'MMM d, yyyy') : 'Pick a date'}
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={lateDate} onSelect={(d) => { setLateDate(d); setLateCalOpen(false) }} initialFocus />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div>
+                <label className="block text-[12px] text-[#6B6B6B] mb-1">Accept until time</label>
+                <input type="time" value={lateTime} onChange={(e) => setLateTime(e.target.value)} style={inputStyle} />
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-2 justify-end pt-1">
             <button type="button" onClick={() => { resetForm(); onClose() }} className="h-9 px-4 text-[13px] text-[#6B7280] border border-[#E5E5E5] rounded-lg hover:bg-[#F8F8F8] transition-colors">Cancel</button>
             <button type="submit" disabled={createAssignment.isPending || uploadInstructionPdf.isPending || !title.trim() || !dueDate} className="h-9 px-4 text-[13px] font-medium bg-black text-white rounded-lg disabled:opacity-50 hover:bg-black/90 transition-colors flex items-center gap-2">
@@ -398,6 +496,29 @@ function EditAssignmentModal({
   const [instructionImageFile, setInstructionImageFile] = useState<File | null>(null)
   const pdfInputRef = useRef<HTMLInputElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
+  // Visibility
+  const initPublishMode = (): PublishMode => {
+    if (assignment.published === false) return 'hidden'
+    if (assignment.publish_at) return 'scheduled'
+    return 'now'
+  }
+  const [publishMode, setPublishMode] = useState<PublishMode>(initPublishMode)
+  const [publishDate, setPublishDate] = useState<Date | undefined>(
+    assignment.publish_at ? new Date(assignment.publish_at) : undefined
+  )
+  const [publishTime, setPublishTime] = useState(
+    assignment.publish_at ? initTimeFromDate(assignment.publish_at) : '08:00'
+  )
+  const [publishCalOpen, setPublishCalOpen] = useState(false)
+  // Late submission window
+  const [hasLateWindow, setHasLateWindow] = useState(!!assignment.available_until)
+  const [lateDate, setLateDate] = useState<Date | undefined>(
+    assignment.available_until ? new Date(assignment.available_until) : undefined
+  )
+  const [lateTime, setLateTime] = useState(
+    assignment.available_until ? initTimeFromDate(assignment.available_until) : '23:59'
+  )
+  const [lateCalOpen, setLateCalOpen] = useState(false)
   const updateAssignment = useUpdateAssignment()
   const uploadInstructionPdf = useUploadAssignmentInstructionPdf()
 
@@ -456,6 +577,15 @@ function EditAssignmentModal({
         instruction_text:
           instructionMode === 'text' ? trimmedText || null : null,
         clear_instruction_pdf: instructionMode === 'none' && hadFile,
+        published: publishMode !== 'hidden',
+        publish_at:
+          publishMode === 'scheduled' && publishDate
+            ? combineDateAndTime(publishDate, publishTime).toISOString()
+            : null,
+        available_until:
+          hasLateWindow && lateDate
+            ? combineDateAndTime(lateDate, lateTime).toISOString()
+            : null,
       })
 
       const fileToUpload = instructionMode === 'pdf' ? instructionPdfFile
@@ -651,6 +781,78 @@ function EditAssignmentModal({
               onBlur={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')}
             />
           </div>
+
+          {/* Visibility */}
+          <div>
+            <label className="block text-[12px] text-[#6B6B6B] mb-1">Visibility</label>
+            <select
+              value={publishMode}
+              onChange={(e) => setPublishMode(e.target.value as PublishMode)}
+              className="w-full h-9 text-[13px] border border-[#E5E5E5] rounded-lg px-2 outline-none hover:border-[#8B1A2F]"
+            >
+              <option value="now">Visible to students</option>
+              <option value="hidden">Hidden</option>
+              <option value="scheduled">Schedule publish date</option>
+            </select>
+          </div>
+          {publishMode === 'scheduled' && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[12px] text-[#6B6B6B] mb-1">Publish date</label>
+                <Popover open={publishCalOpen} onOpenChange={setPublishCalOpen}>
+                  <PopoverTrigger
+                    className="w-full h-9 px-3 text-[13px] text-left border border-[#E5E5E5] rounded-lg hover:border-[#8B1A2F] transition-colors"
+                    style={{ color: publishDate ? '#111' : '#9CA3AF' }}
+                  >
+                    {publishDate ? format(publishDate, 'MMM d, yyyy') : 'Pick a date'}
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={publishDate} onSelect={(d) => { setPublishDate(d); setPublishCalOpen(false) }} initialFocus />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div>
+                <label className="block text-[12px] text-[#6B6B6B] mb-1">Publish time</label>
+                <input type="time" value={publishTime} onChange={(e) => setPublishTime(e.target.value)} style={{ width: '100%', height: '36px', borderRadius: '8px', border: '0.5px solid #E5E5E5', fontSize: '13px', padding: '0 10px', outline: 'none', boxSizing: 'border-box' }} />
+              </div>
+            </div>
+          )}
+
+          {/* Late submission window */}
+          <div>
+            <label className="block text-[12px] text-[#6B6B6B] mb-1">Late submissions</label>
+            <select
+              value={hasLateWindow ? 'yes' : 'no'}
+              onChange={(e) => setHasLateWindow(e.target.value === 'yes')}
+              className="w-full h-9 text-[13px] border border-[#E5E5E5] rounded-lg px-2 outline-none hover:border-[#8B1A2F]"
+            >
+              <option value="no">Close on due date</option>
+              <option value="yes">Accept late submissions until…</option>
+            </select>
+          </div>
+          {hasLateWindow && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[12px] text-[#6B6B6B] mb-1">Accept until date</label>
+                <Popover open={lateCalOpen} onOpenChange={setLateCalOpen}>
+                  <PopoverTrigger
+                    className="w-full h-9 px-3 text-[13px] text-left border border-[#E5E5E5] rounded-lg hover:border-[#8B1A2F] transition-colors"
+                    style={{ color: lateDate ? '#111' : '#9CA3AF' }}
+                  >
+                    {lateDate ? format(lateDate, 'MMM d, yyyy') : 'Pick a date'}
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={lateDate} onSelect={(d) => { setLateDate(d); setLateCalOpen(false) }} initialFocus />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div>
+                <label className="block text-[12px] text-[#6B6B6B] mb-1">Accept until time</label>
+                <input type="time" value={lateTime} onChange={(e) => setLateTime(e.target.value)} style={{ width: '100%', height: '36px', borderRadius: '8px', border: '0.5px solid #E5E5E5', fontSize: '13px', padding: '0 10px', outline: 'none', boxSizing: 'border-box' }} />
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-2 justify-end pt-1">
             <button type="button" onClick={onClose} className="h-9 px-4 text-[13px] text-[#6B7280] border border-[#E5E5E5] rounded-lg hover:bg-[#F8F8F8] transition-colors">Cancel</button>
             <button type="submit" disabled={updateAssignment.isPending || uploadInstructionPdf.isPending || !title.trim() || !dueDate} className="h-9 px-4 text-[13px] font-medium bg-black text-white rounded-lg disabled:opacity-50 hover:bg-black/90 transition-colors flex items-center gap-2">
@@ -1058,6 +1260,112 @@ function SubmissionsList({ assignmentId, gradeType }: { assignmentId: string; gr
   )
 }
 
+function ReopenModal({
+  assignment,
+  classId,
+  onClose,
+}: {
+  assignment: Assignment
+  classId: string
+  onClose: () => void
+}) {
+  const updateAssignment = useUpdateAssignment()
+  const existing = assignment.reopened_until ? new Date(assignment.reopened_until) : undefined
+  const [reopenDate, setReopenDate] = useState<Date | undefined>(existing)
+  const [reopenTime, setReopenTime] = useState(existing ? initTimeFromDate(assignment.reopened_until!) : '23:59')
+  const [calOpen, setCalOpen] = useState(false)
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%', height: '36px', borderRadius: '8px',
+    border: '0.5px solid #E5E5E5', fontSize: '13px',
+    padding: '0 10px', outline: 'none', boxSizing: 'border-box',
+  }
+
+  const handleSave = async () => {
+    if (!reopenDate) return
+    try {
+      await updateAssignment.mutateAsync({
+        assignmentId: assignment.id,
+        classId,
+        reopened_until: combineDateAndTime(reopenDate, reopenTime).toISOString(),
+      })
+      onClose()
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Unable to reopen assignment')
+    }
+  }
+
+  const handleClear = async () => {
+    try {
+      await updateAssignment.mutateAsync({
+        assignmentId: assignment.id,
+        classId,
+        reopened_until: null,
+      })
+      onClose()
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Unable to clear reopen window')
+    }
+  }
+
+  return (
+    <Dialog open onOpenChange={(v) => { if (!v) onClose() }}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="text-[15px] font-medium">Reopen submissions</DialogTitle>
+        </DialogHeader>
+        <div className="mt-2 space-y-4">
+          <p className="text-[12px] text-[#6B7280]">
+            Set a window during which late submissions are accepted, overriding any previous cutoff.
+          </p>
+          <div>
+            <label className="block text-[12px] text-[#6B6B6B] mb-1">Accept submissions until</label>
+            <Popover open={calOpen} onOpenChange={setCalOpen}>
+              <PopoverTrigger
+                className="w-full h-9 px-3 text-[13px] text-left border border-[#E5E5E5] rounded-lg hover:border-[#8B1A2F] transition-colors"
+                style={{ color: reopenDate ? '#111' : '#9CA3AF' }}
+              >
+                {reopenDate ? format(reopenDate, 'MMM d, yyyy') : 'Pick a date'}
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar mode="single" selected={reopenDate} onSelect={(d) => { setReopenDate(d); setCalOpen(false) }} initialFocus />
+              </PopoverContent>
+            </Popover>
+          </div>
+          <div>
+            <label className="block text-[12px] text-[#6B6B6B] mb-1">Time</label>
+            <input type="time" value={reopenTime} onChange={(e) => setReopenTime(e.target.value)} style={inputStyle} />
+          </div>
+          <div className="flex gap-2 justify-between pt-1">
+            {assignment.reopened_until && (
+              <button
+                type="button"
+                onClick={handleClear}
+                disabled={updateAssignment.isPending}
+                className="h-9 px-4 text-[13px] text-[#991B1B] border border-[#E5E5E5] rounded-lg hover:bg-red-50 transition-colors"
+              >
+                Clear reopen
+              </button>
+            )}
+            <div className="flex gap-2 ml-auto">
+              <button type="button" onClick={onClose} className="h-9 px-4 text-[13px] text-[#6B7280] border border-[#E5E5E5] rounded-lg hover:bg-[#F8F8F8] transition-colors">Cancel</button>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={updateAssignment.isPending || !reopenDate}
+                className="h-9 px-4 text-[13px] font-medium bg-black text-white rounded-lg disabled:opacity-50 hover:bg-black/90 transition-colors flex items-center gap-2"
+              >
+                {updateAssignment.isPending && <LoadingSpinner className="text-white" />}
+                {updateAssignment.isPending ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 function AssignmentCard({
   assignment,
   classId,
@@ -1071,30 +1379,67 @@ function AssignmentCard({
 }) {
   const [expanded, setExpanded] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
+  const [reopenOpen, setReopenOpen] = useState(false)
   const submittedCount = assignment.submission_count ?? 0
   const needsReview = submittedCount > 0
+
+  const now = new Date()
+  const dueDate = new Date(assignment.due_date)
+  const availableUntil = assignment.available_until ? new Date(assignment.available_until) : null
+  const reopenedUntil = assignment.reopened_until ? new Date(assignment.reopened_until) : null
+
+  // Effective cutoff for "closed" display
+  const effectiveCutoff = (() => {
+    const times = [availableUntil?.getTime(), reopenedUntil?.getTime()].filter((t): t is number => t !== undefined)
+    if (times.length > 0) return new Date(Math.max(...times))
+    return null
+  })()
+
+  const isHidden = assignment.published === false
+  const isScheduled = !isHidden && !!assignment.publish_at && isFuture(new Date(assignment.publish_at))
+  const isClosed = effectiveCutoff ? now > effectiveCutoff : isPast(dueDate)
+  const inLateWindow = !isClosed && isPast(dueDate) && effectiveCutoff !== null
 
   return (
     <>
     <div
       style={{
-        border: '1px solid #E5E5E5',
+        border: `1px solid ${isHidden ? '#D1D5DB' : '#E5E5E5'}`,
         borderRadius: '12px',
         padding: '16px 20px',
         transition: 'border-color 150ms',
         position: 'relative',
+        opacity: isHidden ? 0.75 : 1,
       }}
       onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(139,26,47,0.3)')}
-      onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')}
+      onMouseLeave={(e) => (e.currentTarget.style.borderColor = isHidden ? '#D1D5DB' : '#E5E5E5')}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' }}>
         {/* Left: title + due date */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontSize: '14px', fontWeight: 500, color: '#111' }}>{assignment.title}</p>
-          <p style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '3px', lineHeight: 1.45 }}>
-            Due {format(new Date(assignment.due_date), 'MMM d, h:mm a')}
-            {isPast(new Date(assignment.due_date)) && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '2px' }}>
+            <p style={{ fontSize: '14px', fontWeight: 500, color: '#111' }}>{assignment.title}</p>
+            {isHidden && (
+              <span style={{ fontSize: '10px', fontWeight: 500, padding: '1px 7px', borderRadius: '9999px', background: '#F3F4F6', color: '#6B7280', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                Hidden
+              </span>
+            )}
+            {isScheduled && (
+              <span style={{ fontSize: '10px', fontWeight: 500, padding: '1px 7px', borderRadius: '9999px', background: '#FEF9C3', color: '#854D0E', letterSpacing: '0.04em' }}>
+                Publishes {format(new Date(assignment.publish_at!), 'MMM d')}
+              </span>
+            )}
+          </div>
+          <p style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '2px', lineHeight: 1.45 }}>
+            Due {format(dueDate, 'MMM d, h:mm a')}
+            {isClosed && !inLateWindow && (
               <span style={{ marginLeft: '6px', color: '#991B1B' }}>· Closed</span>
+            )}
+            {inLateWindow && effectiveCutoff && (
+              <span style={{ marginLeft: '6px', color: '#D97706' }}>· Late until {format(effectiveCutoff, 'MMM d, h:mm a')}</span>
+            )}
+            {reopenedUntil && now < reopenedUntil && (
+              <span style={{ marginLeft: '6px', color: '#2563EB' }}>· Reopened</span>
             )}
             <span style={{ display: 'block', marginTop: '4px', color: '#9CA3AF' }}>
               Expects{' '}{summarizeExpectation(assignment.expected_submission_type)}
@@ -1105,6 +1450,17 @@ function AssignmentCard({
         {/* Right: submission indicator + action buttons */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
           <SubmissionIndicator submitted={submittedCount} total={totalStudents} needsReview={needsReview} />
+          {/* Reopen button */}
+          <button
+            onClick={() => setReopenOpen(true)}
+            className="h-8 w-8 flex items-center justify-center border border-[#E5E5E5] rounded-lg hover:bg-[#F8F8F8] transition-colors text-[#9CA3AF] hover:text-[#2563EB] shrink-0"
+            title="Reopen submissions"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="1 4 1 10 7 10" />
+              <path d="M3.51 15a9 9 0 1 0 .49-3" />
+            </svg>
+          </button>
           <button
             onClick={() => setEditOpen(true)}
             className="h-8 w-8 flex items-center justify-center border border-[#E5E5E5] rounded-lg hover:bg-[#F8F8F8] transition-colors text-[#9CA3AF] hover:text-[#111] shrink-0"
@@ -1160,6 +1516,13 @@ function AssignmentCard({
         assignment={assignment}
         classId={classId}
         onClose={() => setEditOpen(false)}
+      />
+    )}
+    {reopenOpen && (
+      <ReopenModal
+        assignment={assignment}
+        classId={classId}
+        onClose={() => setReopenOpen(false)}
       />
     )}
     </>

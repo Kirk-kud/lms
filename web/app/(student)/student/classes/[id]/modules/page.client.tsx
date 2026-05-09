@@ -14,13 +14,14 @@ import { toast } from 'sonner'
 
 // ── Type chip config ──────────────────────────────────────────────────────────
 
-type ItemType = 'pdf' | 'video' | 'link' | 'text'
+type ItemType = 'pdf' | 'video' | 'link' | 'text' | 'image'
 
 const TYPE_CONFIG: Record<ItemType, { bg: string; iconColor: string; label: string }> = {
   pdf:   { bg: '#FEE2E2', iconColor: '#991B1B', label: 'PDF document' },
   video: { bg: '#DBEAFE', iconColor: '#1E40AF', label: 'Video' },
   link:  { bg: '#F3F4F6', iconColor: '#4B5563', label: 'External link — opens in new tab' },
   text:  { bg: '#F5E6EA', iconColor: '#8B1A2F', label: 'Reading' },
+  image: { bg: '#F0FDF4', iconColor: '#15803D', label: 'Image' },
 }
 
 function TypeIcon({ type, color }: { type: ItemType; color: string }) {
@@ -47,6 +48,15 @@ function TypeIcon({ type, color }: { type: ItemType; color: string }) {
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
         <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
         <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+      </svg>
+    )
+  }
+  if (type === 'image') {
+    return (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+        <circle cx="8.5" cy="8.5" r="1.5" />
+        <polyline points="21 15 16 10 5 21" />
       </svg>
     )
   }
@@ -96,6 +106,7 @@ function ModuleItemRow({ item, onClick }: { item: ModuleItem; onClick: (item: Mo
           <polyline points="9 18 15 12 9 6" />
         </svg>
       )}
+
     </button>
   )
 }
@@ -200,7 +211,7 @@ export default function StudentModulesPageClient({ params }: { params: Promise<{
     }
     setPreviewItem({
       title: item.title,
-      type: item.type,
+      type: item.type as PreviewItem['type'],
       content_url: item.content_url,
       content_text: item.content_text,
     })

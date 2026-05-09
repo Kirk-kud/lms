@@ -100,7 +100,24 @@ export default function AssignmentDetailPageClient({
 
   const assignment = assignments.find((a) => a.id === assignmentId)
   const isLoading = isClassLoading || isAssignmentsLoading
-  const isOverdue = assignment ? new Date(assignment.due_date) < new Date() : false
+
+  const now = new Date()
+  const dueDate = assignment ? new Date(assignment.due_date) : null
+  const isOverdue = dueDate ? now > dueDate : false
+
+  const availableUntil = assignment?.available_until ? new Date(assignment.available_until) : null
+  const reopenedUntil = assignment?.reopened_until ? new Date(assignment.reopened_until) : null
+
+  const effectiveCutoff = (() => {
+    const times = [availableUntil?.getTime(), reopenedUntil?.getTime()].filter((t): t is number => t !== undefined)
+    if (times.length > 0) return new Date(Math.max(...times))
+    return null
+  })()
+
+  // Closed only when explicit window is set and past
+  const windowClosed = effectiveCutoff !== null ? now > effectiveCutoff : false
+  // Late window: past due_date but still within the effective cutoff
+  const lateWindowEnd = isOverdue && effectiveCutoff !== null && !windowClosed ? effectiveCutoff : null
 
   const handleSubmit = useCallback(
     async (payload: SubmitPayload) => {
@@ -314,6 +331,8 @@ export default function AssignmentDetailPageClient({
           expectedSubmissionType={deriveExpectedType(assignment)}
           dueDate={new Date(assignment.due_date)}
           isOverdue={isOverdue}
+          windowClosed={windowClosed}
+          lateWindowEnd={lateWindowEnd}
           submission={deriveSubmissionPresentation(assignment)}
           onSubmit={handleSubmit}
           uploadProgress={uploadProgress}

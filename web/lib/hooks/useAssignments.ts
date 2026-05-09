@@ -50,6 +50,14 @@ export interface Assignment {
   instruction_text?: string | null
   /** Signed URL when `instruction_file_path` is set (API-enriched). */
   instruction_file_signed_url?: string | null
+  /** Visibility: false = hidden from students. */
+  published?: boolean
+  /** If set, assignment becomes visible to students at this timestamp. */
+  publish_at?: string | null
+  /** Hard late-submission cutoff after which the assignment is fully closed. */
+  available_until?: string | null
+  /** Admin reopen window — overrides available_until. */
+  reopened_until?: string | null
   // tutor-enriched
   submission_count?: number
   missing_count?: number
@@ -129,6 +137,9 @@ export function useCreateAssignment() {
       grade_type?: 'score' | 'pass_fail'
       instruction_link_url?: string
       instruction_text?: string
+      published?: boolean
+      publish_at?: string | null
+      available_until?: string | null
     }) => apiClient.post<Assignment>('/assignments', body),
     onSuccess: async (_data, vars) => {
       await Promise.all([
@@ -191,6 +202,10 @@ export function useUpdateAssignment() {
       instruction_link_url?: string | null
       instruction_text?: string | null
       clear_instruction_pdf?: boolean
+      published?: boolean
+      publish_at?: string | null
+      available_until?: string | null
+      reopened_until?: string | null
     }) => {
       const { assignmentId, classId, ...body } = vars
       void classId
