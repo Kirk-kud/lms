@@ -166,7 +166,7 @@ export class AssignmentsService {
       .from('assignments')
       .select('*')
       .eq('class_id', classId)
-      .order('week_number', { ascending: true });
+      .order('due_date', { ascending: true });
 
     if (role === 'admin' && cohortId) {
       query = query.eq('cohort_id', cohortId);
@@ -206,7 +206,7 @@ export class AssignmentsService {
       .from('assignments')
       .select('*')
       .in('class_id', ids)
-      .order('week_number', { ascending: true });
+      .order('due_date', { ascending: true });
 
     if (error) throw new BadRequestException(error.message);
     const list = assignments ?? [];

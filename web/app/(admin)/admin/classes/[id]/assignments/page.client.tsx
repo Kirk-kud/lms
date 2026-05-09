@@ -1734,7 +1734,7 @@ export default function AssignmentsPageClient({ params }: { params: Promise<{ id
               </div>
             ) : (
               filtered
-                .sort((a, b) => a.week_number - b.week_number)
+                .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
                 .map((a) => (
                   <AssignmentCard
                     key={a.id}

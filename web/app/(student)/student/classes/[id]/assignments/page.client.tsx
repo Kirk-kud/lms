@@ -49,8 +49,12 @@ export default function StudentAssignmentsPageClient({ params }: { params: Promi
   }, [isClassLoading, isAssignmentsLoading])
 
   const now = useMemo(() => new Date(), [])
-  const upcoming = assignments.filter((a) => new Date(a.due_date) >= now)
-  const past = assignments.filter((a) => new Date(a.due_date) < now)
+  const upcoming = assignments
+    .filter((a) => new Date(a.due_date) >= now)
+    .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
+  const past = assignments
+    .filter((a) => new Date(a.due_date) < now)
+    .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
 
   return (
     <div className="p-4 sm:p-8">
