@@ -1,0 +1,27 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Claude Code internals
+.claude/
+skills-lock.json
+
+# Cursor local files, except shared project skills
+.cursor/*
+!.cursor/skills/
+!.cursor/skills/**
+
+# Firebase CLI
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+
+# Editor
+.vscode/
+.idea/
+
+# Misc
+*.log
+*.pem
+TEAM_UPDATE.html

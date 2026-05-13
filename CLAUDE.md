@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-Love Inc LMS is a discipleship learning management system for university campus church communities (Ashesi, KNUST, UMaT, Legon). It is a role-based platform — **tutors** manage classes and curriculum, **students** enroll and submit work.
+Vine LMS is a discipleship learning management system for university campus church communities (Ashesi, KNUST, UMaT, Legon). It is a role-based platform — **tutors** manage classes and curriculum, **students** enroll and submit work.
 
 ## Monorepo Structure
 

@@ -17,12 +17,6 @@ const IconClasses = () => (
   </svg>
 )
 
-const IconOverview = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-    <path d="M1 1h6v5H1V1zm8 0h6v5H9V1zM1 8h6v7H1V8zm8 3h6v4H9v-4z" />
-  </svg>
-)
-
 const IconModules = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
     <path d="M1 2h6v6H1V2zm8 0h6v6H9V2zM1 10h6v4H1v-4zm8 0h6v4H9v-4z" />
@@ -49,29 +43,22 @@ const IconChevronLeft = () => (
 
 const IconCalendar = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="1.5" y="2" width="13" height="13" rx="1.5" />
-    <path d="M5 1v2M11 1v2M1.5 6h13" />
+    <rect x="1" y="2" width="14" height="13" rx="1.5" />
+    <line x1="1" y1="6" x2="15" y2="6" />
+    <line x1="5" y1="1" x2="5" y2="4" />
+    <line x1="11" y1="1" x2="11" y2="4" />
   </svg>
 )
 
 const IconTodo = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="3 8 6 11 13 4" />
-    <rect x="1" y="1" width="14" height="14" rx="2" />
-  </svg>
-)
-
-const IconBell = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M13 9.5V7a5 5 0 0 0-10 0v2.5L1.5 12h13L13 9.5z" />
-    <path d="M6.5 12v.5a1.5 1.5 0 0 0 3 0V12" />
-  </svg>
-)
-
-const IconInbox = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="1" y="2" width="14" height="12" rx="1.5" />
-    <polyline points="1,5 8,9 15,5" />
+    <polyline points="3,4 5,4 5,4" />
+    <circle cx="3.5" cy="4" r="1" fill="currentColor" stroke="none" />
+    <line x1="6.5" y1="4" x2="14" y2="4" />
+    <circle cx="3.5" cy="8" r="1" fill="currentColor" stroke="none" />
+    <line x1="6.5" y1="8" x2="14" y2="8" />
+    <circle cx="3.5" cy="12" r="1" fill="currentColor" stroke="none" />
+    <line x1="6.5" y1="12" x2="14" y2="12" />
   </svg>
 )
 
@@ -228,24 +215,6 @@ export default function StudentSidebar({
               />
             </div>
 
-            <div style={sectionLabel}>TOOLS</div>
-            {(
-              [
-                { label: 'Calendar',      icon: <IconCalendar /> },
-                { label: 'To-do',         icon: <IconTodo /> },
-                { label: 'Notifications', icon: <IconBell /> },
-                { label: 'Announcements', icon: <IconInbox /> },
-              ] as const
-            ).map(({ label, icon }) => (
-              <div key={label} style={{ margin: '2px 12px' }}>
-                <NavButton
-                  label={label}
-                  icon={icon}
-                  isActive={activeItem === label}
-                  onClick={() => onNavigate(label)}
-                />
-              </div>
-            ))}
           </div>
         ) : (
           <div>
@@ -290,14 +259,7 @@ export default function StudentSidebar({
               {className ?? 'Class'}
             </div>
 
-            <div style={{ margin: '2px 12px' }}>
-              <NavButton
-                label="Overview"
-                icon={<IconOverview />}
-                isActive={activeItem === 'Overview'}
-                onClick={() => onNavigate('Overview')}
-              />
-            </div>
+            <div style={sectionLabel}>CLASS</div>
             <div style={{ margin: '2px 12px' }}>
               <NavButton
                 label="Modules"
@@ -320,6 +282,24 @@ export default function StudentSidebar({
                 icon={<IconAttendance />}
                 isActive={activeItem === 'Attendance'}
                 onClick={() => onNavigate('Attendance')}
+              />
+            </div>
+
+            <div style={sectionLabel}>TOOLS</div>
+            <div style={{ margin: '2px 12px' }}>
+              <NavButton
+                label="Todo"
+                icon={<IconTodo />}
+                isActive={activeItem === 'Todo'}
+                onClick={() => onNavigate('Todo')}
+              />
+            </div>
+            <div style={{ margin: '2px 12px' }}>
+              <NavButton
+                label="Calendar"
+                icon={<IconCalendar />}
+                isActive={activeItem === 'Calendar'}
+                onClick={() => onNavigate('Calendar')}
               />
             </div>
           </div>

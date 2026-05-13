@@ -10,7 +10,12 @@ export interface ClassRecord {
   description: string | null
   invite_code: string
   enrolled_count: number
+  cohort_count?: number
+  tutor?: { full_name: string; email: string }
   created_at: string
+  // tutor-role only
+  cohort_id?: string
+  cohort_name?: string
 }
 
 export interface RosterEntry {
@@ -26,11 +31,14 @@ export interface RosterEntry {
   enrolled_at: string
 }
 
-export function useClasses(userId?: string) {
+export function useClasses() {
   return useQuery({
-    queryKey: ['classes', userId ?? null],
+    queryKey: ['classes'],
     queryFn: () => apiClient.get<ClassRecord[]>('/classes'),
-    enabled: !!userId,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   })
 }
 
@@ -39,8 +47,10 @@ export function useClass(id: string) {
     queryKey: ['classes', id],
     queryFn: () => apiClient.get<ClassRecord>(`/classes/${id}`),
     enabled: !!id,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   })
 }
 
@@ -49,7 +59,9 @@ export function useCreateClass() {
   return useMutation({
     mutationFn: (body: { title: string; description?: string }) =>
       apiClient.post<ClassRecord>('/classes', body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['classes'] }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['classes'] })
+    },
   })
 }
 
@@ -58,7 +70,23 @@ export function useJoinClass() {
   return useMutation({
     mutationFn: (body: { invite_code: string }) =>
       apiClient.post<ClassRecord>('/classes/join', body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['classes'] }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['classes'] })
+    },
+  })
+}
+
+export function useUpdateClass() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ classId, ...body }: { classId: string; title?: string; description?: string }) =>
+      apiClient.patch<ClassRecord>(`/classes/${classId}`, body),
+    onSuccess: async (_data, vars) => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['classes'] }),
+        qc.invalidateQueries({ queryKey: ['classes', vars.classId] }),
+      ])
+    },
   })
 }
 
@@ -66,7 +94,12 @@ export function useDeleteClass() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (classId: string) => apiClient.delete(`/classes/${classId}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['classes'] }),
+    onSuccess: async (_data, classId) => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['classes'] }),
+        qc.invalidateQueries({ queryKey: ['classes', classId] }),
+      ])
+    },
   })
 }
 
@@ -75,5 +108,56 @@ export function useRoster(classId: string) {
     queryKey: ['roster', classId],
     queryFn: () => apiClient.get<RosterEntry[]>(`/classes/${classId}/roster`),
     enabled: !!classId,
+  })
+}
+
+export function useAddStudentToClass(classId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (student_id: string) =>
+      apiClient.post(`/classes/${classId}/students`, { student_id }),
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['roster', classId] }),
+        qc.invalidateQueries({ queryKey: ['classes'] }),
+        qc.invalidateQueries({ queryKey: ['classes', classId] }),
+        qc.invalidateQueries({ queryKey: ['searchable-students', classId] }),
+      ])
+    },
+  })
+}
+
+export function useRemoveStudentFromClass(classId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (studentId: string) =>
+      apiClient.delete(`/classes/${classId}/students/${studentId}`),
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['roster', classId] }),
+        qc.invalidateQueries({ queryKey: ['classes'] }),
+        qc.invalidateQueries({ queryKey: ['classes', classId] }),
+        qc.invalidateQueries({ queryKey: ['searchable-students', classId] }),
+      ])
+    },
+  })
+}
+
+export interface SearchableStudent {
+  id: string
+  full_name: string
+  email: string
+  avatar_initials: string
+}
+
+export function useSearchableStudents(classId: string, query: string) {
+  return useQuery({
+    queryKey: ['searchable-students', classId, query],
+    queryFn: () =>
+      apiClient.get<SearchableStudent[]>(
+        `/classes/${classId}/students/searchable?q=${encodeURIComponent(query)}`,
+      ),
+    enabled: !!classId && query.trim().length >= 2,
+    staleTime: 30_000,
   })
 }

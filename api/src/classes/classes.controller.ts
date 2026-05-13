@@ -5,7 +5,9 @@ import {
   Get,
   HttpCode,
   Param,
+  Patch,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -13,7 +15,12 @@ import type { Request } from 'express';
 import { createResponse } from '../common/response.helper';
 import { Roles, RolesGuard } from '../auth/role.guard';
 import type { JwtPayload } from '../auth/jwt.strategy';
-import { CreateClassDto, JoinClassDto } from './classes.dto';
+import {
+  AddClassStudentDto,
+  CreateClassDto,
+  JoinClassDto,
+  UpdateClassDto,
+} from './classes.dto';
 import { ClassesService } from './classes.service';
 
 @Controller('classes')
@@ -57,8 +64,66 @@ export class ClassesController {
   @Roles('admin')
   async getRoster(@Req() req: Request, @Param('id') id: string) {
     const user = req.user as JwtPayload;
-    const data = await this.classesService.getRoster(id, user.sub);
+    const data = await this.classesService.getRoster(id, user.sub, user.role);
     return createResponse(data, 'Roster fetched');
+  }
+
+  @Get(':id/students/searchable')
+  @Roles('admin', 'tutor')
+  async searchStudents(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @Query('q') q: string,
+  ) {
+    const user = req.user as JwtPayload;
+    const data = await this.classesService.searchNonEnrolledStudents(
+      id,
+      user.sub,
+      user.role,
+      q ?? '',
+    );
+    return createResponse(data, 'Students fetched');
+  }
+
+  @Post(':id/students')
+  @Roles('admin')
+  async addStudent(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @Body() dto: AddClassStudentDto,
+  ) {
+    const user = req.user as JwtPayload;
+    const data = await this.classesService.addStudent(
+      id,
+      user.sub,
+      user.role,
+      dto,
+    );
+    return createResponse(data, 'Student added to class', 201);
+  }
+
+  @Delete(':id/students/:studentId')
+  @Roles('admin')
+  async removeStudent(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @Param('studentId') studentId: string,
+  ) {
+    const user = req.user as JwtPayload;
+    await this.classesService.removeStudent(id, user.sub, user.role, studentId);
+    return createResponse(null, 'Student removed from class');
+  }
+
+  @Patch(':id')
+  @Roles('admin')
+  async update(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @Body() dto: UpdateClassDto,
+  ) {
+    const user = req.user as JwtPayload;
+    const data = await this.classesService.update(id, user.sub, user.role, dto);
+    return createResponse(data, 'Class updated');
   }
 
   @Delete(':id')
@@ -66,7 +131,7 @@ export class ClassesController {
   @HttpCode(200)
   async remove(@Req() req: Request, @Param('id') id: string) {
     const user = req.user as JwtPayload;
-    await this.classesService.remove(id, user.sub);
+    await this.classesService.remove(id, user.sub, user.role);
     return createResponse(null, 'Class deleted');
   }
 }

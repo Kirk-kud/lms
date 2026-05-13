@@ -5,28 +5,48 @@ import { apiClient } from '@/lib/api'
 
 export interface Announcement {
   id: string
-  class_id: string
-  author_id: string
-  title: string
-  body: string
+  created_by: string | null
+  creator?: { full_name: string } | null
+  message: string
+  target_type: 'all_tutors' | 'whole_class' | 'specific_cohort'
+  class_id: string | null
+  cohort_id: string | null
+  is_anonymous: boolean
   created_at: string
-  author?: { full_name: string }
-  class?: { title: string }
+}
+
+export interface CreateAnnouncementPayload {
+  message: string
+  target_type: 'all_tutors' | 'whole_class' | 'specific_cohort'
+  class_id?: string
+  cohort_id?: string
+  is_anonymous?: boolean
 }
 
 export function useAnnouncements() {
-  return useQuery({
+  return useQuery<Announcement[]>({
     queryKey: ['announcements'],
     queryFn: () => apiClient.get<Announcement[]>('/announcements'),
-    refetchInterval: 60_000,
   })
 }
 
 export function useCreateAnnouncement() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (body: { class_id: string; title: string; body: string }) =>
-      apiClient.post<Announcement>('/announcements', body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['announcements'] }),
+    mutationFn: (payload: CreateAnnouncementPayload) =>
+      apiClient.post<Announcement>('/announcements', payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['announcements'] })
+    },
+  })
+}
+
+export function useDeleteAnnouncement() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => apiClient.delete<null>(`/announcements/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['announcements'] })
+    },
   })
 }

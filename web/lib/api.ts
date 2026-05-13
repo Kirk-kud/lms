@@ -10,6 +10,7 @@ export class ApiError extends Error {
 
 let isRefreshing = false
 let refreshPromise: Promise<string | null> | null = null
+const REQUEST_TIMEOUT_MS = 20_000
 
 function getAccessToken(): string | null {
   if (typeof window === 'undefined') return null
@@ -86,14 +87,45 @@ function redirectToLogin(): void {
   localStorage.removeItem('refresh_token')
   window.location.href = '/login'
 }
+export function getApiBaseUrl(): string {
+  const configuredUrl = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/+$/, '')
+  if (configuredUrl) return configuredUrl
 
-async function request<T>(
+  if (typeof window !== 'undefined') {
+    return `${window.location.origin}/api`
+  }
+
+  throw new ApiError(500, 'API URL is not configured')
+}
+
+async function parseApiResponse<T>(res: Response): Promise<T> {
+  const json = (await res.json().catch(() => null)) as {
+    data?: T
+    message?: string
+  } | null
+
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      json?.message ?? 'Request failed',
+    )
+  }
+
+  return json?.data as T
+}
+
+export async function apiRequest<T>(
   method: string,
   path: string,
   body?: unknown,
   retryCount = 0,
 ): Promise<T> {
   const token = getAccessToken()
+  const controller = new AbortController()
+  const timeout = globalThis.setTimeout(
+    () => controller.abort(),
+    REQUEST_TIMEOUT_MS,
+  )
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -102,37 +134,35 @@ async function request<T>(
     headers['Authorization'] = `Bearer ${token}`
   }
 
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${path}`, {
-    method,
-    headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  })
-
-  const json = (await res.json()) as {
-    data: T
-    message: string
-    statusCode: number
-  }
-
-  // Handle 401 - attempt token refresh and retry
-  if (res.status === 401 && retryCount < 1) {
-    const newToken = await refreshAccessToken()
-    if (newToken) {
-      // Retry the request with the new token
-      return request<T>(method, path, body, retryCount + 1)
+  try {
+    const res = await fetch(`${getApiBaseUrl()}${path}`, {
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
+    })
+    if (res.status === 401 && retryCount < 1) {
+      const newToken = await refreshAccessToken()
+      if (newToken) {
+        return apiRequest<T>(method, path, body, retryCount + 1)
+      }
     }
+    return parseApiResponse<T>(res)
+  } catch (err) {
+    if (err instanceof ApiError) throw err
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new ApiError(0, 'The server took too long to respond. Please try again.')
+    }
+    throw new ApiError(0, 'Unable to reach the server. Please check your connection and try again.')
+  } finally {
+    globalThis.clearTimeout(timeout)
   }
-
-  if (!res.ok) {
-    throw new ApiError(res.status, json.message ?? 'Request failed')
-  }
-
-  return json.data
 }
 
 export const apiClient = {
-  get: <T>(path: string) => request<T>('GET', path),
-  post: <T>(path: string, body?: unknown) => request<T>('POST', path, body),
-  patch: <T>(path: string, body?: unknown) => request<T>('PATCH', path, body),
-  delete: <T>(path: string) => request<T>('DELETE', path),
+  get: <T>(path: string) => apiRequest<T>('GET', path),
+  post: <T>(path: string, body?: unknown) => apiRequest<T>('POST', path, body),
+  put: <T>(path: string, body?: unknown) => apiRequest<T>('PUT', path, body),
+  patch: <T>(path: string, body?: unknown) => apiRequest<T>('PATCH', path, body),
+  delete: <T>(path: string) => apiRequest<T>('DELETE', path),
 }

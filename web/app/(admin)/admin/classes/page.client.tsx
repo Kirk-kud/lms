@@ -43,6 +43,9 @@ function ClassCard({ id, title, description, enrolledCount, inviteCode }: {
 }) {
   const router = useRouter()
   const [copied, setCopied] = useState(false)
+  const [hovered, setHovered] = useState(false)
+  const safeTitle = title ?? ''
+  const isDA = safeTitle.toLowerCase().includes('discipleship')
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -52,38 +55,107 @@ function ClassCard({ id, title, description, enrolledCount, inviteCode }: {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const bannerStyle: React.CSSProperties = isDA
+    ? {
+        height: '160px',
+        background: '#F5EEF0',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+      }
+    : {
+        height: '100px',
+        background: `hsl(${(safeTitle.charCodeAt(0) * 47) % 360}, 35%, 55%)`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }
+
   return (
     <div
       onClick={() => router.push(`/admin/classes/${id}/modules`)}
-      className="border border-[#E5E5E5] rounded-xl p-5 cursor-pointer hover:border-[#8B1A2F]/30 hover:bg-[#FAFAFA] transition-all"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        border: '1px solid',
+        borderColor: hovered ? '#C9B8B4' : '#E5E5E5',
+        borderRadius: '12px',
+        overflow: 'hidden',
+        cursor: 'pointer',
+        transition: 'border-color 120ms ease',
+        background: '#FFFFFF',
+      }}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <h3 className="text-[14px] font-medium text-[#111] truncate">{title}</h3>
-          {description && (
-            <p className="text-[12px] text-[#6B7280] mt-1 line-clamp-2">{description}</p>
-          )}
-        </div>
-        <span className="text-[11px] text-[#9CA3AF] shrink-0">
-          {enrolledCount} {enrolledCount === 1 ? 'student' : 'students'}
-        </span>
+      {/* Banner */}
+      <div style={bannerStyle}>
+        {isDA ? (
+          <img
+            src="/da-logo.png"
+            alt="The Discipleship Academy"
+            style={{ width: '120px', height: '120px', objectFit: 'contain' }}
+          />
+        ) : (
+          <span style={{ fontSize: '36px', fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>
+            {safeTitle.charAt(0).toUpperCase()}
+          </span>
+        )}
       </div>
 
-      <div
-        className="mt-4 flex items-center gap-2 bg-[#F8F8F8] rounded-lg px-3 py-2"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <span className="text-[11px] text-[#9CA3AF] uppercase tracking-wider">Invite</span>
-        <span className="flex-1 text-[13px] font-mono text-[#111] tracking-widest">
-          {inviteCode}
-        </span>
-        <button
-          onClick={handleCopy}
-          className="text-[#6B7280] hover:text-[#8B1A2F] transition-colors"
-          title="Copy invite code"
+      {/* Body */}
+      <div style={{ padding: '16px 18px 18px', display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+        {isDA && (
+          <p style={{ fontSize: '10px', fontWeight: 600, color: '#8B1A2F', textTransform: 'uppercase', letterSpacing: '0.10em', margin: 0 }}>
+            The Discipleship Academy
+          </p>
+        )}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
+          <p style={{ fontSize: '14px', fontWeight: 600, color: '#111', margin: 0, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+            {title}
+          </p>
+          <span style={{ fontSize: '11px', color: '#9CA3AF', flexShrink: 0 }}>
+            {enrolledCount} {enrolledCount === 1 ? 'student' : 'students'}
+          </span>
+        </div>
+        {description && (
+          <p style={{ fontSize: '12.5px', color: '#6B7280', margin: 0, lineHeight: 1.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+            {description}
+          </p>
+        )}
+
+        {/* Invite code */}
+        <div
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#F8F8F8', borderRadius: '7px', padding: '7px 10px', marginTop: '4px' }}
+          onClick={(e) => e.stopPropagation()}
         >
-          {copied ? <CheckIcon /> : <CopyIcon />}
-        </button>
+          <span style={{ fontSize: '10px', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0 }}>Invite</span>
+          <span style={{ flex: 1, fontSize: '12.5px', fontFamily: 'monospace', color: '#111', letterSpacing: '0.12em' }}>{inviteCode}</span>
+          <button
+            onClick={handleCopy}
+            style={{ color: copied ? '#1F8B4C' : '#6B7280', background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}
+            title="Copy invite code"
+          >
+            {copied ? <CheckIcon /> : <CopyIcon />}
+          </button>
+        </div>
+
+        <div style={{ marginTop: '6px', display: 'flex', justifyContent: 'flex-end' }}>
+          <span
+            style={{
+              fontSize: '12px',
+              fontWeight: 600,
+              color: hovered ? '#FFFFFF' : '#8B1A2F',
+              backgroundColor: hovered ? '#8B1A2F' : 'rgba(139,26,47,0.08)',
+              padding: '5px 14px',
+              borderRadius: '6px',
+              transition: 'background 120ms ease, color 120ms ease',
+            }}
+          >
+            Open →
+          </span>
+        </div>
       </div>
     </div>
   )
@@ -188,7 +260,7 @@ export default function ClassesPageClient() {
     isError,
     error,
     refetch,
-  } = useClasses(user?.id)
+  } = useClasses()
   const [showCreate, setShowCreate] = useState(false)
 
   return (

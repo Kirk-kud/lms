@@ -120,7 +120,7 @@ export default function DashboardPageClient() {
     isError,
     error,
     refetch,
-  } = useClasses(user?.id)
+  } = useClasses()
 
   const [upcomingCounts, setUpcomingCounts] = useState<Record<string, number>>({})
   const [submissionCounts, setSubmissionCounts] = useState<Record<string, number>>({})

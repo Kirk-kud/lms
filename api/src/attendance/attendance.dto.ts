@@ -1,8 +1,33 @@
-import { IsString, IsUUID } from 'class-validator';
+import { IsInt, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateSessionDto {
   @IsUUID()
   class_id: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(120)
+  @Type(() => Number)
+  duration_minutes?: number;
+}
+
+export class RestartSessionDto {
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(120)
+  @Type(() => Number)
+  duration_minutes?: number;
+}
+
+export class ExtendSessionDto {
+  @IsInt()
+  @Min(1)
+  @Max(60)
+  @Type(() => Number)
+  duration_minutes: number;
 }
 
 export class CheckInDto {
@@ -11,4 +36,9 @@ export class CheckInDto {
 
   @IsUUID()
   class_id: string;
+}
+
+export class ManualCheckInDto {
+  @IsUUID()
+  student_id: string;
 }

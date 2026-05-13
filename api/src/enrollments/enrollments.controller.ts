@@ -26,7 +26,7 @@ export class EnrollmentsController {
   @Roles('admin')
   async create(@Req() req: Request, @Body() dto: CreateEnrollmentDto) {
     const user = req.user as JwtPayload;
-    const data = await this.service.create(user.sub, dto);
+    const data = await this.service.create(user.sub, user.role, dto);
     return createResponse(data, 'Enrollment created', 201);
   }
 
@@ -38,7 +38,7 @@ export class EnrollmentsController {
     @Body() dto: MoveEnrollmentCohortDto,
   ) {
     const user = req.user as JwtPayload;
-    const data = await this.service.moveToCohort(id, user.sub, dto);
+    const data = await this.service.moveToCohort(id, user.sub, user.role, dto);
     return createResponse(data, 'Enrollment cohort updated');
   }
 }

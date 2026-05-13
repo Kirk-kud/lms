@@ -14,13 +14,15 @@ import { toast } from 'sonner'
 
 // ── Type chip config ──────────────────────────────────────────────────────────
 
-type ItemType = 'pdf' | 'video' | 'link' | 'text'
+type ItemType = 'pdf' | 'video' | 'link' | 'text' | 'image' | 'assignment'
 
 const TYPE_CONFIG: Record<ItemType, { bg: string; iconColor: string; label: string }> = {
   pdf:   { bg: '#FEE2E2', iconColor: '#991B1B', label: 'PDF document' },
   video: { bg: '#DBEAFE', iconColor: '#1E40AF', label: 'Video' },
   link:  { bg: '#F3F4F6', iconColor: '#4B5563', label: 'External link — opens in new tab' },
   text:  { bg: '#F5E6EA', iconColor: '#8B1A2F', label: 'Reading' },
+  image: { bg: '#F0FDF4', iconColor: '#15803D', label: 'Image' },
+  assignment: { bg: '#F5E6EA', iconColor: '#8B1A2F', label: 'Assignment — submit on assignment page' },
 }
 
 function TypeIcon({ type, color }: { type: ItemType; color: string }) {
@@ -47,6 +49,25 @@ function TypeIcon({ type, color }: { type: ItemType; color: string }) {
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
         <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
         <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+      </svg>
+    )
+  }
+  if (type === 'image') {
+    return (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+        <circle cx="8.5" cy="8.5" r="1.5" />
+        <polyline points="21 15 16 10 5 21" />
+      </svg>
+    )
+  }
+  if (type === 'assignment') {
+    return (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+        <line x1="12" y1="18" x2="12" y2="12" />
+        <line x1="9" y1="15" x2="15" y2="15" />
       </svg>
     )
   }
@@ -96,6 +117,7 @@ function ModuleItemRow({ item, onClick }: { item: ModuleItem; onClick: (item: Mo
           <polyline points="9 18 15 12 9 6" />
         </svg>
       )}
+
     </button>
   )
 }
@@ -194,13 +216,19 @@ export default function StudentModulesPageClient({ params }: { params: Promise<{
   }, [isClassLoading, isModulesLoading])
 
   const handleItemClick = (item: ModuleItem) => {
+    if (item.type === 'assignment') {
+      if (item.assignment_id) {
+        router.push(`/student/classes/${classId}/assignments/${item.assignment_id}`)
+      }
+      return
+    }
     if (item.type === 'link' && item.content_url) {
       window.open(item.content_url, '_blank', 'noopener,noreferrer')
       return
     }
     setPreviewItem({
       title: item.title,
-      type: item.type,
+      type: item.type as PreviewItem['type'],
       content_url: item.content_url,
       content_text: item.content_text,
     })

@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Get,
-  Param,
-  Patch,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Param, Patch, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { NotificationsService } from './notifications.service';
 import { RolesGuard } from '../auth/role.guard';
@@ -24,7 +17,6 @@ export class NotificationsController {
     return createResponse(data, 'Notifications fetched');
   }
 
-  // Declare literal route before parameterized route to avoid conflicts
   @Patch('read-all')
   async markAllRead(@Req() req: Request) {
     const user = req.user as JwtPayload;

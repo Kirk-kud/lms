@@ -1,5 +1,5 @@
 -- ============================================================
--- Seed data for Love Inc LMS
+-- Seed data for Vine LMS
 -- Run this AFTER 001_initial_schema.sql
 -- UUIDs are fixed so the seed is idempotent (safe to re-run
 -- after truncating tables).

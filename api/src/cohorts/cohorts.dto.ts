@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class CreateCohortDto {
   @IsUUID()
@@ -36,6 +36,10 @@ export class UpdateCohortDto {
   @IsOptional()
   @IsString()
   invite_pin?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  can_edit_modules?: boolean;
 }
 
 export class AddCohortStudentDto {

@@ -2,207 +2,290 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  startOfWeek,
+  endOfWeek,
+  eachDayOfInterval,
+  isSameMonth,
+  isSameDay,
+  isToday,
+  addMonths,
+  subMonths,
+} from 'date-fns'
+import { useMyAllAssignments } from '@/lib/hooks/useAssignments'
 import { useUser } from '@/lib/hooks/useUser'
-import { useMyAllAssignments, AssignmentWithClass } from '@/lib/hooks/useAssignments'
 import { SkeletonCard } from '@/components/ui/shared/SkeletonCard'
 
-const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December']
+const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
 export default function CalendarPageClient() {
   const router = useRouter()
   const { user } = useUser()
-  const { data: assignments, isLoading } = useMyAllAssignments(user?.id ?? '')
+  const { data: assignments = [], isLoading } = useMyAllAssignments(user?.id ?? '')
+  const [currentMonth, setCurrentMonth] = useState(new Date())
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null)
 
-  const [viewDate, setViewDate] = useState(new Date())
-  const [selectedDay, setSelectedDay] = useState<number | null>(new Date().getDate())
+  const monthStart = startOfMonth(currentMonth)
+  const monthEnd = endOfMonth(currentMonth)
+  const calStart = startOfWeek(monthStart, { weekStartsOn: 1 })
+  const calEnd = endOfWeek(monthEnd, { weekStartsOn: 1 })
+  const days = eachDayOfInterval({ start: calStart, end: calEnd })
 
-  const year = viewDate.getFullYear()
-  const month = viewDate.getMonth()
-  const today = new Date()
+  const assignmentsByDay = new Map<string, typeof assignments>()
+  for (const a of assignments) {
+    const key = format(new Date(a.due_date), 'yyyy-MM-dd')
+    assignmentsByDay.set(key, [...(assignmentsByDay.get(key) ?? []), a])
+  }
 
-  const firstDayOfWeek = new Date(year, month, 1).getDay()
-  const daysInMonth = new Date(year, month + 1, 0).getDate()
-  const cells: (number | null)[] = [
-    ...Array(firstDayOfWeek).fill(null),
-    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
-  ]
-
-  const assignmentsByDay = new Map<number, AssignmentWithClass[]>()
-  assignments.forEach((a) => {
-    const d = new Date(a.due_date)
-    if (d.getFullYear() === year && d.getMonth() === month) {
-      const day = d.getDate()
-      if (!assignmentsByDay.has(day)) assignmentsByDay.set(day, [])
-      assignmentsByDay.get(day)!.push(a)
-    }
-  })
-
-  const selectedAssignments = selectedDay ? (assignmentsByDay.get(selectedDay) ?? []) : []
+  const selectedKey = selectedDay ? format(selectedDay, 'yyyy-MM-dd') : null
+  const selectedAssignments = selectedKey ? (assignmentsByDay.get(selectedKey) ?? []) : []
 
   return (
     <div className="p-4 sm:p-8">
-      {/* Page header */}
-      <div style={{ marginBottom: '28px' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#0A0A0B', letterSpacing: '-0.02em', lineHeight: 1.2, margin: '0 0 6px' }}>
-          Calendar
-        </h1>
-        <p style={{ fontSize: '13.5px', color: '#9C949A', margin: 0 }}>
-          Your assignment due dates, at a glance
-        </p>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+        <div>
+          <h1 className="text-[22px] sm:text-[28px]" style={{ fontWeight: 700, color: '#0A0A0B', letterSpacing: '-0.02em', margin: 0 }}>
+            Calendar
+          </h1>
+          <p style={{ fontSize: '13px', color: '#9C949A', margin: '4px 0 0' }}>
+            Assignment due dates across all your classes
+          </p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            onClick={() => setCurrentMonth((m) => subMonths(m, 1))}
+            style={{
+              width: '32px', height: '32px', border: '1px solid #E5E5E5',
+              borderRadius: '7px', background: '#FFF', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B6168',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = '#FAF7F4')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = '#FFF')}
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M9 2L4 7l5 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+          <span style={{ fontSize: '14px', fontWeight: 600, color: '#0A0A0B', minWidth: '130px', textAlign: 'center' }}>
+            {format(currentMonth, 'MMMM yyyy')}
+          </span>
+          <button
+            onClick={() => setCurrentMonth((m) => addMonths(m, 1))}
+            style={{
+              width: '32px', height: '32px', border: '1px solid #E5E5E5',
+              borderRadius: '7px', background: '#FFF', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B6168',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = '#FAF7F4')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = '#FFF')}
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M5 2l5 5-5 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        </div>
       </div>
 
-      {isLoading ? (
-        <SkeletonCard lines={6} />
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 items-start">
-          {/* Calendar grid */}
-          <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #ECE6E0', borderRadius: '12px', overflow: 'hidden' }}>
-            {/* Month nav */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px 16px', borderBottom: '1px solid #ECE6E0' }}>
-              <button
-                onClick={() => { setViewDate(new Date(year, month - 1, 1)); setSelectedDay(null) }}
-                style={{ background: 'none', border: '1px solid #ECE6E0', cursor: 'pointer', padding: '6px 12px', color: '#6B6168', fontSize: '14px', borderRadius: '6px' }}
+      {isLoading && <SkeletonCard lines={6} />}
+
+      {!isLoading && (
+        <div
+          style={{
+            border: '1px solid #ECE6E0',
+            borderRadius: '10px',
+            overflow: 'hidden',
+            background: '#FFFFFF',
+          }}
+        >
+          {/* Day headers */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: '1px solid #ECE6E0' }}>
+            {DAY_LABELS.map((d) => (
+              <div
+                key={d}
+                style={{
+                  padding: '10px 0',
+                  textAlign: 'center',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  color: '#9C949A',
+                  borderRight: '1px solid #ECE6E0',
+                }}
               >
-                ‹
-              </button>
-              <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#0A0A0B', margin: 0 }}>
-                {MONTH_NAMES[month]} {year}
-              </h2>
-              <button
-                onClick={() => { setViewDate(new Date(year, month + 1, 1)); setSelectedDay(null) }}
-                style={{ background: 'none', border: '1px solid #ECE6E0', cursor: 'pointer', padding: '6px 12px', color: '#6B6168', fontSize: '14px', borderRadius: '6px' }}
-              >
-                ›
-              </button>
-            </div>
-
-            {/* Day headers */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', padding: '12px 16px 4px' }}>
-              {DAY_LABELS.map((d) => (
-                <div key={d} style={{ textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#9C949A', paddingBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                  {d}
-                </div>
-              ))}
-            </div>
-
-            {/* Day cells */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', padding: '0 16px 20px', gap: '4px' }}>
-              {cells.map((day, i) => {
-                if (!day) return <div key={`e-${i}`} />
-                const isCurrentDay = day === today.getDate() && month === today.getMonth() && year === today.getFullYear()
-                const hasAssignments = assignmentsByDay.has(day)
-                const isSelected = selectedDay === day
-
-                return (
-                  <button
-                    key={day}
-                    onClick={() => setSelectedDay(isSelected ? null : day)}
-                    style={{
-                      display: 'flex', flexDirection: 'column', alignItems: 'center',
-                      justifyContent: 'center', padding: '10px 4px', borderRadius: '8px',
-                      border: isCurrentDay && !isSelected ? '1.5px solid #8B1A2F' : '1.5px solid transparent',
-                      cursor: 'pointer',
-                      background: isSelected ? '#8B1A2F' : hasAssignments ? 'rgba(139,26,47,0.05)' : 'transparent',
-                      gap: '4px', minHeight: '52px',
-                      transition: 'background 120ms ease',
-                    }}
-                    onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = 'rgba(139,26,47,0.08)' }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = isSelected ? '#8B1A2F' : hasAssignments ? 'rgba(139,26,47,0.05)' : 'transparent' }}
-                  >
-                    <span style={{
-                      fontSize: '14px', fontWeight: isCurrentDay || isSelected ? 700 : 400,
-                      color: isSelected ? '#FFFFFF' : isCurrentDay ? '#8B1A2F' : '#0A0A0B',
-                      lineHeight: 1,
-                    }}>
-                      {day}
-                    </span>
-                    {hasAssignments && (
-                      <span style={{
-                        width: '5px', height: '5px', borderRadius: '50%', flexShrink: 0,
-                        backgroundColor: isSelected ? 'rgba(255,255,255,0.7)' : '#8B1A2F',
-                      }} />
-                    )}
-                  </button>
-                )
-              })}
-            </div>
-
-            {/* Month summary */}
-            <div style={{ borderTop: '1px solid #ECE6E0', padding: '12px 24px', display: 'flex', gap: '16px' }}>
-              <span style={{ fontSize: '12px', color: '#9C949A' }}>
-                <strong style={{ color: '#0A0A0B' }}>{assignmentsByDay.size}</strong> days with due dates this month
-              </span>
-              <span style={{ fontSize: '12px', color: '#9C949A' }}>
-                <strong style={{ color: '#0A0A0B' }}>
-                  {Array.from(assignmentsByDay.values()).reduce((sum, a) => sum + a.length, 0)}
-                </strong> total assignments
-              </span>
-            </div>
+                {d}
+              </div>
+            ))}
           </div>
 
-          {/* Day detail panel */}
-          <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #ECE6E0', borderRadius: '12px', overflow: 'hidden' }}>
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid #ECE6E0' }}>
-              <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#0A0A0B', margin: 0 }}>
-                {selectedDay
-                  ? `${MONTH_NAMES[month]} ${selectedDay}`
-                  : 'Select a day'}
-              </h3>
-            </div>
+          {/* Calendar grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
+            {days.map((day, i) => {
+              const key = format(day, 'yyyy-MM-dd')
+              const dayAssignments = assignmentsByDay.get(key) ?? []
+              const isCurrentMonth = isSameMonth(day, currentMonth)
+              const isSelected = selectedDay ? isSameDay(day, selectedDay) : false
+              const today = isToday(day)
+              const isLastRow = i >= days.length - 7
 
-            {!selectedDay && (
-              <p style={{ padding: '24px 20px', fontSize: '13px', color: '#9C949A', margin: 0 }}>
-                Click any day on the calendar to see its assignments.
-              </p>
-            )}
-
-            {selectedDay && selectedAssignments.length === 0 && (
-              <p style={{ padding: '24px 20px', fontSize: '13px', color: '#9C949A', margin: 0 }}>
-                No assignments due on this day.
-              </p>
-            )}
-
-            {selectedDay && selectedAssignments.map((a) => {
-              const isPast = new Date(a.due_date) < new Date()
               return (
                 <button
-                  key={a.id}
-                  onClick={() => router.push(`/student/classes/${a.class_id}/assignments`)}
-                  style={{
-                    width: '100%', textAlign: 'left', background: 'none',
-                    border: 'none', borderBottom: '1px solid #F3F4F6',
-                    padding: '14px 20px', cursor: 'pointer',
+                  key={key}
+                  onClick={() => {
+                    if (dayAssignments.length > 0) {
+                      setSelectedDay(isSelected ? null : day)
+                    }
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = '#FAF7F4')}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+                  className="min-h-[56px] sm:min-h-[80px]"
+                  style={{
+                    padding: '6px',
+                    borderRight: (i + 1) % 7 !== 0 ? '1px solid #ECE6E0' : 'none',
+                    borderBottom: !isLastRow ? '1px solid #ECE6E0' : 'none',
+                    background: isSelected ? 'rgba(139,26,47,0.04)' : 'transparent',
+                    cursor: dayAssignments.length > 0 ? 'pointer' : 'default',
+                    textAlign: 'left',
+                    verticalAlign: 'top',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                    transition: 'background 100ms ease',
+                  }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
-                    <div style={{ minWidth: 0 }}>
-                      <p style={{ fontSize: '13.5px', fontWeight: 600, color: '#0A0A0B', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {a.title}
-                      </p>
-                      <span style={{
-                        fontSize: '10px', fontWeight: 600, textTransform: 'uppercase',
-                        letterSpacing: '0.06em', color: '#8B1A2F',
-                        background: 'rgba(139,26,47,0.07)', padding: '2px 7px', borderRadius: '4px',
-                      }}>
-                        {a.class_title}
-                      </span>
-                    </div>
-                    <span style={{
-                      fontSize: '10px', fontWeight: 600, flexShrink: 0,
-                      color: isPast ? '#B0182E' : '#1F8B4C',
-                      background: isPast ? 'rgba(176,24,46,0.08)' : 'rgba(31,139,76,0.08)',
-                      padding: '3px 8px', borderRadius: '4px',
-                    }}>
-                      {a.submission ? 'Submitted' : isPast ? 'Overdue' : 'Pending'}
-                    </span>
+                  {/* Day number */}
+                  <div
+                    style={{
+                      width: '24px',
+                      height: '24px',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '12px',
+                      fontWeight: today ? 700 : 400,
+                      color: !isCurrentMonth
+                        ? '#D0C8C6'
+                        : today
+                        ? '#FFFFFF'
+                        : '#0A0A0B',
+                      background: today ? '#8B1A2F' : 'transparent',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {format(day, 'd')}
                   </div>
+
+                  {/* Assignment chips — show fewer on mobile */}
+                  {dayAssignments.slice(0, 2).map((a) => {
+                    const now = new Date()
+                    const overdue = new Date(a.due_date) < now && !a.submission
+                    const submitted = !!a.submission
+                    const bg = submitted ? 'rgba(31,139,76,0.1)' : overdue ? 'rgba(176,24,46,0.1)' : 'rgba(139,26,47,0.08)'
+                    const color = submitted ? '#1F8B4C' : overdue ? '#B0182E' : '#8B1A2F'
+                    return (
+                      <div
+                        key={a.id}
+                        style={{
+                          fontSize: '10px',
+                          fontWeight: 600,
+                          color,
+                          background: bg,
+                          borderRadius: '4px',
+                          padding: '2px 5px',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          maxWidth: '100%',
+                        }}
+                      >
+                        {a.title}
+                      </div>
+                    )
+                  })}
+                  {dayAssignments.length > 2 && (
+                    <div style={{ fontSize: '10px', color: '#9C949A', paddingLeft: '2px' }}>
+                      +{dayAssignments.length - 2} more
+                    </div>
+                  )}
                 </button>
               )
             })}
           </div>
+        </div>
+      )}
+
+      {/* Selected day detail */}
+      {selectedDay && selectedAssignments.length > 0 && (
+        <div
+          style={{
+            marginTop: '16px',
+            border: '1px solid #ECE6E0',
+            borderRadius: '10px',
+            overflow: 'hidden',
+            background: '#FFFFFF',
+          }}
+        >
+          <div style={{ padding: '12px 18px', borderBottom: '1px solid #ECE6E0', background: '#FAF7F4' }}>
+            <p style={{ fontSize: '13px', fontWeight: 600, color: '#0A0A0B', margin: 0 }}>
+              {format(selectedDay, 'EEEE, d MMMM')}
+            </p>
+          </div>
+          {selectedAssignments.map((a, i) => {
+            const now = new Date()
+            const overdue = new Date(a.due_date) < now && !a.submission
+            const submitted = !!a.submission
+            const statusColor = submitted ? '#1F8B4C' : overdue ? '#B0182E' : '#B6791D'
+            const statusLabel = submitted ? 'Submitted' : overdue ? 'Overdue' : 'Pending'
+            const statusBg = submitted ? 'rgba(31,139,76,0.08)' : overdue ? 'rgba(176,24,46,0.08)' : 'rgba(182,121,29,0.08)'
+
+            return (
+              <button
+                key={a.id}
+                onClick={() => router.push(`/student/classes/${a.class_id}/assignments/${a.id}`)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  width: '100%',
+                  padding: '14px 18px',
+                  borderBottom: i < selectedAssignments.length - 1 ? '1px solid #ECE6E0' : 'none',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  gap: '12px',
+                  textAlign: 'left',
+                  transition: 'background 100ms ease',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = '#FAF7F4')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontSize: '13.5px', fontWeight: 500, color: '#0A0A0B', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {a.title}
+                  </p>
+                  <p style={{ fontSize: '11.5px', color: '#9C949A', margin: 0 }}>
+                    {a.class_title}
+                  </p>
+                </div>
+                <span
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    color: statusColor,
+                    background: statusBg,
+                    padding: '3px 9px',
+                    borderRadius: '4px',
+                    flexShrink: 0,
+                  }}
+                >
+                  {statusLabel}
+                </span>
+              </button>
+            )
+          })}
         </div>
       )}
     </div>

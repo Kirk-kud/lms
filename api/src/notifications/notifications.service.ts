@@ -16,7 +16,12 @@ export class NotificationsService {
     if (error) {
       // If migrations haven't been applied the notifications table may not exist yet.
       // Return an empty list so the API remains functional until migrations are run.
-      if (typeof error.message === 'string' && error.message.includes("Could not find the table 'public.notifications'")) {
+      if (
+        typeof error.message === 'string' &&
+        error.message.includes(
+          "Could not find the table 'public.notifications'",
+        )
+      ) {
         return [];
       }
       throw new Error(error.message);
@@ -33,7 +38,12 @@ export class NotificationsService {
       .eq('user_id', userId);
 
     if (error) {
-      if (typeof error.message === 'string' && error.message.includes("Could not find the table 'public.notifications'")) {
+      if (
+        typeof error.message === 'string' &&
+        error.message.includes(
+          "Could not find the table 'public.notifications'",
+        )
+      ) {
         // No-op when notifications table is missing
         return;
       }
@@ -49,7 +59,12 @@ export class NotificationsService {
       .eq('read', false);
 
     if (error) {
-      if (typeof error.message === 'string' && error.message.includes("Could not find the table 'public.notifications'")) {
+      if (
+        typeof error.message === 'string' &&
+        error.message.includes(
+          "Could not find the table 'public.notifications'",
+        )
+      ) {
         // No-op when notifications table is missing
         return;
       }

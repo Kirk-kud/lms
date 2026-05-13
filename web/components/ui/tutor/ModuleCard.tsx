@@ -1,15 +1,33 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  arrayMove,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { FileChip } from '../shared/FileChip'
 
 interface Item {
   id: string
   module_id: string
   title: string
-  type: 'pdf' | 'link' | 'video' | 'text'
+  type: 'pdf' | 'link' | 'video' | 'text' | 'image' | 'assignment'
   content_url: string | null
   content_text: string | null
+  assignment_id?: string | null
   order_index: number
   created_at: string
 }
@@ -21,9 +39,21 @@ interface ModuleCardProps {
   completedItems?: string[]
   onAddItem?: () => void
   onDeleteItem?: (id: string) => void
+  onEditItem?: (item: Item) => void
   onRenameModule?: () => void
   onDeleteModule?: () => void
   onItemClick: (item: Item) => void
+  onReorderItems?: (newOrder: { item_id: string; order_index: number }[]) => void
+}
+
+function GripIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+      <circle cx="9" cy="6" r="1.5" /><circle cx="15" cy="6" r="1.5" />
+      <circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="12" r="1.5" />
+      <circle cx="9" cy="18" r="1.5" /><circle cx="15" cy="18" r="1.5" />
+    </svg>
+  )
 }
 
 function ExternalIcon() {
@@ -64,6 +94,115 @@ function CheckIcon() {
   )
 }
 
+function SortableItemRow({
+  item,
+  completedItems,
+  onItemClick,
+  onEditItem,
+  onDeleteItem,
+}: {
+  item: Item
+  completedItems: string[]
+  onItemClick: (item: Item) => void
+  onEditItem?: (item: Item) => void
+  onDeleteItem?: (id: string) => void
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: item.id })
+
+  const isCompleted = completedItems.includes(item.id)
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.4 : 1,
+        zIndex: isDragging ? 10 : undefined,
+        position: 'relative',
+      }}
+      className="w-full flex items-center gap-2 py-2.5 -mx-5 px-5 group hover:bg-[#FAFAFA] transition-colors first:mt-2"
+    >
+      {/* Drag handle */}
+      <button
+        {...attributes}
+        {...listeners}
+        onClick={(e) => e.stopPropagation()}
+        className="shrink-0 opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-[#D1D5DB] hover:text-[#9CA3AF] transition-all touch-none focus:outline-none"
+        aria-label="Drag to reorder"
+        tabIndex={-1}
+      >
+        <GripIcon />
+      </button>
+
+      {/* Clickable content */}
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => onItemClick(item)}
+        onKeyDown={(e) => e.key === 'Enter' && onItemClick(item)}
+        className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
+      >
+        <FileChip type={item.type} />
+        <div className="flex-1 min-w-0">
+          <p className={`text-[13px] truncate ${isCompleted ? 'text-[#9CA3AF]' : 'text-[#111]'}`}>
+            {item.title}
+          </p>
+          <p className="text-[11px] text-[#9CA3AF] mt-0.5">
+            {new Date(item.created_at).toLocaleDateString('en-US', {
+              month: 'short', day: 'numeric', year: 'numeric',
+            })}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {(item.type === 'link' || item.type === 'video') && (
+            <span className="text-[#9CA3AF] group-hover:text-[#6B7280] transition-colors">
+              <ExternalIcon />
+            </span>
+          )}
+          {item.type === 'assignment' && (
+            <span className="text-[#9CA3AF] group-hover:text-[#6B7280] transition-colors">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </span>
+          )}
+          {(item.type === 'pdf' || item.type === 'image') && (
+            <span className="text-[#9CA3AF] group-hover:text-[#6B7280] transition-colors">
+              <DownloadIcon />
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Edit / delete */}
+      <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-all shrink-0">
+        <button
+          onClick={(e) => { e.stopPropagation(); onEditItem?.(item) }}
+          className="w-6 h-6 flex items-center justify-center text-[#9CA3AF] hover:text-[#111] transition-colors"
+          aria-label="Edit item"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+          </svg>
+        </button>
+        <button
+          onClick={(e) => { e.stopPropagation(); onDeleteItem?.(item.id) }}
+          className="w-6 h-6 flex items-center justify-center text-[#9CA3AF] hover:text-[#991B1B] transition-colors"
+          aria-label="Delete item"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="3 6 5 6 21 6" />
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function ModuleCard({
   title,
   items,
@@ -71,13 +210,42 @@ export default function ModuleCard({
   completedItems = [],
   onAddItem,
   onDeleteItem,
+  onEditItem,
   onRenameModule,
   onDeleteModule,
   onItemClick,
+  onReorderItems,
 }: ModuleCardProps) {
   const [showMenu, setShowMenu] = useState(false)
+  const [localItems, setLocalItems] = useState(
+    [...items].sort((a, b) => a.order_index - b.order_index)
+  )
+
+  useEffect(() => {
+    setLocalItems([...items].sort((a, b) => a.order_index - b.order_index))
+  }, [items])
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    const oldIndex = localItems.findIndex((i) => i.id === active.id)
+    const newIndex = localItems.findIndex((i) => i.id === over.id)
+    const reordered = arrayMove(localItems, oldIndex, newIndex)
+
+    setLocalItems(reordered)
+    onReorderItems?.(
+      reordered.map((item, idx) => ({ item_id: item.id, order_index: idx }))
+    )
+  }
+
   const completedCount = completedItems.length
-  const totalCount = items.length
+  const totalCount = localItems.length
   const progressPct = totalCount > 0 ? (completedCount / totalCount) * 100 : 0
 
   return (
@@ -87,7 +255,7 @@ export default function ModuleCard({
         <div className="flex items-center gap-2.5">
           <h3 className="text-[14px] font-medium text-[#111]">{title}</h3>
           <span className="text-[11px] text-[#9CA3AF]">
-            {items.length} {items.length === 1 ? 'item' : 'items'}
+            {localItems.length} {localItems.length === 1 ? 'item' : 'items'}
           </span>
         </div>
 
@@ -133,56 +301,66 @@ export default function ModuleCard({
       </div>
 
       {/* Items */}
-      {items.length > 0 && (
-        <div className="mt-3 divide-y divide-[#F3F4F6]">
-          {items.map((item) => {
-            const isCompleted = completedItems.includes(item.id)
-            return (
-              <button
-                key={item.id}
-                onClick={() => onItemClick(item)}
-                className="w-full flex items-center gap-3 py-2.5 text-left hover:bg-[#FAFAFA] -mx-5 px-5 transition-colors group first:mt-2"
-              >
-                <FileChip type={item.type} />
-                <div className="flex-1 min-w-0">
-                  <p className={`text-[13px] truncate ${isCompleted ? 'text-[#9CA3AF]' : 'text-[#111]'}`}>
-                    {item.title}
-                  </p>
-                  <p className="text-[11px] text-[#9CA3AF] mt-0.5">
-                    {new Date(item.created_at).toLocaleDateString('en-US', {
-                      month: 'short', day: 'numeric', year: 'numeric',
-                    })}
-                  </p>
+      {localItems.length > 0 && (
+        mode === 'admin' ? (
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={localItems.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+              <div className="mt-3 divide-y divide-[#F3F4F6]">
+                {localItems.map((item) => (
+                  <SortableItemRow
+                    key={item.id}
+                    item={item}
+                    completedItems={completedItems}
+                    onItemClick={onItemClick}
+                    onEditItem={onEditItem}
+                    onDeleteItem={onDeleteItem}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        ) : (
+          <div className="mt-3 divide-y divide-[#F3F4F6]">
+            {localItems.map((item) => {
+              const isCompleted = completedItems.includes(item.id)
+              return (
+                <div
+                  key={item.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => onItemClick(item)}
+                  onKeyDown={(e) => e.key === 'Enter' && onItemClick(item)}
+                  className="w-full flex items-center gap-3 py-2.5 text-left hover:bg-[#FAFAFA] -mx-5 px-5 transition-colors group first:mt-2 cursor-pointer"
+                >
+                  <FileChip type={item.type} />
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-[13px] truncate ${isCompleted ? 'text-[#9CA3AF]' : 'text-[#111]'}`}>
+                      {item.title}
+                    </p>
+                    <p className="text-[11px] text-[#9CA3AF] mt-0.5">
+                      {new Date(item.created_at).toLocaleDateString('en-US', {
+                        month: 'short', day: 'numeric', year: 'numeric',
+                      })}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {isCompleted && <CheckIcon />}
+                    {(item.type === 'link' || item.type === 'video') && (
+                      <span className="text-[#9CA3AF] group-hover:text-[#6B7280] transition-colors">
+                        <ExternalIcon />
+                      </span>
+                    )}
+                    {(item.type === 'pdf' || item.type === 'image') && (
+                      <span className="text-[#9CA3AF] group-hover:text-[#6B7280] transition-colors">
+                        <DownloadIcon />
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  {isCompleted && mode === 'student' && <CheckIcon />}
-                  {(item.type === 'link' || item.type === 'video') && (
-                    <span className="text-[#9CA3AF] group-hover:text-[#6B7280] transition-colors">
-                      <ExternalIcon />
-                    </span>
-                  )}
-                  {item.type === 'pdf' && (
-                    <span className="text-[#9CA3AF] group-hover:text-[#6B7280] transition-colors">
-                      <DownloadIcon />
-                    </span>
-                  )}
-                  {mode === 'admin' && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); onDeleteItem?.(item.id) }}
-                      className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center text-[#9CA3AF] hover:text-[#991B1B] transition-all"
-                      aria-label="Delete item"
-                    >
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <polyline points="3 6 5 6 21 6" />
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                      </svg>
-                    </button>
-                  )}
-                </div>
-              </button>
-            )
-          })}
-        </div>
+              )
+            })}
+          </div>
+        )
       )}
 
       {/* Student progress */}

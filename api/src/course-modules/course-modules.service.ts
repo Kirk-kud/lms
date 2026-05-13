@@ -19,7 +19,10 @@ import {
   UpdateModuleItemDto,
 } from './course-modules.dto';
 
-const MAX_MODULE_PDF_SIZE = 25 * 1024 * 1024; // 25 MB
+const MAX_MODULE_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
+
+const ALLOWED_IMAGE_MIMES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const ALLOWED_IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
 
 @Injectable()
 export class CourseModulesService {
@@ -37,7 +40,11 @@ export class CourseModulesService {
   // Access helpers
   // ----------------------------------------------------------------
 
-  private async assertTutorOwnsClass(classId: string, tutorId: string) {
+  private async assertTutorOwnsClass(
+    classId: string,
+    tutorId: string,
+    role?: string | null,
+  ) {
     const { data, error } = await this.supabase.adminClient
       .from('classes')
       .select('id, tutor_id')
@@ -45,7 +52,8 @@ export class CourseModulesService {
       .single();
 
     if (error || !data) throw new NotFoundException('Class not found');
-    if (data.tutor_id !== tutorId) throw new ForbiddenException();
+    if (role !== 'admin' && data.tutor_id !== tutorId)
+      throw new ForbiddenException();
     return data;
   }
 
@@ -61,31 +69,96 @@ export class CourseModulesService {
     return data;
   }
 
-  /** Resolves a module to its class_id and verifies tutor owns that class. */
-  private async assertTutorOwnsModule(moduleId: string, tutorId: string) {
+  /** Checks that a tutor has can_edit_modules on their cohort in this class. */
+  private async assertTutorCanEditModules(classId: string, tutorId: string) {
+    const { data, error } = await this.supabase.adminClient
+      .from('cohorts')
+      .select('id, can_edit_modules')
+      .eq('class_id', classId)
+      .eq('ta_id', tutorId)
+      .maybeSingle();
+
+    if (error) throw new BadRequestException(error.message);
+    if (!data)
+      throw new ForbiddenException('No cohort assigned for this class');
+    if (!data.can_edit_modules)
+      throw new ForbiddenException(
+        'Module editing is not enabled for your cohort',
+      );
+  }
+
+  /** Resolves a module to its class_id and verifies tutor owns that class (and can edit). */
+  private async assertTutorOwnsModule(
+    moduleId: string,
+    tutorId: string,
+    role?: string | null,
+  ) {
     const { data: mod, error } = await this.supabase.adminClient
       .from('modules')
-      .select('id, class_id')
+      .select('id, class_id, cohort_id')
       .eq('id', moduleId)
       .single();
 
     if (error || !mod) throw new NotFoundException('Module not found');
-    await this.assertTutorOwnsClass(mod.class_id, tutorId);
+    if (role === 'tutor') {
+      await this.assertTutorCanEditModules(mod.class_id, tutorId);
+    } else {
+      await this.assertTutorOwnsClass(mod.class_id, tutorId, role);
+    }
     return mod;
   }
 
   /** Resolves a module item up the ownership chain. */
-  private async assertTutorOwnsItem(itemId: string, tutorId: string) {
+  private async assertTutorOwnsItem(
+    itemId: string,
+    tutorId: string,
+    role?: string | null,
+  ) {
     const { data: item, error } = await this.supabase.adminClient
       .from('module_items')
-      .select('*, module:modules!module_id(id, class_id)')
+      .select('*, module:modules!module_id(id, class_id, cohort_id)')
       .eq('id', itemId)
       .single();
 
     if (error || !item) throw new NotFoundException('Item not found');
     const classId = item.module.class_id as string;
-    await this.assertTutorOwnsClass(classId, tutorId);
+    if (role === 'tutor') {
+      await this.assertTutorCanEditModules(classId, tutorId);
+    } else {
+      await this.assertTutorOwnsClass(classId, tutorId, role);
+    }
     return item;
+  }
+
+  /** Ensures the assignment belongs to the same class and cohort scope as the module. */
+  private async assertAssignmentMatchesModule(
+    classId: string,
+    moduleCohortId: string | null,
+    assignmentId: string,
+  ) {
+    const { data: row, error } = await this.supabase.adminClient
+      .from('assignments')
+      .select('id, class_id, cohort_id')
+      .eq('id', assignmentId)
+      .maybeSingle();
+
+    if (error) throw new BadRequestException(error.message);
+    if (!row) throw new BadRequestException('Assignment not found');
+
+    if (row.class_id !== classId) {
+      throw new BadRequestException(
+        'Assignment does not belong to this class',
+      );
+    }
+
+    const ac = row.cohort_id as string | null;
+    const mc = moduleCohortId;
+    if (ac === null) return; // class-wide assignment is visible to all cohorts
+    if (mc !== null && ac === mc) return; // same cohort
+
+    throw new BadRequestException(
+      'Assignment cohort does not match this module',
+    );
   }
 
   // ----------------------------------------------------------------
@@ -102,7 +175,7 @@ export class CourseModulesService {
     let scopedCohortId: string | null | undefined = cohortId;
 
     if (role === 'admin') {
-      await this.assertTutorOwnsClass(classId, userId);
+      await this.assertTutorOwnsClass(classId, userId, role);
       if (cohortId) {
         await assertCohortBelongsToClass(this.supabase, classId, cohortId);
       }
@@ -148,8 +221,12 @@ export class CourseModulesService {
   // ----------------------------------------------------------------
   // POST /modules
   // ----------------------------------------------------------------
-  async create(tutorId: string, dto: CreateModuleDto) {
-    await this.assertTutorOwnsClass(dto.class_id, tutorId);
+  async create(tutorId: string, role: string | null, dto: CreateModuleDto) {
+    if (role === 'tutor') {
+      await this.assertTutorCanEditModules(dto.class_id, tutorId);
+    } else {
+      await this.assertTutorOwnsClass(dto.class_id, tutorId, role);
+    }
     if (dto.cohort_id) {
       await assertCohortBelongsToClass(
         this.supabase,
@@ -176,8 +253,13 @@ export class CourseModulesService {
   // ----------------------------------------------------------------
   // PATCH /modules/:id
   // ----------------------------------------------------------------
-  async update(moduleId: string, tutorId: string, dto: UpdateModuleDto) {
-    const mod = await this.assertTutorOwnsModule(moduleId, tutorId);
+  async update(
+    moduleId: string,
+    tutorId: string,
+    role: string | null,
+    dto: UpdateModuleDto,
+  ) {
+    const mod = await this.assertTutorOwnsModule(moduleId, tutorId, role);
     if (dto.cohort_id) {
       await assertCohortBelongsToClass(
         this.supabase,
@@ -200,8 +282,8 @@ export class CourseModulesService {
   // ----------------------------------------------------------------
   // DELETE /modules/:id
   // ----------------------------------------------------------------
-  async remove(moduleId: string, tutorId: string) {
-    await this.assertTutorOwnsModule(moduleId, tutorId);
+  async remove(moduleId: string, tutorId: string, role: string | null) {
+    await this.assertTutorOwnsModule(moduleId, tutorId, role);
 
     const { error } = await this.supabase.adminClient
       .from('modules')
@@ -217,6 +299,7 @@ export class CourseModulesService {
   async createItem(
     moduleId: string,
     tutorId: string,
+    role: string | null,
     dto: CreateModuleItemDto,
     file?: Express.Multer.File,
   ) {
@@ -224,22 +307,40 @@ export class CourseModulesService {
       `createItem called - moduleId=${moduleId}, type=${dto.type}, hasFile=${!!file}`,
     );
 
-    const mod = await this.assertTutorOwnsModule(moduleId, tutorId);
+    const mod = await this.assertTutorOwnsModule(moduleId, tutorId, role);
     let contentUrl = dto.content_url ?? null;
+    let assignmentId: string | null = null;
 
-    if (dto.type === 'pdf') {
+    if (dto.type === 'assignment') {
+      if (!dto.assignment_id) {
+        throw new BadRequestException(
+          'assignment_id is required for assignment items',
+        );
+      }
+      if (file) {
+        throw new BadRequestException(
+          'Assignment items do not use file uploads',
+        );
+      }
+      await this.assertAssignmentMatchesModule(
+        mod.class_id,
+        mod.cohort_id as string | null,
+        dto.assignment_id,
+      );
+      assignmentId = dto.assignment_id;
+      contentUrl = null;
+    } else if (dto.type === 'pdf') {
       if (!file) throw new BadRequestException('PDF file is required');
       if (file.mimetype !== 'application/pdf') {
         throw new BadRequestException('Only PDF files are accepted');
       }
-      if (file.size > MAX_MODULE_PDF_SIZE) {
+      if (file.size > MAX_MODULE_FILE_SIZE) {
         throw new BadRequestException('PDF file must be under 25 MB');
       }
 
       this.logger.log(
         `Uploading PDF - filename=${file.originalname}, size=${file.buffer.length}`,
       );
-      // Sanitize filename: remove special characters, replace spaces with underscores
       const sanitized = file.originalname
         .replace(/[^a-zA-Z0-9.\-_]/g, '_')
         .replace(/\s+/g, '_');
@@ -266,6 +367,47 @@ export class CourseModulesService {
       this.logger.log(`File uploaded successfully - url=${contentUrl}`);
     }
 
+    if (dto.type === 'image') {
+      if (!file) throw new BadRequestException('Image file is required');
+      const ext = (file.originalname ?? '').split('.').pop()?.toLowerCase() ?? '';
+      const isAllowed =
+        ALLOWED_IMAGE_MIMES.includes(file.mimetype) || ALLOWED_IMAGE_EXTS.includes(ext);
+      if (!isAllowed) {
+        throw new BadRequestException('Only image files are accepted (JPG, PNG, GIF, WebP)');
+      }
+      if (file.size > MAX_MODULE_FILE_SIZE) {
+        throw new BadRequestException('Image must be under 25 MB');
+      }
+
+      this.logger.log(
+        `Uploading image - filename=${file.originalname}, size=${file.buffer.length}`,
+      );
+      const sanitized = file.originalname
+        .replace(/[^a-zA-Z0-9.\-_]/g, '_')
+        .replace(/\s+/g, '_');
+      const path = `${mod.class_id}/${Date.now()}_${sanitized}`;
+      const { error: uploadError } = await this.supabase.adminClient.storage
+        .from('modules')
+        .upload(path, file.buffer, {
+          contentType: file.mimetype,
+          upsert: false,
+        });
+
+      if (uploadError) {
+        this.logger.error(
+          `Supabase upload error: ${JSON.stringify(uploadError)}`,
+        );
+        throw new BadRequestException(uploadError.message);
+      }
+
+      const { data: urlData } = this.supabase.adminClient.storage
+        .from('modules')
+        .getPublicUrl(path);
+
+      contentUrl = urlData.publicUrl;
+      this.logger.log(`Image uploaded successfully - url=${contentUrl}`);
+    }
+
     const { data, error } = await this.supabase.adminClient
       .from('module_items')
       .insert({
@@ -275,6 +417,7 @@ export class CourseModulesService {
         content_url: contentUrl,
         content_text: dto.content_text ?? null,
         order_index: dto.order_index,
+        assignment_id: assignmentId,
       })
       .select()
       .single();
@@ -286,12 +429,56 @@ export class CourseModulesService {
   // ----------------------------------------------------------------
   // PATCH /modules/items/:itemId
   // ----------------------------------------------------------------
-  async updateItem(itemId: string, tutorId: string, dto: UpdateModuleItemDto) {
-    await this.assertTutorOwnsItem(itemId, tutorId);
+  async updateItem(
+    itemId: string,
+    tutorId: string,
+    role: string | null,
+    dto: UpdateModuleItemDto,
+  ) {
+    const item = await this.assertTutorOwnsItem(itemId, tutorId, role);
+    const moduleRow = item.module as {
+      id: string;
+      class_id: string;
+      cohort_id: string | null;
+    };
+
+    const patch: Record<string, unknown> = {};
+    if (dto.title !== undefined) patch.title = dto.title;
+    if (dto.content_url !== undefined) patch.content_url = dto.content_url;
+    if (dto.content_text !== undefined) patch.content_text = dto.content_text;
+
+    if (dto.assignment_id !== undefined) {
+      if ((item as { type: string }).type !== 'assignment') {
+        throw new BadRequestException(
+          'assignment_id can only be set on assignment module items',
+        );
+      }
+      if (dto.assignment_id === null) {
+        throw new BadRequestException(
+          'Choose another assignment or delete this item',
+        );
+      }
+      await this.assertAssignmentMatchesModule(
+        moduleRow.class_id,
+        moduleRow.cohort_id,
+        dto.assignment_id,
+      );
+      patch.assignment_id = dto.assignment_id;
+    }
+
+    if (Object.keys(patch).length === 0) {
+      const { data: fresh, error: fetchErr } = await this.supabase.adminClient
+        .from('module_items')
+        .select()
+        .eq('id', itemId)
+        .single();
+      if (fetchErr) throw new BadRequestException(fetchErr.message);
+      return fresh;
+    }
 
     const { data, error } = await this.supabase.adminClient
       .from('module_items')
-      .update(dto)
+      .update(patch)
       .eq('id', itemId)
       .select()
       .single();
@@ -303,11 +490,11 @@ export class CourseModulesService {
   // ----------------------------------------------------------------
   // DELETE /modules/items/:itemId
   // ----------------------------------------------------------------
-  async removeItem(itemId: string, tutorId: string) {
-    const item = await this.assertTutorOwnsItem(itemId, tutorId);
+  async removeItem(itemId: string, tutorId: string, role: string | null) {
+    const item = await this.assertTutorOwnsItem(itemId, tutorId, role);
 
-    // Delete storage file for PDFs
-    if (item.type === 'pdf' && item.content_url) {
+    // Delete storage file for PDFs and images
+    if ((item.type === 'pdf' || item.type === 'image') && item.content_url) {
       const storagePath = (item.content_url as string).replace(
         this.storageUrl,
         '',
@@ -330,8 +517,13 @@ export class CourseModulesService {
   // ----------------------------------------------------------------
   // POST /modules/:id/reorder
   // ----------------------------------------------------------------
-  async reorderItems(moduleId: string, tutorId: string, dto: ReorderItemsDto) {
-    await this.assertTutorOwnsModule(moduleId, tutorId);
+  async reorderItems(
+    moduleId: string,
+    tutorId: string,
+    role: string | null,
+    dto: ReorderItemsDto,
+  ) {
+    await this.assertTutorOwnsModule(moduleId, tutorId, role);
 
     await Promise.all(
       dto.items.map(({ item_id, order_index }) =>

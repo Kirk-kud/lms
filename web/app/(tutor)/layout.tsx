@@ -6,6 +6,8 @@ import Sidebar from '@/components/ui/layout/Sidebar'
 import Topbar from '@/components/ui/layout/Topbar'
 import { createClient } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
+import { useClasses } from '@/lib/hooks/useClasses'
+import { TutorClassProvider, useTutorClass } from '@/lib/contexts/TutorClassContext'
 
 function activeItemFromPath(pathname: string): string {
   if (pathname.includes('/tutor/cohort')) return 'My Cohort'
@@ -53,11 +55,55 @@ const IconAttendance = ({ active }: { active: boolean }) => (
   </svg>
 )
 
+function ClassSelectorBar() {
+  const { classes, selectedClass, setSelectedClassId } = useTutorClass()
+  if (!selectedClass || classes.length <= 1) return null
+
+  return (
+    <div
+      style={{
+        borderBottom: '0.5px solid #E5E5E5',
+        padding: '7px 20px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        backgroundColor: '#FAFAFA',
+        flexShrink: 0,
+      }}
+    >
+      <span style={{ fontSize: '11px', color: '#9CA3AF', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+        Class
+      </span>
+      <select
+        value={selectedClass.id}
+        onChange={(e) => setSelectedClassId(e.target.value)}
+        style={{
+          fontSize: '12px',
+          fontWeight: 500,
+          color: '#111',
+          border: 'none',
+          background: 'transparent',
+          cursor: 'pointer',
+          fontFamily: 'Inter, sans-serif',
+          outline: 'none',
+        }}
+      >
+        {classes.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.title}{c.cohort_name ? ` · ${c.cohort_name}` : ''}
+          </option>
+        ))}
+      </select>
+    </div>
+  )
+}
+
 export default function TutorLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const qc = useQueryClient()
   const { user } = useUser()
+  const { data: classes = [] } = useClasses()
 
   const activeItem = activeItemFromPath(pathname)
 
@@ -86,39 +132,49 @@ export default function TutorLayout({ children }: { children: React.ReactNode })
   const handleProfile = () => router.push('/tutor/profile')
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
-      <Topbar userName={fullName} userInitials={initials} role="tutor" userId={user?.id} onSignOut={handleSignOut} onProfile={handleProfile} />
-      <div className="flex flex-1 overflow-hidden">
-        <div className="hidden md:block">
-          <Sidebar
-            variant="tutor"
-            activeItem={activeItem}
-            onNavigate={handleNavigate}
-            onSignOut={handleSignOut}
-            userName={fullName}
-            userInitials={initials}
-          />
+    <TutorClassProvider classes={classes}>
+      <div className="flex flex-col h-screen overflow-hidden">
+        <Topbar userName={fullName} userInitials={initials} role="tutor" userId={user?.id} onSignOut={handleSignOut} onProfile={handleProfile} />
+        <div className="flex min-h-0 flex-1 overflow-hidden">
+          <div className="hidden md:block">
+            <Sidebar
+              variant="tutor"
+              activeItem={activeItem}
+              onNavigate={handleNavigate}
+              onSignOut={handleSignOut}
+              userName={fullName}
+              userInitials={initials}
+            />
+          </div>
+          <main className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-white pb-20 md:pb-0">
+            <ClassSelectorBar />
+            <div className="min-h-0 flex-1">{children}</div>
+          </main>
         </div>
-        <main className="flex-1 overflow-y-auto bg-white pb-20 md:pb-0">{children}</main>
-      </div>
 
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t-[0.5px] border-[#E5E5E5] h-[calc(56px+env(safe-area-inset-bottom))] px-6 pb-[env(safe-area-inset-bottom)] flex items-center justify-between">
-        <button onClick={() => handleNavigate('Dashboard')} aria-label="Dashboard">
-          <IconDashboard active={activeItem === 'Dashboard'} />
-        </button>
-        <button onClick={() => handleNavigate('My Cohort')} aria-label="My Cohort">
-          <IconCohort active={activeItem === 'My Cohort'} />
-        </button>
-        <button onClick={() => handleNavigate('Modules')} aria-label="Modules">
-          <IconModules active={activeItem === 'Modules'} />
-        </button>
-        <button onClick={() => handleNavigate('Assignments')} aria-label="Assignments">
-          <IconAssignments active={activeItem === 'Assignments'} />
-        </button>
-        <button onClick={() => handleNavigate('Attendance')} aria-label="Attendance">
-          <IconAttendance active={activeItem === 'Attendance'} />
-        </button>
-      </nav>
-    </div>
+        <nav className="fixed bottom-0 left-0 right-0 flex h-[calc(56px+env(safe-area-inset-bottom))] items-center justify-between border-t-[0.5px] border-[#E5E5E5] bg-white px-6 pb-[env(safe-area-inset-bottom)] md:hidden">
+          <button type="button" onClick={() => handleNavigate('Dashboard')} aria-label="Dashboard" className="flex flex-col items-center justify-center gap-1 py-2">
+            <IconDashboard active={activeItem === 'Dashboard'} />
+            <span className={`text-[10px] ${activeItem === 'Dashboard' ? 'font-medium text-[#8B1A2F]' : 'text-[#6B6168]'}`}>Dashboard</span>
+          </button>
+          <button type="button" onClick={() => handleNavigate('My Cohort')} aria-label="My Cohort" className="flex flex-col items-center justify-center gap-1 py-2">
+            <IconCohort active={activeItem === 'My Cohort'} />
+            <span className={`text-[10px] ${activeItem === 'My Cohort' ? 'font-medium text-[#8B1A2F]' : 'text-[#6B6168]'}`}>Cohort</span>
+          </button>
+          <button type="button" onClick={() => handleNavigate('Modules')} aria-label="Modules" className="flex flex-col items-center justify-center gap-1 py-2">
+            <IconModules active={activeItem === 'Modules'} />
+            <span className={`text-[10px] ${activeItem === 'Modules' ? 'font-medium text-[#8B1A2F]' : 'text-[#6B6168]'}`}>Modules</span>
+          </button>
+          <button type="button" onClick={() => handleNavigate('Assignments')} aria-label="Assignments" className="flex flex-col items-center justify-center gap-1 py-2">
+            <IconAssignments active={activeItem === 'Assignments'} />
+            <span className={`text-[10px] ${activeItem === 'Assignments' ? 'font-medium text-[#8B1A2F]' : 'text-[#6B6168]'}`}>Assignments</span>
+          </button>
+          <button type="button" onClick={() => handleNavigate('Attendance')} aria-label="Attendance" className="flex flex-col items-center justify-center gap-1 py-2">
+            <IconAttendance active={activeItem === 'Attendance'} />
+            <span className={`text-[10px] ${activeItem === 'Attendance' ? 'font-medium text-[#8B1A2F]' : 'text-[#6B6168]'}`}>Attendance</span>
+          </button>
+        </nav>
+      </div>
+    </TutorClassProvider>
   )
 }

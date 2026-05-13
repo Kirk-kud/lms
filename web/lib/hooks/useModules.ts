@@ -7,9 +7,11 @@ export interface ModuleItem {
   id: string
   module_id: string
   title: string
-  type: 'pdf' | 'video' | 'link' | 'text'
+  type: 'pdf' | 'video' | 'link' | 'text' | 'image' | 'assignment'
   content_url: string | null
   content_text: string | null
+  /** Set when `type` is `assignment` — same class/cohort as the module. */
+  assignment_id?: string | null
   order_index: number
   created_at: string
 }
@@ -36,8 +38,9 @@ export function useCreateModule() {
   return useMutation({
     mutationFn: (body: { class_id: string; title: string; order_index: number }) =>
       apiClient.post<CourseModule>('/modules', body),
-    onSuccess: (_data, vars) =>
-      qc.invalidateQueries({ queryKey: ['modules', vars.class_id] }),
+    onSuccess: async (_data, vars) => {
+      await qc.invalidateQueries({ queryKey: ['modules', vars.class_id] })
+    },
   })
 }
 
@@ -75,8 +78,41 @@ export function useAddModuleItem() {
 
       return json.data
     },
-    onSuccess: (_data, vars) =>
-      qc.invalidateQueries({ queryKey: ['modules', vars.classId] }),
+    onSuccess: async (_data, vars) => {
+      await qc.invalidateQueries({ queryKey: ['modules', vars.classId] })
+    },
+  })
+}
+
+export function useUpdateModule() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ moduleId, classId: _classId, title }: { moduleId: string; classId: string; title: string }) =>
+      apiClient.patch<CourseModule>(`/modules/${moduleId}`, { title }),
+    onSuccess: async (_data, vars) => {
+      await qc.invalidateQueries({ queryKey: ['modules', vars.classId] })
+    },
+  })
+}
+
+export function useUpdateModuleItem() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      itemId,
+      classId: _classId,
+      ...body
+    }: {
+      itemId: string
+      classId: string
+      title?: string
+      content_url?: string
+      content_text?: string
+      assignment_id?: string
+    }) => apiClient.patch<ModuleItem>(`/modules/items/${itemId}`, body),
+    onSuccess: async (_data, vars) => {
+      await qc.invalidateQueries({ queryKey: ['modules', vars.classId] })
+    },
   })
 }
 
@@ -85,8 +121,9 @@ export function useDeleteModule() {
   return useMutation({
     mutationFn: ({ moduleId }: { moduleId: string; classId: string }) =>
       apiClient.delete(`/modules/${moduleId}`),
-    onSuccess: (_data, vars) =>
-      qc.invalidateQueries({ queryKey: ['modules', vars.classId] }),
+    onSuccess: async (_data, vars) => {
+      await qc.invalidateQueries({ queryKey: ['modules', vars.classId] })
+    },
   })
 }
 
@@ -95,8 +132,9 @@ export function useDeleteModuleItem() {
   return useMutation({
     mutationFn: ({ itemId }: { itemId: string; classId: string }) =>
       apiClient.delete(`/modules/items/${itemId}`),
-    onSuccess: (_data, vars) =>
-      qc.invalidateQueries({ queryKey: ['modules', vars.classId] }),
+    onSuccess: async (_data, vars) => {
+      await qc.invalidateQueries({ queryKey: ['modules', vars.classId] })
+    },
   })
 }
 
@@ -111,7 +149,8 @@ export function useReorderItems() {
       classId: string
       items: { item_id: string; order_index: number }[]
     }) => apiClient.post<CourseModule>(`/modules/${moduleId}/reorder`, { items }),
-    onSuccess: (_data, vars) =>
-      qc.invalidateQueries({ queryKey: ['modules', vars.classId] }),
+    onSuccess: async (_data, vars) => {
+      await qc.invalidateQueries({ queryKey: ['modules', vars.classId] })
+    },
   })
 }

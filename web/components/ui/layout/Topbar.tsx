@@ -3,9 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useNotifications } from '@/lib/hooks/useNotifications'
-import { NotificationsPanel, AnnouncementsPanel } from './TopbarPanels'
-
-type PanelId = 'notifications' | 'announcements' | null
+import { AnnouncementsPanel } from './TopbarPanels'
 
 interface TopbarProps {
   userName: string
@@ -92,11 +90,8 @@ export default function Topbar({ userName, userInitials, role, userId, onSignOut
   const router = useRouter()
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
-  const [activePanel, setActivePanel] = useState<PanelId>(null)
+  const [announcementsOpen, setAnnouncementsOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
-
-  const { data: notifications = [] } = useNotifications()
-  const unreadCount = notifications.filter((n) => !n.read).length
 
   useEffect(() => {
     if (!menuOpen) return
@@ -109,8 +104,8 @@ export default function Topbar({ userName, userInitials, role, userId, onSignOut
     return () => document.removeEventListener('mousedown', handler)
   }, [menuOpen])
 
-  const togglePanel = (id: PanelId) =>
-    setActivePanel((prev) => (prev === id ? null : id))
+  const { data: notifications = [] } = useNotifications()
+  const unreadCount = notifications.filter((n) => !n.read).length
 
   const roleLabel = role === 'admin' ? 'Admin' : role === 'tutor' ? 'Tutor' : 'Student'
   const isStudent = role === 'student'
@@ -145,21 +140,29 @@ export default function Topbar({ userName, userInitials, role, userId, onSignOut
           {isStudent && userId && (
             <>
               <IconButton
-                label="Calendar"
-                active={pathname === '/student/calendar'}
-                onClick={() => router.push('/student/calendar')}
+                label="To-do"
+                active={pathname === '/student/todo' || pathname.includes('/todo')}
+                onClick={() => router.push('/student/todo')}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="3.5" cy="4" r="1" fill="currentColor" stroke="none" />
+                  <line x1="6.5" y1="4" x2="14" y2="4" />
+                  <circle cx="3.5" cy="8" r="1" fill="currentColor" stroke="none" />
+                  <line x1="6.5" y1="8" x2="14" y2="8" />
+                  <circle cx="3.5" cy="12" r="1" fill="currentColor" stroke="none" />
+                  <line x1="6.5" y1="12" x2="14" y2="12" />
                 </svg>
               </IconButton>
               <IconButton
-                label="To-do"
-                active={pathname === '/student/todo'}
-                onClick={() => router.push('/student/todo')}
+                label="Calendar"
+                active={pathname === '/student/calendar' || pathname.includes('/calendar')}
+                onClick={() => router.push('/student/calendar')}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="1" y="2" width="14" height="13" rx="1.5" />
+                  <line x1="1" y1="6" x2="15" y2="6" />
+                  <line x1="5" y1="1" x2="5" y2="4" />
+                  <line x1="11" y1="1" x2="11" y2="4" />
                 </svg>
               </IconButton>
               <IconButton
@@ -184,27 +187,15 @@ export default function Topbar({ userName, userInitials, role, userId, onSignOut
             </>
           )}
           {!isStudent && (
-            <>
-              <IconButton
-                label="Notifications"
-                active={activePanel === 'notifications'}
-                badge={unreadCount}
-                onClick={() => togglePanel('notifications')}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-                </svg>
-              </IconButton>
-              <IconButton
-                label="Announcements"
-                active={activePanel === 'announcements'}
-                onClick={() => togglePanel('announcements')}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
-                </svg>
-              </IconButton>
-            </>
+            <IconButton
+              label="Announcements"
+              active={announcementsOpen}
+              onClick={() => setAnnouncementsOpen((v) => !v)}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+              </svg>
+            </IconButton>
           )}
         </div>
 
@@ -300,12 +291,9 @@ export default function Topbar({ userName, userInitials, role, userId, onSignOut
         </div>
       </div>
 
-      {/* Panels — non-student only */}
-      {!isStudent && activePanel === 'notifications' && (
-        <NotificationsPanel onClose={() => setActivePanel(null)} />
-      )}
-      {!isStudent && activePanel === 'announcements' && userId && (
-        <AnnouncementsPanel role={role} userId={userId} onClose={() => setActivePanel(null)} />
+      {/* Announcements panel — admin/tutor only */}
+      {!isStudent && announcementsOpen && userId && (
+        <AnnouncementsPanel role={role} userId={userId} onClose={() => setAnnouncementsOpen(false)} />
       )}
     </>
   )

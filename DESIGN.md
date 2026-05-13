@@ -1,5 +1,5 @@
 ---
-name: Love Inc LMS
+name: Vine LMS
 description: Discipleship learning management system for university campus church communities
 colors:
   fellowship-burgundy: "#8B1A2F"
@@ -94,13 +94,13 @@ components:
     padding: "2px 10px"
 ---
 
-# Design System: Love Inc LMS
+# Design System: Vine LMS
 
 ## 1. Overview
 
 **Creative North Star: "The Bold Register"**
 
-Love Inc LMS is built like a register — a living, named record of a discipleship community. Every element earns its place by doing a job. The system is confident without being loud, warm without being soft. The brand's bold condensed wordmark sets the tone: this isn't a generic tool. It belongs to real people at real universities who are serious about what they're doing together.
+Vine LMS is built like a register — a living, named record of a discipleship community. Every element earns its place by doing a job. The system is confident without being loud, warm without being soft. The brand's bold condensed wordmark sets the tone: this isn't a generic tool. It belongs to real people at real universities who are serious about what they're doing together.
 
 The palette is built on restraint. A single accent — Fellowship Burgundy — carries the entire brand weight. It appears on the wordmark, on active navigation, on the confirmation of an action. Everywhere else, near-black and gray do the structural work. The result is a system where the burgundy always means something.
 

@@ -1,6 +1,6 @@
-## Love Inc LMS
+## Vine LMS
 
-Love Inc LMS is a discipleship learning management system with:
+Vine LMS is a discipleship learning management system with:
 
 - **Web app** (`/web`): Next.js (App Router) + Supabase auth client
 - **API** (`/api`): NestJS REST API backed by Supabase (profiles/classes/modules/assignments/attendance)

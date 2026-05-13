@@ -1,62 +1,107 @@
 'use client'
 
+import React from 'react'
 import { useRouter } from 'next/navigation'
-import { format, isToday, isTomorrow, isFuture, isPast } from 'date-fns'
+import { format, isToday, isTomorrow, startOfDay, endOfWeek } from 'date-fns'
+import { useMyAllAssignments } from '@/lib/hooks/useAssignments'
 import { useUser } from '@/lib/hooks/useUser'
-import { useMyAllAssignments, AssignmentWithClass } from '@/lib/hooks/useAssignments'
 import { SkeletonCard } from '@/components/ui/shared/SkeletonCard'
+import type { AssignmentWithClass } from '@/lib/hooks/useAssignments'
 
-function dueDateLabel(dateStr: string): string {
-  const d = new Date(dateStr)
-  if (isToday(d)) return 'Today'
-  if (isTomorrow(d)) return 'Tomorrow'
-  return format(d, 'EEE, d MMM')
+type Group = 'overdue' | 'today' | 'this-week' | 'later'
+
+function groupAssignment(a: AssignmentWithClass, now: Date): Group {
+  const due = new Date(a.due_date)
+  if (due < startOfDay(now)) return 'overdue'
+  if (isToday(due)) return 'today'
+  if (due <= endOfWeek(now, { weekStartsOn: 1 })) return 'this-week'
+  return 'later'
 }
 
-function AssignmentCard({
-  a,
-  isOverdue,
+const GROUP_META: Record<Group, { label: string; color: string }> = {
+  overdue: { label: 'Overdue', color: '#B0182E' },
+  today: { label: 'Due today', color: '#B6791D' },
+  'this-week': { label: 'Due this week', color: '#0A0A0B' },
+  later: { label: 'Later', color: '#6B6168' },
+}
+
+const GROUP_ORDER: Group[] = ['overdue', 'today', 'this-week', 'later']
+
+function TodoRow({
+  assignment,
+  group,
   onClick,
 }: {
-  a: AssignmentWithClass
-  isOverdue: boolean
+  assignment: AssignmentWithClass
+  group: Group
   onClick: () => void
 }) {
+  const [hovered, setHovered] = React.useState(false)
+  const due = new Date(assignment.due_date)
+  const dueLabel = isToday(due)
+    ? 'Today'
+    : isTomorrow(due)
+    ? 'Tomorrow'
+    : format(due, 'EEE, d MMM')
+
   return (
     <button
       onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
-        width: '100%', textAlign: 'left', display: 'flex', alignItems: 'flex-start',
-        gap: '14px', padding: '16px 20px', background: 'none', border: 'none',
-        borderBottom: '1px solid #F3F4F6', cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        width: '100%',
+        padding: '13px 20px',
+        background: hovered ? '#FAF7F4' : 'transparent',
+        border: 'none',
+        cursor: 'pointer',
+        gap: '14px',
+        textAlign: 'left',
+        transition: 'background 100ms ease',
       }}
-      onMouseEnter={(e) => (e.currentTarget.style.background = '#FAF7F4')}
-      onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
     >
-      <div style={{
-        width: '8px', height: '8px', borderRadius: '50%', marginTop: '5px', flexShrink: 0,
-        backgroundColor: isOverdue ? '#B0182E' : '#8B1A2F',
-      }} />
+      {/* Checkbox visual */}
+      <div
+        style={{
+          width: '16px',
+          height: '16px',
+          borderRadius: '4px',
+          border: `1.5px solid ${group === 'overdue' ? '#B0182E' : '#D0C8C6'}`,
+          flexShrink: 0,
+          background: 'transparent',
+        }}
+      />
+
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontSize: '14px', fontWeight: 600, color: '#0A0A0B', margin: '0 0 6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {a.title}
+        <p style={{ fontSize: '13.5px', fontWeight: 500, color: '#0A0A0B', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {assignment.title}
         </p>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <span style={{
-            fontSize: '10px', fontWeight: 600, textTransform: 'uppercase',
-            letterSpacing: '0.06em', color: '#8B1A2F',
-            background: 'rgba(139,26,47,0.07)', padding: '2px 8px', borderRadius: '4px',
-          }}>
-            {a.class_title}
-          </span>
-          <span style={{ fontSize: '12.5px', color: isOverdue ? '#B0182E' : '#6B6168' }}>
-            {isOverdue ? 'Was due ' : 'Due '}
-            {dueDateLabel(a.due_date)}
-          </span>
-        </div>
+        <p style={{ fontSize: '11.5px', color: '#9C949A', margin: 0 }}>
+          {assignment.class_title}
+        </p>
       </div>
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, marginTop: '2px', color: '#9C949A' }}>
-        <path d="M5 3l4 4-4 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+
+      <span
+        style={{
+          fontSize: '11.5px',
+          color: group === 'overdue' ? '#B0182E' : '#6B6168',
+          fontWeight: group === 'overdue' ? 600 : 400,
+          flexShrink: 0,
+        }}
+      >
+        {dueLabel}
+      </span>
+
+      <svg
+        width="13"
+        height="13"
+        viewBox="0 0 13 13"
+        fill="none"
+        style={{ flexShrink: 0, color: '#9C949A', opacity: hovered ? 1 : 0, transition: 'opacity 100ms' }}
+      >
+        <path d="M5 2l4 4.5L5 11" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </button>
   )
@@ -65,112 +110,142 @@ function AssignmentCard({
 export default function TodoPageClient() {
   const router = useRouter()
   const { user } = useUser()
-  const { data: assignments, isLoading } = useMyAllAssignments(user?.id ?? '')
+  const { data: assignments = [], isLoading } = useMyAllAssignments(user?.id ?? '')
+  const now = new Date()
 
-  const pending = assignments
-    .filter((a) => !a.submission && isFuture(new Date(a.due_date)))
-    .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
+  const pending = assignments.filter((a) => !a.submission)
+  const grouped: Record<Group, AssignmentWithClass[]> = {
+    overdue: [],
+    today: [],
+    'this-week': [],
+    later: [],
+  }
+  for (const a of pending) {
+    grouped[groupAssignment(a, now)].push(a)
+  }
+  for (const g of GROUP_ORDER) {
+    grouped[g].sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
+  }
 
-  const overdue = assignments
-    .filter((a) => !a.submission && isPast(new Date(a.due_date)))
-    .sort((a, b) => new Date(b.due_date).getTime() - new Date(a.due_date).getTime())
-
-  const total = pending.length + overdue.length
+  const totalPending = pending.length
+  const overdueCount = grouped.overdue.length
 
   return (
     <div className="p-4 sm:p-8">
-      {/* Page header */}
-      <div style={{ marginBottom: '28px' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px', flexWrap: 'wrap' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#0A0A0B', letterSpacing: '-0.02em', lineHeight: 1.2, margin: 0 }}>
-            To-do
-          </h1>
-          {!isLoading && total > 0 && (
-            <span style={{
-              fontSize: '12px', fontWeight: 600, color: '#8B1A2F',
-              background: 'rgba(139,26,47,0.08)', padding: '3px 10px',
-              borderRadius: '999px', marginBottom: '2px',
-            }}>
-              {total} remaining
-            </span>
-          )}
-        </div>
-        <p style={{ fontSize: '13.5px', color: '#9C949A', margin: '6px 0 0' }}>
-          Your pending assignments across all classes
-        </p>
+      {/* Header */}
+      <div style={{ marginBottom: '24px' }}>
+        <h1 className="text-[22px] sm:text-[28px]" style={{ fontWeight: 700, color: '#0A0A0B', letterSpacing: '-0.02em', margin: 0 }}>
+          To-do
+        </h1>
+        {!isLoading && (
+          <p style={{ fontSize: '13px', color: '#9C949A', margin: '4px 0 0' }}>
+            {totalPending === 0
+              ? 'All caught up — nothing pending!'
+              : `${totalPending} pending${overdueCount > 0 ? ` · ${overdueCount} overdue` : ''}`}
+          </p>
+        )}
       </div>
 
       {isLoading && <SkeletonCard lines={5} />}
 
-      {!isLoading && total === 0 && (
-        <div style={{
-          border: '1px dashed #ECE6E0', borderRadius: '12px',
-          padding: '64px 24px', textAlign: 'center',
-        }}>
-          <div style={{
-            width: '48px', height: '48px', borderRadius: '50%',
-            backgroundColor: 'rgba(139,26,47,0.07)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 16px',
-          }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8B1A2F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      {!isLoading && totalPending === 0 && (
+        <div
+          style={{
+            border: '1px dashed #E5E5E5',
+            borderRadius: '12px',
+            padding: '60px 24px',
+            textAlign: 'center',
+          }}
+        >
+          <div
+            style={{
+              width: '44px',
+              height: '44px',
+              borderRadius: '12px',
+              background: 'rgba(31,139,76,0.07)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 12px',
+            }}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1F8B4C" strokeWidth="1.8">
               <polyline points="20 6 9 17 4 12" />
             </svg>
           </div>
-          <p style={{ fontSize: '15px', fontWeight: 600, color: '#0A0A0B', margin: '0 0 6px' }}>All caught up!</p>
-          <p style={{ fontSize: '13.5px', color: '#9C949A', margin: 0 }}>No pending assignments right now.</p>
+          <p style={{ fontSize: '14px', fontWeight: 600, color: '#0A0A0B', margin: '0 0 4px' }}>All done!</p>
+          <p style={{ fontSize: '13px', color: '#9C949A', margin: 0 }}>Nothing pending across all your classes.</p>
         </div>
       )}
 
-      {!isLoading && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          {overdue.length > 0 && (
-            <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #ECE6E0', borderRadius: '12px', overflow: 'hidden' }}>
-              <div style={{ padding: '14px 20px', borderBottom: '1px solid #ECE6E0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <h2 style={{ fontSize: '13px', fontWeight: 700, color: '#B0182E', margin: 0, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                  Overdue
-                </h2>
-                <span style={{
-                  fontSize: '11px', fontWeight: 700, color: '#B0182E',
-                  background: 'rgba(176,24,46,0.1)', padding: '2px 8px', borderRadius: '999px',
-                }}>
-                  {overdue.length}
-                </span>
-              </div>
-              {overdue.map((a) => (
-                <AssignmentCard
-                  key={a.id}
-                  a={a}
-                  isOverdue
-                  onClick={() => router.push(`/student/classes/${a.class_id}/assignments`)}
-                />
-              ))}
-            </div>
-          )}
+      {!isLoading && totalPending > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {GROUP_ORDER.map((group) => {
+            const items = grouped[group]
+            if (items.length === 0) return null
+            const meta = GROUP_META[group]
+            return (
+              <div
+                key={group}
+                style={{
+                  border: '1px solid #ECE6E0',
+                  borderRadius: '10px',
+                  overflow: 'hidden',
+                  background: '#FFFFFF',
+                }}
+              >
+                {/* Section header */}
+                <div
+                  style={{
+                    padding: '10px 20px',
+                    borderBottom: '1px solid #ECE6E0',
+                    background: '#FAF7F4',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.1em',
+                      color: meta.color,
+                    }}
+                  >
+                    {meta.label}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: '10.5px',
+                      fontWeight: 600,
+                      color: meta.color,
+                      background: group === 'overdue' ? 'rgba(176,24,46,0.1)' : 'rgba(10,10,11,0.06)',
+                      padding: '1px 6px',
+                      borderRadius: '4px',
+                    }}
+                  >
+                    {items.length}
+                  </span>
+                </div>
 
-          {pending.length > 0 && (
-            <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #ECE6E0', borderRadius: '12px', overflow: 'hidden' }}>
-              <div style={{ padding: '14px 20px', borderBottom: '1px solid #ECE6E0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <h2 style={{ fontSize: '13px', fontWeight: 700, color: '#0A0A0B', margin: 0, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                  Upcoming
-                </h2>
-                <span style={{
-                  fontSize: '11px', fontWeight: 700, color: '#6B6168',
-                  background: '#F3F4F6', padding: '2px 8px', borderRadius: '999px',
-                }}>
-                  {pending.length}
-                </span>
+                {/* Rows */}
+                {items.map((a, i) => (
+                  <div
+                    key={a.id}
+                    style={{ borderBottom: i < items.length - 1 ? '1px solid #ECE6E0' : 'none' }}
+                  >
+                    <TodoRow
+                      assignment={a}
+                      group={group}
+                      onClick={() => router.push(`/student/classes/${a.class_id}/assignments/${a.id}`)}
+                    />
+                  </div>
+                ))}
               </div>
-              {pending.map((a) => (
-                <AssignmentCard
-                  key={a.id}
-                  a={a}
-                  isOverdue={false}
-                  onClick={() => router.push(`/student/classes/${a.class_id}/assignments`)}
-                />
-              ))}
-            </div>
-          )}
+            )
+          })}
         </div>
       )}
     </div>

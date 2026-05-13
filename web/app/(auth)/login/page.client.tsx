@@ -6,14 +6,16 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
+import { apiClient, ApiError } from '@/lib/api'
 import { PasswordInput } from '@/components/ui/shared/PasswordInput'
 import globalBlack from '@/public/global_black.png'
 import { PhotoCarousel } from '@/components/ui/shared/PhotoCarousel'
 
 interface LoginResponse {
-  access_token: string
-  refresh_token: string
-  user: { id: string; email: string; full_name: string | null; role: string | null }
+  id: string
+  email: string
+  full_name: string | null
+  role: string | null
 }
 
 const Spinner = () => (
@@ -57,20 +59,24 @@ export default function LoginPageClient() {
     setIsLoading(true)
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      })
-      const json = (await res.json()) as { data: LoginResponse; message?: string }
-      if (!res.ok) throw new Error(json.message ?? 'Invalid credentials')
-
-      const { access_token, refresh_token, user } = json.data
+      const { access_token, refresh_token, user } = await apiClient.post<{
+        access_token: string
+        refresh_token?: string
+        user: LoginResponse
+      }>('/auth/login', { email, password })
       localStorage.setItem('access_token', access_token)
-      localStorage.setItem('refresh_token', refresh_token)
+      if (refresh_token) {
+        localStorage.setItem('refresh_token', refresh_token)
+      } else {
+        localStorage.removeItem('refresh_token')
+      }
 
       const supabase = createClient()
-      await supabase.auth.signInWithPassword({ email, password })
+      const { error: sessionError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+      if (sessionError) throw sessionError
 
       toast.success(`Welcome back${user.full_name ? `, ${user.full_name.split(' ')[0]}` : ''}!`, {
         description: 'You have been signed in successfully.',
@@ -84,7 +90,10 @@ export default function LoginPageClient() {
       )
     } catch (err) {
       toast.error('Sign in failed', {
-        description: err instanceof Error ? err.message : 'Something went wrong. Please try again.',
+        description:
+          err instanceof ApiError || err instanceof Error
+            ? err.message
+            : 'Something went wrong. Please try again.',
       })
     } finally {
       setIsLoading(false)
@@ -206,7 +215,7 @@ export default function LoginPageClient() {
                     margin: '0 0 8px 0',
                   }}
                 >
-                  "I am the vine, you are the branches. Whoever abides in me bears much fruit."
+                  &quot;I am the vine, you are the branches. Whoever abides in me bears much fruit.&quot;
                 </p>
                 <cite
                   style={{

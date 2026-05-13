@@ -29,6 +29,23 @@ export interface SessionRecords {
   absent: { id: string; full_name: string; email: string; avatar_initials: string }[]
 }
 
+export interface StudentAttendanceSummary {
+  student: {
+    id: string
+    full_name: string
+    email: string
+    avatar_initials: string
+  }
+  sessions_attended: number
+  sessions_total: number
+  rate: number
+}
+
+export interface ClassAttendanceSummary {
+  sessions_count: number
+  students: StudentAttendanceSummary[]
+}
+
 export interface MyAttendanceRow {
   session: AttendanceSession
   present: boolean
@@ -47,17 +64,27 @@ export function useAttendanceSessions(classId: string) {
 export function useStartSession() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (body: { class_id: string }) =>
+    mutationFn: (body: { class_id: string; duration_minutes?: number }) =>
       apiClient.post<AttendanceSession>('/attendance/sessions', body),
     onSuccess: (_data, vars) =>
       qc.invalidateQueries({ queryKey: ['attendance-sessions', vars.class_id] }),
   })
 }
 
+export function useRestartSession() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ sessionId, duration_minutes }: { sessionId: string; classId: string; duration_minutes?: number }) =>
+      apiClient.post<AttendanceSession>(`/attendance/sessions/${sessionId}/restart`, { duration_minutes }),
+    onSuccess: (_data, vars) =>
+      qc.invalidateQueries({ queryKey: ['attendance-sessions', vars.classId] }),
+  })
+}
+
 export function useEndSession() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ sessionId, classId }: { sessionId: string; classId: string }) =>
+    mutationFn: async ({ sessionId }: { sessionId: string; classId: string }) =>
       apiClient.patch<AttendanceSession>(`/attendance/sessions/${sessionId}`),
     onSuccess: (_data, { classId }) =>
       qc.invalidateQueries({ queryKey: ['attendance-sessions', classId] }),
@@ -79,5 +106,67 @@ export function useMyAttendance(classId: string) {
     queryFn: () =>
       apiClient.get<MyAttendanceRow[]>(`/attendance/my/${classId}`),
     enabled: !!classId,
+  })
+}
+
+export function useManualCheckIn(sessionId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (student_id: string) =>
+      apiClient.post(`/attendance/sessions/${sessionId}/records/manual`, { student_id }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['session-records', sessionId] })
+      qc.invalidateQueries({ queryKey: ['attendance-sessions'] })
+    },
+  })
+}
+
+export function useDeleteSession() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ sessionId }: { sessionId: string; classId: string }) =>
+      apiClient.delete(`/attendance/sessions/${sessionId}`),
+    onSuccess: (_data, { classId }) =>
+      qc.invalidateQueries({ queryKey: ['attendance-sessions', classId] }),
+  })
+}
+
+export function useStudentAttendanceSummary(
+  classId: string,
+  options: { from?: string; to?: string; enabled?: boolean } = {},
+) {
+  const params = new URLSearchParams()
+  if (options.from) params.set('from', options.from)
+  if (options.to) params.set('to', options.to)
+  const qs = params.toString()
+  return useQuery({
+    queryKey: ['student-summary', classId, options.from, options.to],
+    queryFn: () =>
+      apiClient.get<ClassAttendanceSummary>(
+        `/attendance/class/${classId}/student-summary${qs ? `?${qs}` : ''}`,
+      ),
+    enabled: (options.enabled ?? true) && !!classId,
+  })
+}
+
+export function useExtendSession() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ sessionId, duration_minutes }: { sessionId: string; classId: string; duration_minutes: number }) =>
+      apiClient.post<AttendanceSession>(`/attendance/sessions/${sessionId}/extend`, { duration_minutes }),
+    onSuccess: (_data, { classId }) =>
+      qc.invalidateQueries({ queryKey: ['attendance-sessions', classId] }),
+  })
+}
+
+export function useMarkAbsent(sessionId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (studentId: string) =>
+      apiClient.delete(`/attendance/sessions/${sessionId}/records/${studentId}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['session-records', sessionId] })
+      qc.invalidateQueries({ queryKey: ['attendance-sessions'] })
+    },
   })
 }

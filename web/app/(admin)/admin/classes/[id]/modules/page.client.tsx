@@ -5,11 +5,16 @@ import { useRouter } from 'next/navigation'
 import {
   useModules,
   useCreateModule,
+  useUpdateModule,
+  useUpdateModuleItem,
   useDeleteModule,
   useDeleteModuleItem,
   useAddModuleItem,
+  useReorderItems,
+  CourseModule,
   ModuleItem,
 } from '@/lib/hooks/useModules'
+import { useAssignments } from '@/lib/hooks/useAssignments'
 import { useClass } from '@/lib/hooks/useClasses'
 import ModuleCard from '@/components/ui/tutor/ModuleCard'
 import { SkeletonCard } from '@/components/ui/shared/SkeletonCard'
@@ -27,8 +32,17 @@ import {
 import ItemPreviewModal from '@/components/ui/shared/ItemPreviewModal'
 import type { PreviewItem } from '@/components/ui/shared/ItemPreviewModal'
 
-const ITEM_TYPES = ['pdf', 'video', 'link', 'text'] as const
+const ITEM_TYPES = ['pdf', 'image', 'video', 'link', 'text', 'assignment'] as const
 type ItemType = (typeof ITEM_TYPES)[number]
+
+const ITEM_TYPE_BUTTON_LABEL: Record<ItemType, string> = {
+  pdf: 'PDF',
+  image: 'Image',
+  video: 'Video',
+  link: 'Link',
+  text: 'Text',
+  assignment: 'Assignment',
+}
 
 function CreateModuleModal({
   classId,
@@ -47,6 +61,7 @@ function CreateModuleModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim()) return
+    if (!classId) { toast.error('Class not loaded — please refresh'); return }
     try {
       await createModule.mutateAsync({ class_id: classId, title: title.trim(), order_index: nextIndex })
       setTitle('')
@@ -110,6 +125,8 @@ function AddItemModal({
   const [url, setUrl] = useState('')
   const [text, setText] = useState('')
   const [file, setFile] = useState<File | null>(null)
+  const [assignmentId, setAssignmentId] = useState('')
+  const { data: classAssignments = [] } = useAssignments(classId)
   const addItem = useAddModuleItem()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -117,7 +134,14 @@ function AddItemModal({
     const formData = new FormData()
     formData.append('title', title.trim())
     formData.append('type', type)
-    if (type === 'pdf' && file) formData.append('file', file)
+    if (type === 'assignment') {
+      if (!assignmentId) {
+        toast.error('Choose an assignment to link')
+        return
+      }
+      formData.append('assignment_id', assignmentId)
+    }
+    if ((type === 'pdf' || type === 'image') && file) formData.append('file', file)
     if ((type === 'video' || type === 'link') && url) formData.append('content_url', url)
     if (type === 'text' && text) formData.append('content_text', text)
     formData.append('order_index', '0')
@@ -127,11 +151,18 @@ function AddItemModal({
       setUrl('')
       setText('')
       setFile(null)
+      setAssignmentId('')
       onClose()
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Unable to add item')
     }
   }
+
+  const sortedAssignments = [...classAssignments].sort((a, b) =>
+    a.week_number !== b.week_number
+      ? a.week_number - b.week_number
+      : a.title.localeCompare(b.title),
+  )
 
   const inputStyle: React.CSSProperties = {
     width: '100%', height: '36px', borderRadius: '8px',
@@ -159,14 +190,18 @@ function AddItemModal({
                 <button
                   key={t}
                   type="button"
-                  onClick={() => setType(t)}
+                  onClick={() => {
+                    setType(t)
+                    setFile(null)
+                    setAssignmentId('')
+                  }}
                   className={`h-8 px-3 text-[12px] rounded-lg border transition-colors ${
                     type === t
                       ? 'border-[#8B1A2F] text-[#8B1A2F] bg-[#F5E6EA]'
                       : 'border-[#E5E5E5] text-[#6B7280] hover:bg-[#F8F8F8]'
                   }`}
                 >
-                  {t.toUpperCase()}
+                  {ITEM_TYPE_BUTTON_LABEL[t]}
                 </button>
               ))}
             </div>
@@ -176,6 +211,26 @@ function AddItemModal({
               <label className="block text-[12px] text-[#6B6B6B] mb-1">PDF file</label>
               <input type="file" accept="application/pdf" required onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                 className="w-full text-[13px] text-[#6B7280]" />
+            </div>
+          )}
+          {type === 'image' && (
+            <div>
+              <label className="block text-[12px] text-[#6B6B6B] mb-1">Image file</label>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                required
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                className="w-full text-[13px] text-[#6B7280]"
+              />
+              {file && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={URL.createObjectURL(file)}
+                  alt="Preview"
+                  className="mt-2 w-full max-h-40 object-contain rounded-lg border border-[#E5E5E5]"
+                />
+              )}
             </div>
           )}
           {(type === 'video' || type === 'link') && (
@@ -195,11 +250,230 @@ function AddItemModal({
                 onBlur={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')} />
             </div>
           )}
+          {type === 'assignment' && (
+            <div>
+              <label className="block text-[12px] text-[#6B6B6B] mb-1">Class assignment</label>
+              <select
+                required
+                value={assignmentId}
+                onChange={(e) => setAssignmentId(e.target.value)}
+                style={inputStyle}
+              >
+                <option value="">Select assignment…</option>
+                {sortedAssignments.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    Week {a.week_number}: {a.title}
+                  </option>
+                ))}
+              </select>
+              {sortedAssignments.length === 0 && (
+                <p className="text-[11px] text-[#9CA3AF] mt-1">Create assignments for this class first.</p>
+              )}
+            </div>
+          )}
           <div className="flex gap-2 justify-end pt-1">
             <button type="button" onClick={onClose} className="h-9 px-4 text-[13px] text-[#6B7280] border border-[#E5E5E5] rounded-lg hover:bg-[#F8F8F8] transition-colors">Cancel</button>
             <button type="submit" disabled={addItem.isPending} className="h-9 px-4 text-[13px] font-medium bg-black text-white rounded-lg disabled:opacity-50 hover:bg-black/90 transition-colors flex items-center gap-2">
               {addItem.isPending && <LoadingSpinner className="text-white" />}
               {addItem.isPending ? 'Uploading...' : 'Add item'}
+            </button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function RenameModuleModal({
+  module: mod,
+  classId,
+  open,
+  onClose,
+}: {
+  module: CourseModule
+  classId: string
+  open: boolean
+  onClose: () => void
+}) {
+  const [title, setTitle] = useState(mod.title)
+  const updateModule = useUpdateModule()
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!title.trim() || title.trim() === mod.title) { onClose(); return }
+    try {
+      await updateModule.mutateAsync({ moduleId: mod.id, classId, title: title.trim() })
+      onClose()
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Unable to rename module')
+    }
+  }
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%', height: '36px', borderRadius: '8px',
+    border: '0.5px solid #E5E5E5', fontSize: '13px',
+    padding: '0 10px', outline: 'none', boxSizing: 'border-box',
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-[15px] font-medium">Rename module</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="mt-2 space-y-4">
+          <div>
+            <label className="block text-[12px] text-[#6B6B6B] mb-1">Module title</label>
+            <input
+              autoFocus required value={title} onChange={(e) => setTitle(e.target.value)} style={inputStyle}
+              onFocus={(e) => (e.currentTarget.style.borderColor = '#8B1A2F')}
+              onBlur={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')}
+            />
+          </div>
+          <div className="flex gap-2 justify-end pt-1">
+            <button type="button" onClick={onClose} className="h-9 px-4 text-[13px] text-[#6B7280] border border-[#E5E5E5] rounded-lg hover:bg-[#F8F8F8] transition-colors">Cancel</button>
+            <button type="submit" disabled={updateModule.isPending || !title.trim()} className="h-9 px-4 text-[13px] font-medium bg-black text-white rounded-lg disabled:opacity-50 hover:bg-black/90 transition-colors flex items-center gap-2">
+              {updateModule.isPending && <LoadingSpinner className="text-white" />}
+              {updateModule.isPending ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function EditItemModal({
+  item,
+  classId,
+  open,
+  onClose,
+}: {
+  item: ModuleItem
+  classId: string
+  open: boolean
+  onClose: () => void
+}) {
+  const [title, setTitle] = useState(item.title)
+  const [url, setUrl] = useState(item.content_url ?? '')
+  const [text, setText] = useState(item.content_text ?? '')
+  const [assignmentId, setAssignmentId] = useState(item.assignment_id ?? '')
+  const { data: classAssignments = [] } = useAssignments(classId)
+  const updateItem = useUpdateModuleItem()
+
+  const sortedAssignments = [...classAssignments].sort((a, b) =>
+    a.week_number !== b.week_number
+      ? a.week_number - b.week_number
+      : a.title.localeCompare(b.title),
+  )
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!title.trim()) return
+    if (item.type === 'assignment') {
+      if (!assignmentId) {
+        toast.error('Choose an assignment')
+        return
+      }
+      try {
+        await updateItem.mutateAsync({
+          itemId: item.id,
+          classId,
+          title: title.trim(),
+          assignment_id: assignmentId,
+        })
+        onClose()
+      } catch (err) {
+        toast.error(err instanceof ApiError ? err.message : 'Unable to update item')
+      }
+      return
+    }
+    const body: {
+      itemId: string
+      classId: string
+      title?: string
+      content_url?: string
+      content_text?: string
+    } = {
+      itemId: item.id,
+      classId,
+      title: title.trim(),
+    }
+    if (item.type === 'video' || item.type === 'link') body.content_url = url
+    if (item.type === 'text') body.content_text = text
+    try {
+      await updateItem.mutateAsync(body)
+      onClose()
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Unable to update item')
+    }
+  }
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%', height: '36px', borderRadius: '8px',
+    border: '0.5px solid #E5E5E5', fontSize: '13px',
+    padding: '0 10px', outline: 'none', boxSizing: 'border-box',
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-[15px] font-medium">Edit item</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="mt-2 space-y-4">
+          <div>
+            <label className="block text-[12px] text-[#6B6B6B] mb-1">Title</label>
+            <input autoFocus required value={title} onChange={(e) => setTitle(e.target.value)} style={inputStyle}
+              onFocus={(e) => (e.currentTarget.style.borderColor = '#8B1A2F')}
+              onBlur={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')} />
+          </div>
+          {(item.type === 'video' || item.type === 'link') && (
+            <div>
+              <label className="block text-[12px] text-[#6B6B6B] mb-1">URL</label>
+              <input value={url} onChange={(e) => setUrl(e.target.value)} style={inputStyle} placeholder="https://"
+                onFocus={(e) => (e.currentTarget.style.borderColor = '#8B1A2F')}
+                onBlur={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')} />
+            </div>
+          )}
+          {item.type === 'text' && (
+            <div>
+              <label className="block text-[12px] text-[#6B6B6B] mb-1">Content</label>
+              <textarea value={text} onChange={(e) => setText(e.target.value)} rows={4}
+                style={{ ...inputStyle, height: 'auto', padding: '8px 10px', resize: 'none' }}
+                onFocus={(e) => (e.currentTarget.style.borderColor = '#8B1A2F')}
+                onBlur={(e) => (e.currentTarget.style.borderColor = '#E5E5E5')} />
+            </div>
+          )}
+          {item.type === 'assignment' && (
+            <div>
+              <label className="block text-[12px] text-[#6B6B6B] mb-1">Class assignment</label>
+              <select
+                required
+                value={assignmentId}
+                onChange={(e) => setAssignmentId(e.target.value)}
+                style={inputStyle}
+              >
+                <option value="">Select assignment…</option>
+                {sortedAssignments.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    Week {a.week_number}: {a.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {item.type === 'pdf' && (
+            <p className="text-[12px] text-[#9CA3AF]">To replace the PDF file, delete this item and add a new one.</p>
+          )}
+          {item.type === 'image' && (
+            <p className="text-[12px] text-[#9CA3AF]">To replace the image, delete this item and add a new one.</p>
+          )}
+          <div className="flex gap-2 justify-end pt-1">
+            <button type="button" onClick={onClose} className="h-9 px-4 text-[13px] text-[#6B7280] border border-[#E5E5E5] rounded-lg hover:bg-[#F8F8F8] transition-colors">Cancel</button>
+            <button type="submit" disabled={updateItem.isPending || !title.trim()} className="h-9 px-4 text-[13px] font-medium bg-black text-white rounded-lg disabled:opacity-50 hover:bg-black/90 transition-colors flex items-center gap-2">
+              {updateItem.isPending && <LoadingSpinner className="text-white" />}
+              {updateItem.isPending ? 'Saving...' : 'Save'}
             </button>
           </div>
         </form>
@@ -227,9 +501,12 @@ export default function ModulesPageClient({ params }: { params: Promise<{ id: st
   } = useModules(classId)
   const deleteModule = useDeleteModule()
   const deleteItem = useDeleteModuleItem()
+  const reorderItems = useReorderItems()
 
   const [showCreateModule, setShowCreateModule] = useState(false)
   const [previewItem, setPreviewItem] = useState<PreviewItem | null>(null)
+  const [renamingModule, setRenamingModule] = useState<CourseModule | null>(null)
+  const [editingItem, setEditingItem] = useState<ModuleItem | null>(null)
 
   const toastIdRef = useRef<string | number | null>(null)
   const didSuccessRef = useRef(false)
@@ -264,13 +541,19 @@ export default function ModulesPageClient({ params }: { params: Promise<{ id: st
   }
 
   const handleItemClick = (item: ModuleItem) => {
+    if (item.type === 'assignment') {
+      if (item.assignment_id) {
+        router.push(`/admin/classes/${classId}/assignments`)
+      }
+      return
+    }
     if (item.type === 'link' && item.content_url) {
       window.open(item.content_url, '_blank', 'noopener,noreferrer')
       return
     }
     setPreviewItem({
       title: item.title,
-      type: item.type,
+      type: item.type as PreviewItem['type'],
       content_url: item.content_url,
       content_text: item.content_text,
     })
@@ -375,8 +658,13 @@ export default function ModulesPageClient({ params }: { params: Promise<{ id: st
                 mode="admin"
                 onAddItem={() => handleAddItem(mod.id)}
                 onDeleteItem={handleDeleteItem}
+                onEditItem={(item) => setEditingItem(item)}
+                onRenameModule={() => setRenamingModule(mod)}
                 onDeleteModule={() => handleDeleteModule(mod.id)}
                 onItemClick={handleItemClick}
+                onReorderItems={(newOrder) =>
+                  reorderItems.mutate({ moduleId: mod.id, classId, items: newOrder })
+                }
               />
             ))}
         </div>
@@ -395,6 +683,24 @@ export default function ModulesPageClient({ params }: { params: Promise<{ id: st
           classId={classId}
           open={showAddItem}
           onClose={() => { setShowAddItem(false); setActiveModuleId(null) }}
+        />
+      )}
+
+      {renamingModule && (
+        <RenameModuleModal
+          module={renamingModule}
+          classId={classId}
+          open={renamingModule !== null}
+          onClose={() => setRenamingModule(null)}
+        />
+      )}
+
+      {editingItem && (
+        <EditItemModal
+          item={editingItem}
+          classId={classId}
+          open={editingItem !== null}
+          onClose={() => setEditingItem(null)}
         />
       )}
 
