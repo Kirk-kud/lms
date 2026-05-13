@@ -78,6 +78,7 @@ export default function TutorLayout({ children }: { children: React.ReactNode })
     const supabase = createClient()
     await supabase.auth.signOut()
     localStorage.removeItem('access_token')
+    localStorage.removeItem('refresh_token')
     qc.clear()
     router.push('/login')
   }

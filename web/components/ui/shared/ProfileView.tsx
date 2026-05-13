@@ -24,6 +24,7 @@ export default function ProfileView() {
     const supabase = createClient()
     await supabase.auth.signOut()
     localStorage.removeItem('access_token')
+    localStorage.removeItem('refresh_token')
     router.push('/login')
   }
 

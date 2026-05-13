@@ -3,16 +3,18 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { createClient } from '@supabase/supabase-js';
 import { SupabaseService } from '../supabase/supabase.service';
-import { LoginDto, RegisterDto } from './auth.dto';
+import { LoginDto, RegisterDto, RefreshTokenDto } from './auth.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly supabase: SupabaseService,
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -76,14 +78,31 @@ export class AuthService {
     const meta = user.user_metadata as Record<string, string>;
     const role = meta.role ?? null;
 
-    const access_token = this.jwtService.sign({
-      sub: user.id,
-      email: user.email,
-      role,
-    });
+    // Generate tokens with different expiration times
+    const access_token = this.jwtService.sign(
+      {
+        sub: user.id,
+        email: user.email,
+        role,
+      },
+      {
+        expiresIn: '30m', // Short-lived access token
+      },
+    );
+
+    const refresh_token = this.jwtService.sign(
+      {
+        sub: user.id,
+        type: 'refresh',
+      },
+      {
+        expiresIn: '7d', // Long-lived refresh token
+      },
+    );
 
     return {
       access_token,
+      refresh_token,
       user: {
         id: user.id,
         email: user.email,
@@ -115,5 +134,46 @@ export class AuthService {
     }
 
     return this.getMe(data.user.id);
+  }
+
+  async refresh(dto: RefreshTokenDto) {
+    try {
+      const payload = this.jwtService.verify<{
+        sub: string;
+        type: string;
+      }>(dto.refresh_token);
+
+      if (payload.type !== 'refresh') {
+        throw new UnauthorizedException('Invalid token type');
+      }
+
+      const { data: user_data, error } = await this.supabase.adminClient
+        .from('profiles')
+        .select('*')
+        .eq('id', payload.sub)
+        .single();
+
+      if (error || !user_data) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      // Generate new access token
+      const access_token = this.jwtService.sign(
+        {
+          sub: user_data.id,
+          email: user_data.email,
+          role: user_data.role,
+        },
+        {
+          expiresIn: '30m',
+        },
+      );
+
+      return {
+        access_token,
+      };
+    } catch (err) {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
   }
 }

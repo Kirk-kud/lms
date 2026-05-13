@@ -127,6 +127,7 @@ export default function StudentLayout({
     const supabase = createClient()
     await supabase.auth.signOut()
     localStorage.removeItem('access_token')
+    localStorage.removeItem('refresh_token')
     qc.clear()
     router.push('/login')
   }

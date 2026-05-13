@@ -10,6 +10,54 @@ interface UseUserResult {
   isLoading: boolean
 }
 
+function decodeJwt(token: string): { exp?: number } & Record<string, any> {
+  try {
+    const [, payload] = token.split('.')
+    const decoded = JSON.parse(atob(payload))
+    return decoded
+  } catch {
+    return {}
+  }
+}
+
+function getTimeUntilExpiration(token: string): number {
+  const payload = decodeJwt(token)
+  if (!payload.exp) return -1
+  const expirationMs = payload.exp * 1000
+  const nowMs = Date.now()
+  return expirationMs - nowMs
+}
+
+async function refreshAccessToken(): Promise<string | null> {
+  try {
+    const refreshToken = localStorage.getItem('refresh_token')
+    if (!refreshToken) return null
+
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      }
+    )
+
+    const json = (await res.json()) as {
+      data: { access_token: string }
+      message: string
+      statusCode: number
+    }
+
+    if (!res.ok) return null
+
+    const newAccessToken = json.data.access_token
+    localStorage.setItem('access_token', newAccessToken)
+    return newAccessToken
+  } catch {
+    return null
+  }
+}
+
 export function useUser(): UseUserResult {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -29,6 +77,24 @@ export function useUser(): UseUserResult {
     })
 
     return () => subscription.unsubscribe()
+  }, [])
+
+  // Proactive token refresh: refresh 2 minutes before expiration
+  useEffect(() => {
+    const accessToken = localStorage.getItem('access_token')
+    if (!accessToken) return
+
+    const timeUntilExpiration = getTimeUntilExpiration(accessToken)
+    if (timeUntilExpiration < 0) return
+
+    // Refresh 2 minutes (120000 ms) before expiration
+    const refreshIn = Math.max(0, timeUntilExpiration - 120000)
+
+    const timeoutId = setTimeout(async () => {
+      await refreshAccessToken()
+    }, refreshIn)
+
+    return () => clearTimeout(timeoutId)
   }, [])
 
   return {

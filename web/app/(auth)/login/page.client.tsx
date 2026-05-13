@@ -12,6 +12,7 @@ import { PhotoCarousel } from '@/components/ui/shared/PhotoCarousel'
 
 interface LoginResponse {
   access_token: string
+  refresh_token: string
   user: { id: string; email: string; full_name: string | null; role: string | null }
 }
 
@@ -64,8 +65,9 @@ export default function LoginPageClient() {
       const json = (await res.json()) as { data: LoginResponse; message?: string }
       if (!res.ok) throw new Error(json.message ?? 'Invalid credentials')
 
-      const { access_token, user } = json.data
+      const { access_token, refresh_token, user } = json.data
       localStorage.setItem('access_token', access_token)
+      localStorage.setItem('refresh_token', refresh_token)
 
       const supabase = createClient()
       await supabase.auth.signInWithPassword({ email, password })
