@@ -28,34 +28,44 @@ function getTimeUntilExpiration(token: string): number {
   return expirationMs - nowMs
 }
 
+let refreshPromise: Promise<string | null> | null = null
+
 async function refreshAccessToken(): Promise<string | null> {
-  try {
-    const refreshToken = localStorage.getItem('refresh_token')
-    if (!refreshToken) return null
+  if (refreshPromise) return refreshPromise
 
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresh_token: refreshToken }),
+  refreshPromise = (async () => {
+    try {
+      const refreshToken = localStorage.getItem('refresh_token')
+      if (!refreshToken) return null
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh_token: refreshToken }),
+        }
+      )
+
+      const json = (await res.json()) as {
+        data: { access_token: string }
+        message: string
+        statusCode: number
       }
-    )
 
-    const json = (await res.json()) as {
-      data: { access_token: string }
-      message: string
-      statusCode: number
+      if (!res.ok) return null
+
+      const newAccessToken = json.data.access_token
+      localStorage.setItem('access_token', newAccessToken)
+      return newAccessToken
+    } catch {
+      return null
+    } finally {
+      refreshPromise = null
     }
+  })()
 
-    if (!res.ok) return null
-
-    const newAccessToken = json.data.access_token
-    localStorage.setItem('access_token', newAccessToken)
-    return newAccessToken
-  } catch {
-    return null
-  }
+  return refreshPromise
 }
 
 export function useUser(): UseUserResult {
