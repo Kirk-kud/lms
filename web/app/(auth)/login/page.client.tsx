@@ -59,11 +59,17 @@ export default function LoginPageClient() {
     setIsLoading(true)
 
     try {
-      const { access_token, user } = await apiClient.post<{
+      const { access_token, refresh_token, user } = await apiClient.post<{
         access_token: string
+        refresh_token?: string
         user: LoginResponse
       }>('/auth/login', { email, password })
       localStorage.setItem('access_token', access_token)
+      if (refresh_token) {
+        localStorage.setItem('refresh_token', refresh_token)
+      } else {
+        localStorage.removeItem('refresh_token')
+      }
 
       const supabase = createClient()
       const { error: sessionError } = await supabase.auth.signInWithPassword({

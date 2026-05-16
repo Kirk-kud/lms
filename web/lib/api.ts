@@ -8,6 +8,8 @@ export class ApiError extends Error {
   }
 }
 
+let isRefreshing = false
+let refreshPromise: Promise<string | null> | null = null
 const REQUEST_TIMEOUT_MS = 20_000
 
 function getAccessToken(): string | null {
@@ -15,6 +17,84 @@ function getAccessToken(): string | null {
   return localStorage.getItem('access_token')
 }
 
+function setAccessToken(token: string): void {
+  if (typeof window === 'undefined') return
+  localStorage.setItem('access_token', token)
+}
+
+function setRefreshToken(token: string): void {
+  if (typeof window === 'undefined') return
+  localStorage.setItem('refresh_token', token)
+}
+
+function getRefreshToken(): string | null {
+  if (typeof window === 'undefined') return null
+  return localStorage.getItem('refresh_token')
+}
+
+export async function refreshAccessToken(): Promise<string | null> {
+  // Prevent multiple simultaneous refresh requests
+  if (isRefreshing && refreshPromise) {
+    return refreshPromise
+  }
+
+  isRefreshing = true
+
+  refreshPromise = (async () => {
+    try {
+      const refreshToken = getRefreshToken()
+      if (!refreshToken) {
+        // No refresh token available, must re-login
+        redirectToLogin()
+        return null
+      }
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh_token: refreshToken }),
+        }
+      )
+
+      const json = (await res.json()) as {
+        data: { access_token: string; refresh_token?: string }
+        message: string
+        statusCode: number
+      }
+
+      if (!res.ok) {
+        // Refresh failed, redirect to login
+        redirectToLogin()
+        return null
+      }
+
+      const newAccessToken = json.data.access_token
+      setAccessToken(newAccessToken)
+      if (json.data.refresh_token) {
+        setRefreshToken(json.data.refresh_token)
+      }
+      return newAccessToken
+    } catch {
+      // Network error or other issue, redirect to login
+      redirectToLogin()
+      return null
+    } finally {
+      isRefreshing = false
+      refreshPromise = null
+    }
+  })()
+
+  return refreshPromise
+}
+
+function redirectToLogin(): void {
+  if (typeof window === 'undefined') return
+  localStorage.removeItem('access_token')
+  localStorage.removeItem('refresh_token')
+  window.location.href = '/login'
+}
 export function getApiBaseUrl(): string {
   const configuredUrl = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/+$/, '')
   if (configuredUrl) return configuredUrl
@@ -46,6 +126,7 @@ export async function apiRequest<T>(
   method: string,
   path: string,
   body?: unknown,
+  retryCount = 0,
 ): Promise<T> {
   const token = getAccessToken()
   const controller = new AbortController()
@@ -68,6 +149,12 @@ export async function apiRequest<T>(
       body: body !== undefined ? JSON.stringify(body) : undefined,
       signal: controller.signal,
     })
+    if (res.status === 401 && retryCount < 1) {
+      const newToken = await refreshAccessToken()
+      if (newToken) {
+        return apiRequest<T>(method, path, body, retryCount + 1)
+      }
+    }
     return parseApiResponse<T>(res)
   } catch (err) {
     if (err instanceof ApiError) throw err

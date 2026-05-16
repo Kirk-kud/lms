@@ -2,7 +2,7 @@ import { Body, Controller, Get, HttpCode, Post, Req } from '@nestjs/common';
 import type { Request } from 'express';
 import { createResponse } from '../common/response.helper';
 import { Public } from './auth.guard';
-import { LoginDto, RegisterDto } from './auth.dto';
+import { LoginDto, RegisterDto, RefreshTokenDto } from './auth.dto';
 import { AuthService } from './auth.service';
 import { JwtPayload } from './jwt.strategy';
 
@@ -23,6 +23,14 @@ export class AuthController {
   async login(@Body() dto: LoginDto) {
     const data = await this.authService.login(dto);
     return createResponse(data, 'Login successful');
+  }
+
+  @Public()
+  @Post('refresh')
+  @HttpCode(200)
+  async refresh(@Body() dto: RefreshTokenDto) {
+    const data = await this.authService.refresh(dto);
+    return createResponse(data, 'Token refreshed');
   }
 
   @Public()
