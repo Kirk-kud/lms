@@ -145,7 +145,7 @@ export class AuthService {
         sub: string;
         type: string;
       }>(dto.refresh_token);
-    } catch (err) {
+    } catch {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
 
@@ -175,8 +175,19 @@ export class AuthService {
       },
     );
 
+    const refresh_token = this.jwtService.sign(
+      {
+        sub: user_data.id,
+        type: 'refresh',
+      },
+      {
+        expiresIn: '7d',
+      },
+    );
+
     return {
       access_token,
+      refresh_token,
     };
   }
 }

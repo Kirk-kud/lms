@@ -22,12 +22,17 @@ function setAccessToken(token: string): void {
   localStorage.setItem('access_token', token)
 }
 
+function setRefreshToken(token: string): void {
+  if (typeof window === 'undefined') return
+  localStorage.setItem('refresh_token', token)
+}
+
 function getRefreshToken(): string | null {
   if (typeof window === 'undefined') return null
   return localStorage.getItem('refresh_token')
 }
 
-async function refreshAccessToken(): Promise<string | null> {
+export async function refreshAccessToken(): Promise<string | null> {
   // Prevent multiple simultaneous refresh requests
   if (isRefreshing && refreshPromise) {
     return refreshPromise
@@ -54,7 +59,7 @@ async function refreshAccessToken(): Promise<string | null> {
       )
 
       const json = (await res.json()) as {
-        data: { access_token: string }
+        data: { access_token: string; refresh_token?: string }
         message: string
         statusCode: number
       }
@@ -67,6 +72,9 @@ async function refreshAccessToken(): Promise<string | null> {
 
       const newAccessToken = json.data.access_token
       setAccessToken(newAccessToken)
+      if (json.data.refresh_token) {
+        setRefreshToken(json.data.refresh_token)
+      }
       return newAccessToken
     } catch {
       // Network error or other issue, redirect to login
